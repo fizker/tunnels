@@ -1,3 +1,3 @@
 import Tunnels
 
-print(hello)
+print("server says \(try await hello())")

@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
 	name: "tunnels-client",
+	platforms: [ .macOS(.v10_15) ],
 	products: [
 		.executable(name: "tunnels", targets: ["CLI"])
 	],
