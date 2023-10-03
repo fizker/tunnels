@@ -4,6 +4,9 @@ import Vapor
 extension TunnelDTO: Content {}
 
 func routes(_ app: Application) throws {
+	let tunnelController = TunnelController()
+	app.middleware.use(TunnelInterceptor(ownHost: "localhost", controller: tunnelController))
+
 	app.get { req in
 		return "It works!"
 	}
@@ -13,8 +16,6 @@ func routes(_ app: Application) throws {
 	}
 
 	app.group("tunnels") { app in
-		let tunnelController = TunnelController()
-
 		app.get { try await tunnelController.all(req: $0) }
 		app.post { try await tunnelController.add(req: $0) }
 
