@@ -8,13 +8,11 @@ struct TunnelInterceptor: AsyncMiddleware {
 		guard let host = portlessHost(for: request), host != ownHost
 		else { return try await next.respond(to: request) }
 
-		let matchingRoute = controller.tunnels.values.first { $0.host == host }
+		guard let matchingRoute = controller.connectedClients.first(where: { $0.tunnel.host == host })
+		else { return Response(status: .notFound) }
 
-		request.logger.info("""
-		Tunnelling for \(host) to \(request.method) \(request.url) to \(matchingRoute == nil ? "nothing" : "detected route")
-		""")
-
-		return Response(status: matchingRoute == nil ? .notFound : .badGateway)
+		try await matchingRoute.webSocket.send("got request for \(request.url)")
+		return Response(status: .badGateway)
 	}
 
 	private func portlessHost(for request: Request) -> String? {
