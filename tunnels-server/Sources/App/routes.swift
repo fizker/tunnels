@@ -26,6 +26,8 @@ func routes(_ app: Application) throws {
 				try await tunnelController.delete(req: $0, id: $0.parameters.require("id"))
 				return HTTPStatus.noContent
 			}
+
+			app.webSocket { try? await tunnelController.connectClient(req: $0, webSocket: $1, id: $0.parameters.require("id")) }
 		}
 	}
 }
