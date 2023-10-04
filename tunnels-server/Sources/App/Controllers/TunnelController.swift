@@ -11,6 +11,7 @@ struct TunnelUpdateRequest: Codable {
 
 class TunnelController {
 	var tunnels: [UUID: TunnelDTO] = [:]
+	var connectedClients: [(tunnel: TunnelDTO, webSocket: WebSocket)] = []
 
 	func all(req: Request) async throws -> [TunnelDTO] {
 		return tunnels.map(\.value)
@@ -37,5 +38,16 @@ class TunnelController {
 
 	func delete(req: Request, id: UUID) async throws {
 		tunnels.removeValue(forKey: id)
+	}
+
+	func connectClient(req: Request, webSocket ws: WebSocket, id: UUID) async throws {
+		guard let dto = tunnels[id]
+		else { throw Abort(.notFound) }
+
+		connectedClients.append((dto, ws))
+
+		ws.onClose.whenComplete { [weak self] _ in
+			self?.connectedClients.removeAll { $0.webSocket.isClosed }
+		}
 	}
 }
