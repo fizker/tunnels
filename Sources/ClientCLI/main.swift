@@ -1,5 +1,5 @@
 import Foundation
-import Tunnels
+import TunnelsClient
 
 print("server says \(try await hello())")
 
