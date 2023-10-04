@@ -15,9 +15,11 @@ let package = Package(
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
 	],
 	targets: [
+		.target(name: "Models"),
 		.target(
 			name: "TunnelsClient",
 			dependencies: [
+				"Models",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			]
@@ -25,6 +27,7 @@ let package = Package(
 		.target(
 			name: "TunnelsServer",
 			dependencies: [
+				"Models",
 				.product(name: "Vapor", package: "vapor"),
 			]
 		),
