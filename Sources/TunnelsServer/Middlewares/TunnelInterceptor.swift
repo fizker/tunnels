@@ -17,13 +17,32 @@ struct TunnelInterceptor: AsyncMiddleware {
 			headers.add(value: $1.value, for: $1.name)
 			return headers
 		})
-		let request = HTTPRequest(url: URL(string: request.url.description)!, method: request.method.string, headers: headers)
+		let request = HTTPRequest(url: URL(string: request.url.description)!, method: request.method.string, headers: headers, body: request.body.string.flatMap { .text($0) })
 		let response = try await matchingRoute.client.send(request)
 
-		return Response(status: .custom(code: response.status.code, reasonPhrase: response.status.reason))
+		return response.asVaporResponse
 	}
 
 	private func portlessHost(for request: Request) -> String? {
 		request.headers[.host].first?.split(separator: ":").first.map(String.init)
+	}
+}
+
+extension Models.HTTPResponse {
+	var asVaporResponse: Response {
+		let body: Response.Body = switch self.body {
+		case let .text(value):
+			.init(string: value)
+		case let .binary(data):
+			.init(data: data)
+		case .none:
+			.empty
+		}
+
+		return Response(
+			status: .custom(code: status.code, reasonPhrase: status.reason),
+			headers: .init(self.headers.map { ($0, $1.joined(separator: " ")) }),
+			body: body
+		)
 	}
 }

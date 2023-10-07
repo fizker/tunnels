@@ -26,4 +26,8 @@ public struct HTTPHeaders: Codable {
 	public func headers(named name: String) -> [String] {
 		values[name] ?? []
 	}
+
+	public func map<T>(_ transform: (String, [String]) throws -> T) rethrows -> [T] {
+		try values.map(transform)
+	}
 }
