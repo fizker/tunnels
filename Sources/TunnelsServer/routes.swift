@@ -27,7 +27,7 @@ func routes(_ app: Application) throws {
 				return HTTPStatus.noContent
 			}
 
-			app.webSocket { try? await tunnelController.connectClient(req: $0, webSocket: $1, id: $0.parameters.require("id")) }
+			app.webSocket { try? tunnelController.connectClient(req: $0, webSocket: $1, id: $0.parameters.require("id")) }
 		}
 	}
 }

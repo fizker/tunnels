@@ -1,3 +1,4 @@
+import Models
 import Vapor
 
 struct TunnelInterceptor: AsyncMiddleware {
@@ -11,8 +12,15 @@ struct TunnelInterceptor: AsyncMiddleware {
 		guard let matchingRoute = controller.connectedClients.first(where: { $0.tunnel.host == host })
 		else { return Response(status: .notFound) }
 
-		try await matchingRoute.webSocket.send("got request for \(request.url)")
-		return Response(status: .badGateway)
+		let headers = request.headers.reduce(Models.HTTPHeaders(), {
+			var headers = $0
+			headers.add(value: $1.value, for: $1.name)
+			return headers
+		})
+		let request = HTTPRequest(url: URL(string: request.url.description)!, method: request.method.string, headers: headers)
+		let response = try await matchingRoute.client.send(request)
+
+		return Response(status: .custom(code: response.status.code, reasonPhrase: response.status.reason))
 	}
 
 	private func portlessHost(for request: Request) -> String? {
