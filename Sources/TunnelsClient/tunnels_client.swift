@@ -28,7 +28,7 @@ func handleText(proxy: Proxy, ws: WebSocket, value: String) async throws {
 	let data = value.data(using: .utf8)!
 	let decoder = JSONDecoder()
 	if let req = try? decoder.decode(HTTPRequest.self, from: data) {
-		let res = await proxy.handle(req)
+		let res = try await proxy.handle(req)
 		let encoder = JSONEncoder()
 		let json = try encoder.encode(res)
 		try await ws.send(String(data: json, encoding: .utf8)!)
