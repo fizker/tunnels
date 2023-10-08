@@ -12,8 +12,8 @@ public func hello() async throws -> String {
 	return String(data: Data(buffer: body), encoding: .utf8) ?? ""
 }
 
-public func connect(id: UUID) async throws {
-	let proxy = Proxy(localPort: 8080, remoteName: "example.com", remoteID: id)
+public func connect(id: UUID, port: Int) async throws {
+	let proxy = Proxy(localPort: port, remoteName: "example.com", remoteID: id)
 
 	let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 	try await WebSocket.connect(to: "ws://localhost:8110/tunnels/\(id)", on: elg) { ws in
