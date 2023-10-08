@@ -12,13 +12,12 @@ struct Client: AsyncParsableCommand {
 	@Option var tunnelServer: String = "http://localhost:8110"
 
 	func run() async throws {
-		try await connect(id: remoteID, port: port)
+		let proxy = Proxy(localPort: port, remoteID: remoteID)
+		try await proxy.connect()
 
 		print("Client started for local port \(port)")
 
-		print("Client will close in 120s")
-		try await Task.sleep(for: .seconds(120))
-		print("Closing client")
+		try await proxy.waitUntilClose()
 	}
 }
 
