@@ -1,4 +1,4 @@
-public struct BitIterator<Number: BinaryInteger>: IteratorProtocol {
+public struct BitIterator<Number: BinaryInteger & UnsignedInteger>: IteratorProtocol {
 	public typealias Element = Bit
 
 	var iterator: () -> Number?
@@ -59,7 +59,7 @@ public struct BitIterator<Number: BinaryInteger>: IteratorProtocol {
 	}
 }
 
-public extension Collection where Element: BinaryInteger {
+public extension Collection where Element: BinaryInteger & UnsignedInteger {
 	func makeBitIterator() -> BitIterator<Element> {
 		.init(self)
 	}

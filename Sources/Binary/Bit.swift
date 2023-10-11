@@ -2,7 +2,7 @@ public enum Bit {
 	case zero
 	case one
 
-	public init<T: BinaryInteger>(_ value: T, position: Int) {
+	public init<T: BinaryInteger & UnsignedInteger>(_ value: T, position: Int) {
 		guard position >= 0 && position < value.bitWidth
 		else {
 			self = .zero
@@ -15,7 +15,7 @@ public enum Bit {
 		self = truncated == 0 ? .zero : .one
 	}
 
-	public init<T: BinaryInteger>(_ value: T, positionFromLeft: Int) {
+	public init<T: BinaryInteger & UnsignedInteger>(_ value: T, positionFromLeft: Int) {
 		self.init(value, position: value.bitWidth - positionFromLeft - 1)
 	}
 
