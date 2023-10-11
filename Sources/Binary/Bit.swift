@@ -1,4 +1,4 @@
-public enum Bit {
+public enum Bit: CustomStringConvertible {
 	case zero
 	case one
 
@@ -23,6 +23,13 @@ public enum Bit {
 		switch self {
 		case .zero: 0
 		case .one: 1
+		}
+	}
+
+	public var description: String {
+		switch self {
+		case .zero: "0"
+		case .one: "1"
 		}
 	}
 }
