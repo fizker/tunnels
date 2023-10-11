@@ -45,4 +45,16 @@ public struct BitIterator<Number: BinaryInteger>: IteratorProtocol {
 
 		return value
 	}
+
+	public mutating func next8() -> UInt8? {
+		guard let val = next(8)
+		else { return nil }
+		return UInt8(truncatingIfNeeded: val)
+	}
+
+	public mutating func next16() -> UInt16? {
+		guard let val = next(16)
+		else { return nil }
+		return UInt16(truncatingIfNeeded: val)
+	}
 }
