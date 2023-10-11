@@ -58,3 +58,9 @@ public struct BitIterator<Number: BinaryInteger>: IteratorProtocol {
 		return UInt16(truncatingIfNeeded: val)
 	}
 }
+
+public extension Collection where Element: BinaryInteger {
+	func makeBitIterator() -> BitIterator<Element> {
+		.init(self)
+	}
+}
