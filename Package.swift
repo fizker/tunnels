@@ -16,6 +16,7 @@ let package = Package(
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
 	],
 	targets: [
+		.target(name: "Binary"),
 		.target(name: "Models"),
 		.target(
 			name: "TunnelsClient",
@@ -37,5 +38,6 @@ let package = Package(
 			.product(name: "ArgumentParser", package: "swift-argument-parser"),
 		]),
 		.executableTarget(name: "ServerCLI", dependencies: [ "TunnelsServer" ]),
+		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
 	]
 )
