@@ -38,7 +38,7 @@ struct Header {
 	var isRecursionAvailable: Bool
 
 	/// Set by the server to indicate the status of the response, i.e. whether or not it was successful or failed, and in the latter case providing details about the cause of the failure.
-	var responseCode: UInt8
+	var responseCode: ResponseCode?
 
 	/// The number of entries in the Question Section.
 	var questionCount: UInt16
@@ -57,7 +57,7 @@ struct Header {
 		isTruncated: Bool,
 		isRecursionDesired: Bool,
 		isRecursionAvailable: Bool,
-		responseCode: UInt8,
+		responseCode: ResponseCode?,
 		questionCount: UInt16,
 		answerCount: UInt16,
 		authorityCount: UInt16,
@@ -87,7 +87,7 @@ struct Header {
 			let isTruncated = iterator.next(),
 			let isRecursionDesired = iterator.next(),
 			let isRecursionAvailable = iterator.next(),
-			let responseCode = iterator.next8(),
+			let responseCode = iterator.next(4),
 			let questionCount = iterator.next16(),
 			let answerCount = iterator.next16(),
 			let authorityCount = iterator.next16(),
@@ -102,7 +102,7 @@ struct Header {
 			isTruncated: isTruncated == .one,
 			isRecursionDesired: isRecursionDesired == .one,
 			isRecursionAvailable: isRecursionAvailable == .one,
-			responseCode: responseCode,
+			responseCode: .init(value: responseCode),
 			questionCount: questionCount,
 			answerCount: answerCount,
 			authorityCount: authorityCount,
@@ -124,11 +124,76 @@ struct Header {
 		}
 	}
 
+	/// this 4 bit field is set as part of responses.  The values have the following interpretation:
+	enum ResponseCode: Error {
+		/// No error condition (0)
+		//case success
+
+		/// Format error (1)
+		///
+		/// The name server was unable to interpret the query.
+		case formatError
+
+		/// Server failure (2)
+		///
+		/// The name server was unable to process this query due to a problem with the name server.
+		case serverFailure
+
+		/// Name Error (3)
+		///
+		/// Meaningful only for responses from an authoritative name server, this code signifies that the
+		/// domain name referenced in the query does not exist.
+		case nameError
+
+		/// Not Implemented (4)
+		///
+		/// The name server does not support the requested kind of query.
+		case notImplemented
+
+		/// Refused (5)
+		///
+		/// The name server refuses to perform the specified operation for policy reasons.
+		/// For example, a name server may not wish to provide the information to the particular requester,
+		/// or a name server may not wish to perform a particular operation (e.g., zone transfer) for particular data.
+		case refused
+
+		/// Reserved for future use. (6-15)
+		case unknown(UInt)
+
+		init?(value: UInt) {
+			switch value {
+			case 0: return nil
+			case 1: self = .formatError
+			case 2: self = .serverFailure
+			case 3: self = .nameError
+			case 4: self = .notImplemented
+			case 5: self = .refused
+			default: self = .unknown(value)
+			}
+		}
+	}
+
+	/// A four bit field that specifies kind of query in this message.  This value is set by the originator
+	/// of a query and copied into the response.  The values are:
 	enum Opcode {
+		/// A standard query (0)
+		case query
+
+		/// An inverse query (1)
+		case iquery
+
+		/// A server status request (2)
+		case status
+
 		case unknown(UInt8)
 
 		init(_ value: UInt8) {
-			self = .unknown(value)
+			switch value {
+			case 0: self = .query
+			case 1: self = .iquery
+			case 2: self = .status
+			default: self = .unknown(value)
+			}
 		}
 	}
 }
