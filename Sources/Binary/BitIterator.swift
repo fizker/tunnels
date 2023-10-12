@@ -12,21 +12,22 @@
 /// iterator.next(2)
 /// // iterator will have one more bit to give
 /// ```
-public struct BitIterator<Number: BinaryInteger & UnsignedInteger>: IteratorProtocol {
+public struct BitIterator: IteratorProtocol {
 	public typealias Element = Bit
+	public typealias Number = BinaryInteger & UnsignedInteger
 
-	var iterator: () -> Number?
-	var current: Number?
+	var iterator: () -> (any Number)?
+	var current: (any Number)?
 	var position: Int = 0
 
 	/// Creates a new BitIterator that enumerates all bits in the given collection.
-	public init<C: Collection>(_ numbers: C) where C.Element == Number {
+	public init<C: Collection>(_ numbers: C) where C.Element: Number {
 		var i = numbers.makeIterator()
 		iterator = { i.next() }
 	}
 
 	/// Creates a new BitIterator that enumerates all bits in the given number.
-	public init(_ number: Number) {
+	public init(_ number: some Number) {
 		self.init([number])
 	}
 
@@ -91,7 +92,7 @@ public struct BitIterator<Number: BinaryInteger & UnsignedInteger>: IteratorProt
 
 public extension Collection where Element: BinaryInteger & UnsignedInteger {
 	/// Creates a ``BitIterator`` from the collection.
-	func makeBitIterator() -> BitIterator<Element> {
+	func makeBitIterator() -> BitIterator {
 		.init(self)
 	}
 }
