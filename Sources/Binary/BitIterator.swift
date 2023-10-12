@@ -20,8 +20,8 @@ public struct BitIterator: IteratorProtocol {
 	var current: (any Number)?
 	var position: Int = 0
 
-	/// Creates a new BitIterator that enumerates all bits in the given collection.
-	public init<C: Collection>(_ numbers: C) where C.Element: Number {
+	/// Creates a new BitIterator that enumerates all bits in the given `Sequence`.
+	public init<S: Sequence>(_ numbers: S) where S.Element: Number {
 		var i = numbers.makeIterator()
 		iterator = { i.next() }
 	}
@@ -90,7 +90,7 @@ public struct BitIterator: IteratorProtocol {
 	}
 }
 
-public extension Collection where Element: BinaryInteger & UnsignedInteger {
+public extension Sequence where Element: BinaryInteger & UnsignedInteger {
 	/// Creates a ``BitIterator`` from the collection.
 	func makeBitIterator() -> BitIterator {
 		.init(self)
