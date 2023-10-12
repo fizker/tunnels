@@ -49,5 +49,6 @@ let package = Package(
 		]),
 		.executableTarget(name: "ServerCLI", dependencies: [ "TunnelsServer" ]),
 		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
+		.testTarget(name: "DNSServerTests", dependencies: ["DNSServer"]),
 	]
 )
