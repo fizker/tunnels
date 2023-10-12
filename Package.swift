@@ -22,6 +22,7 @@ let package = Package(
 		.executableTarget(
 			name: "DNSServer",
 			dependencies: [
+				"Binary",
 				.product(name: "ArgumentParser", package: "swift-argument-parser"),
 				.product(name: "NIO", package: "swift-nio"),
 			]
