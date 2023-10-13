@@ -82,11 +82,20 @@ public struct BitIterator: IteratorProtocol {
 
 	/// Advances to the next 16 ``Bit``s and returns an ``UInt16`` with the read value, or `nil` if there are not `count` next element exists.
 	///
-	/// If the iterator has less than 8 bits remaining, the iterator is emptied and `nil` is returned.
+	/// If the iterator has less than 16 bits remaining, the iterator is emptied and `nil` is returned.
 	public mutating func next16() -> UInt16? {
 		guard let val = next(16)
 		else { return nil }
 		return UInt16(truncatingIfNeeded: val)
+	}
+
+	/// Advances to the next 32 ``Bit``s and returns an ``UInt32`` with the read value, or `nil` if there are not `count` next element exists.
+	///
+	/// If the iterator has less than 32 bits remaining, the iterator is emptied and `nil` is returned.
+	public mutating func next32() -> UInt32? {
+		guard let val = next(32)
+		else { return nil }
+		return .init(truncatingIfNeeded: val)
 	}
 }
 
