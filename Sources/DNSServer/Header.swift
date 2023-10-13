@@ -37,6 +37,11 @@ struct Header {
 	/// Set by the server to indicate whether or not recursive queries are allowed.
 	var isRecursionAvailable: Bool
 
+	/// Originally reserved for later use, but now used for DNSSEC queries.
+	#warning("The z property should be renamed once the proper purpose and document is found")
+	var z: UInt8
+
+
 	/// Set by the server to indicate the status of the response, i.e. whether or not it was successful or failed, and in the latter case providing details about the cause of the failure.
 	var responseCode: ResponseCode?
 
@@ -57,6 +62,7 @@ struct Header {
 		isTruncated: Bool,
 		isRecursionDesired: Bool,
 		isRecursionAvailable: Bool,
+		z: UInt8,
 		responseCode: ResponseCode?,
 		questionCount: UInt16,
 		answerCount: UInt16,
@@ -70,6 +76,7 @@ struct Header {
 		self.isTruncated = isTruncated
 		self.isRecursionDesired = isRecursionDesired
 		self.isRecursionAvailable = isRecursionAvailable
+		self.z = z
 		self.responseCode = responseCode
 		self.questionCount = questionCount
 		self.answerCount = answerCount
@@ -79,6 +86,10 @@ struct Header {
 
 	init?<S: Sequence>(bytes: S) where S.Element == UInt8 {
 		var iterator = bytes.makeBitIterator()
+		self.init(iterator: &iterator)
+	}
+
+	init?(iterator: inout BitIterator) {
 		guard
 			let id = iterator.next16(),
 			let kind = iterator.next(),
@@ -87,6 +98,7 @@ struct Header {
 			let isTruncated = iterator.next(),
 			let isRecursionDesired = iterator.next(),
 			let isRecursionAvailable = iterator.next(),
+			let z = iterator.next(3),
 			let responseCode = iterator.next(4),
 			let questionCount = iterator.next16(),
 			let answerCount = iterator.next16(),
@@ -102,6 +114,7 @@ struct Header {
 			isTruncated: isTruncated == .one,
 			isRecursionDesired: isRecursionDesired == .one,
 			isRecursionAvailable: isRecursionAvailable == .one,
+			z: .init(truncatingIfNeeded: z),
 			responseCode: .init(value: responseCode),
 			questionCount: questionCount,
 			answerCount: answerCount,
@@ -175,7 +188,7 @@ struct Header {
 
 	/// A four bit field that specifies kind of query in this message.  This value is set by the originator
 	/// of a query and copied into the response.  The values are:
-	enum Opcode {
+	enum Opcode: Equatable {
 		/// A standard query (0)
 		case query
 
