@@ -1,4 +1,5 @@
 import Binary
+import Foundation
 
 struct ResourceRecord {
 	var name: DomainName
@@ -6,13 +7,15 @@ struct ResourceRecord {
 	var `class`: Class
 	var timeToLive: UInt32
 	var length: UInt16
+	var data: Data
 
-	init(name: DomainName, type: `Type`, `class`: Class, timeToLive: UInt32, length: UInt16) {
+	init(name: DomainName, type: `Type`, `class`: Class, timeToLive: UInt32, length: UInt16, data: Data) {
 		self.name = name
 		self.type = type
 		self.class = `class`
 		self.timeToLive = timeToLive
 		self.length = length
+		self.data = data
 	}
 
 	init(iterator: inout BitIterator) throws {
@@ -22,13 +25,15 @@ struct ResourceRecord {
 			let type = iterator.next16(),
 			let `class` = iterator.next16(),
 			let timeToLive = iterator.next32(),
-			let length = iterator.next16()
+			let length = iterator.next16(),
+			let data = iterator.data(bytes: length)
 		else { throw ParseError.endOfStream }
 
 		self.type = .init(type)
 		self.class = .init(`class`)
 		self.timeToLive = timeToLive
 		self.length = length
+		self.data = .init(type: self.type, class: self.class, data: data)
 	}
 
 	/// The class of the ResourceRecord.
@@ -138,6 +143,20 @@ struct ResourceRecord {
 			case 15: self = .mailExchange
 			case 16: self = .textStrings
 			default: self = .unknown(value)
+			}
+		}
+	}
+
+	enum Data {
+		case ipV4(UInt8, UInt8, UInt8, UInt8)
+		case unknown(Foundation.Data)
+
+		init(type: `Type`, class: Class, data: Foundation.Data) {
+			switch (type, `class`) {
+			case (.hostAddress, .internet) where data.count == 4:
+				self = .ipV4(data[0], data[1], data[2], data[3])
+			default:
+				self = .unknown(data)
 			}
 		}
 	}
