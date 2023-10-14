@@ -1,3 +1,5 @@
+import Foundation
+
 /// An iterator that enumerates the bits in one or more `BinaryInteger`.
 ///
 /// It has some convenience methods for extracting multiple bits, on top of the protocol-required `next() -> Bit` function.
@@ -96,6 +98,29 @@ public struct BitIterator: IteratorProtocol {
 		guard let val = next(32)
 		else { return nil }
 		return .init(truncatingIfNeeded: val)
+	}
+
+	/// Reads the requested number of bytes, and accumulates then as a ``Foundation/Data``.
+	///
+	/// If the iteratr has less than the requested amount of bytes, `nil` is returned and the iterator is left empty.
+	///
+	/// - parameter bytes: The number of bytes to read.
+	/// - returns: The accumulated `Data`, or `nil` if the bytes run out before `length` is reached.
+	public mutating func data<T: BinaryInteger>(bytes: T) -> Data? {
+		var data = Data()
+
+		var count: T = 0
+		while let byte = next8() {
+			count += 1
+
+			data.append(byte)
+
+			if count == bytes {
+				return data
+			}
+		}
+
+		return nil
 	}
 }
 

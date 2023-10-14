@@ -102,4 +102,33 @@ final class BitIteratorTests: XCTestCase {
 		XCTAssertEqual(iterator.next16(), 0b01011000_11111000)
 		XCTAssertNil(iterator.next16())
 	}
+
+	func test__dataWithBytes__inputContainsSufficientBytes__dataIsReturned() throws {
+		let input: [UInt32] = [
+			0x862a_8180, 0x0001_f201, 0xdead_beef, 0x0667_6f6f,
+		]
+		var iterator = BitIterator(input)
+
+		let expected = Data([0x2a, 0x81, 0x80, 0x00, 0x01])
+
+		_ = iterator.next8()
+
+		let actual = iterator.data(bytes: 5)
+
+		XCTAssertEqual(actual, expected)
+		XCTAssertEqual(iterator.next8(), 0xf2)
+	}
+
+	func test__dataWithBytes__inputContainsInsufficientBytes__dataIsReturned() throws {
+		let input: [UInt8] = [
+			0x86,
+		]
+		var iterator = BitIterator(input)
+
+		_ = iterator.next()
+
+		let actual = iterator.data(bytes: 1)
+
+		XCTAssertNil(actual)
+	}
 }
