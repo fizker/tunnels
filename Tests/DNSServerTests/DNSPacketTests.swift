@@ -88,4 +88,86 @@ final class DNSPacketTests: XCTestCase {
 
 		XCTAssertEqual(actual, expected)
 	}
+
+	func test__asData__validQuery_packetHaveOneQuestion__returnsExpectedBytes() throws {
+		let packet = DNSPacket(
+			header: .init(
+				id: 0x862a,
+				kind: .query,
+				opcode: .query,
+				isAuthoritativeAnswer: false,
+				isTruncated: false,
+				isRecursionDesired: true,
+				isRecursionAvailable: false,
+				z: 2,
+				responseCode: nil,
+				questionCount: 1,
+				answerCount: 0,
+				authorityCount: 0,
+				additionalCount: 0
+			),
+			questions: [
+				.init(
+					name: .init(components: ["google", "com"]),
+					type: .hostAddress,
+					class: .internet
+				),
+			],
+			answers: [
+			]
+		)
+
+		let expected = Data([
+			0x86, 0x2a, 0x01, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06, 0x67,
+			0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00, 0x00, 0x01, 0x00, 0x01,
+		])
+
+		XCTAssertEqual(expected, packet.asData)
+	}
+
+	func test__asData__validResponse_packetHaveOneQuestionAndOneAnswer__returnsExpectedBytes() throws {
+		let packet = DNSPacket(
+			header: .init(
+				id: 0x862a,
+				kind: .response,
+				opcode: .query,
+				isAuthoritativeAnswer: false,
+				isTruncated: false,
+				isRecursionDesired: true,
+				isRecursionAvailable: true,
+				z: 0,
+				responseCode: nil,
+				questionCount: 1,
+				answerCount: 1,
+				authorityCount: 0,
+				additionalCount: 0
+			),
+			questions: [
+				.init(
+					name: .init(components: ["google", "com"]),
+					type: .hostAddress,
+					class: .internet
+				),
+			],
+			answers: [
+				.init(
+					name: .init(components: ["google", "com"]),
+					type: .hostAddress,
+					class: .internet,
+					timeToLive: 0x125,
+					length: 4,
+					data: .ipV4(0xd8, 0x3a, 0xd3, 0x8e)
+				)
+			]
+		)
+
+		let expected = Data([
+			0x86, 0x2a, 0x81, 0x80, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
+			0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
+			0x00, 0x01, 0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+			0x01, 0x25, 0x00, 0x04, 0xd8, 0x3a, 0xd3, 0x8e,
+		])
+
+		XCTAssertEqual(expected, packet.asData)
+	}
 }

@@ -1,5 +1,6 @@
 import XCTest
 import Binary
+import Foundation
 @testable import DNSServer
 
 final class DomainNameTests: XCTestCase {
@@ -99,5 +100,14 @@ final class DomainNameTests: XCTestCase {
 
 		iterator.byteIndex = 64
 		XCTAssertEqual(try DomainName(iterator: &iterator), DomainName(components: ["ARPA"]))
+	}
+
+	func test__asData__googleCom__encodesAsExpected() throws {
+		let domainName = DomainName(components: ["google", "com"])
+		let expected = Data([ 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00 ])
+
+		let actual = domainName.asData()
+
+		XCTAssertEqual(expected, actual)
 	}
 }

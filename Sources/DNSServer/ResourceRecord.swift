@@ -36,6 +36,16 @@ struct ResourceRecord: Equatable {
 		self.data = .init(type: self.type, class: self.class, data: data)
 	}
 
+	func asData() -> Foundation.Data {
+		var data = name.asData()
+		data.append(contentsOf: type.asUInt16.asUInt8)
+		data.append(contentsOf: `class`.asUInt16.asUInt8)
+		data.append(contentsOf: timeToLive.asUInt8)
+		data.append(contentsOf: length.asUInt8)
+		data.append(self.data.asData)
+		return data
+	}
+
 	/// The class of the ResourceRecord.
 	///
 	/// | Class	| Value	| Meaning														|
@@ -63,6 +73,16 @@ struct ResourceRecord: Equatable {
 			case 3: self = .chaos
 			case 4: self = .hesiod
 			default: self = .unknown(value)
+			}
+		}
+
+		var asUInt16: UInt16 {
+			switch self {
+			case .internet: 1
+			case .csnet: 2
+			case .chaos: 3
+			case .hesiod: 4
+			case let .unknown(value): value
 			}
 		}
 	}
@@ -145,6 +165,28 @@ struct ResourceRecord: Equatable {
 			default: self = .unknown(value)
 			}
 		}
+
+		var asUInt16: UInt16 {
+			switch self {
+			case .hostAddress: 1
+			case .authoritativeNameServer: 2
+			case .mailDestination: 3
+			case .mailForwarder: 4
+			case .canonicalName: 5
+			case .zoneOfAuthority: 6
+			case .mailboxDomainName: 7
+			case .mailGroupMember: 8
+			case .mailRenameDomain: 9
+			case .nullResourceRecord: 10
+			case .wellKnownService: 11
+			case .domainNamePointer: 12
+			case .hostInformation: 13
+			case .mailboxInformation: 14
+			case .mailExchange: 15
+			case .textStrings: 16
+			case let .unknown(value): value
+			}
+		}
 	}
 
 	enum Data: Equatable {
@@ -157,6 +199,13 @@ struct ResourceRecord: Equatable {
 				self = .ipV4(data[0], data[1], data[2], data[3])
 			default:
 				self = .unknown(data)
+			}
+		}
+
+		var asData: Foundation.Data {
+			switch self {
+			case let .ipV4(_1, _2, _3, _4): .init([_1, _2, _3, _4])
+			case let .unknown(data): data
 			}
 		}
 	}

@@ -52,6 +52,18 @@ struct DomainName: Equatable {
 		throw ParseError.endOfStream
 	}
 
+	func asData() -> Data {
+		var data = Data()
+		for component in components {
+			#warning("DomainName component should be encoded in case utf8 chars are present")
+			let encoded = component.data(using: .ascii)!
+			data.append(UInt8(truncatingIfNeeded: encoded.count))
+			data.append(encoded)
+		}
+		data.append(0)
+		return data
+	}
+
 	enum LabelHeader {
 		case length(UInt8)
 		case pointer(Int)

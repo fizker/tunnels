@@ -1,4 +1,5 @@
 import Binary
+import Foundation
 
 /// The header for the DNS Packet.
 ///
@@ -40,7 +41,6 @@ struct Header: Equatable {
 	/// Originally reserved for later use, but now used for DNSSEC queries.
 	#warning("The z property should be renamed once the proper purpose and document is found")
 	var z: UInt8
-
 
 	/// Set by the server to indicate the status of the response, i.e. whether or not it was successful or failed, and in the latter case providing details about the cause of the failure.
 	var responseCode: ResponseCode?
@@ -118,6 +118,25 @@ struct Header: Equatable {
 		)
 	}
 
+	var asData: Data {
+		var bits = [Bit]()
+		bits.append(id)
+		bits.append(kind.asBit)
+		bits.append(opcode.asUInt8, bits: 4)
+		bits.append(isAuthoritativeAnswer)
+		bits.append(isTruncated)
+		bits.append(isRecursionDesired)
+		bits.append(isRecursionAvailable)
+		bits.append(z, bits: 3)
+		bits.append(responseCode?.asUInt8 ?? 0, bits: 4)
+		bits.append(questionCount)
+		bits.append(answerCount)
+		bits.append(authorityCount)
+		bits.append(additionalCount)
+		var iterator = bits.makeIterator()
+		return iterator.data(bytes: Self.size)!
+	}
+
 	enum Kind {
 		case query, response
 
@@ -128,6 +147,13 @@ struct Header: Equatable {
 			self = switch bit {
 			case .zero: .query
 			case .one: .response
+			}
+		}
+
+		var asBit: Bit {
+			switch self {
+			case .query: .zero
+			case .response: .one
 			}
 		}
 	}
@@ -179,6 +205,17 @@ struct Header: Equatable {
 			default: self = .unknown(value)
 			}
 		}
+
+		var asUInt8: UInt8 {
+			switch self {
+			case .formatError: 1
+			case .serverFailure: 2
+			case .nameError: 3
+			case .notImplemented: 4
+			case .refused: 5
+			case let .unknown(value): UInt8(truncatingIfNeeded: value)
+			}
+		}
 	}
 
 	/// A four bit field that specifies kind of query in this message.  This value is set by the originator
@@ -201,6 +238,15 @@ struct Header: Equatable {
 			case 1: self = .iquery
 			case 2: self = .status
 			default: self = .unknown(value)
+			}
+		}
+
+		var asUInt8: UInt8 {
+			switch self {
+			case .query: 0
+			case .iquery: 1
+			case .status: 2
+			case let .unknown(value): value
 			}
 		}
 	}
