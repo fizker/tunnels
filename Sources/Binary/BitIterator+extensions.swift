@@ -1,6 +1,6 @@
 import Foundation
 
-extension BitIterator {
+extension IteratorProtocol where Element == Bit {
 	/// Advances to the next `count` ``Bit``s and returns an ``UInt`` with the read value, or `nil` if there are not `count` next element exists.
 	///
 	/// If the iterator has 4 bits remaining, and 5 bits are requested, the iterator is emptied and `nil` is returned.
