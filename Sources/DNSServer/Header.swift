@@ -18,7 +18,7 @@ import Binary
 /// | ANCOUNT	| Answer Count			| 16 bits		| The number of entries in the Answer Section |
 /// | NSCOUNT	| Authority Count			| 16 bits		| The number of entries in the Authority Section |
 /// | ARCOUNT	| Additional Count		| 16 bits		| The number of entries in the Additional Section |
-struct Header {
+struct Header: Equatable {
 	static let size = 12
 
 	/// A random identifier is assigned to query packets. Response packets must reply with the same id. This is needed to differentiate responses due to the stateless nature of UDP.
@@ -138,7 +138,7 @@ struct Header {
 	}
 
 	/// this 4 bit field is set as part of responses.  The values have the following interpretation:
-	enum ResponseCode: Error {
+	enum ResponseCode: Error, Equatable {
 		/// No error condition (0)
 		//case success
 

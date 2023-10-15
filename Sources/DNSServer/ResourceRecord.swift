@@ -1,7 +1,7 @@
 import Binary
 import Foundation
 
-struct ResourceRecord {
+struct ResourceRecord: Equatable {
 	var name: DomainName
 	var type: `Type`
 	var `class`: Class
@@ -44,7 +44,7 @@ struct ResourceRecord {
 	/// | CS		| 2		| the CSNET class (Obsolete - used only for examples in some obsolete RFCs)	|
 	/// | CH		| 3		| the CHAOS class												|
 	/// | HS		| 4		| Hesiod [Dyer 87]												|
-	enum Class {
+	enum Class: Equatable {
 		/// the Internet
 		case internet
 		/// the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
@@ -87,7 +87,7 @@ struct ResourceRecord {
 	/// | MINFO		| 14		| mailbox or mail list information						|
 	/// | MX			| 15		| mail exchange									|
 	/// | TXT			| 16		| text strings									|
-	enum `Type` {
+	enum `Type`: Equatable {
 		/// A
 		case hostAddress
 		/// NS
@@ -147,7 +147,7 @@ struct ResourceRecord {
 		}
 	}
 
-	enum Data {
+	enum Data: Equatable {
 		case ipV4(UInt8, UInt8, UInt8, UInt8)
 		case unknown(Foundation.Data)
 

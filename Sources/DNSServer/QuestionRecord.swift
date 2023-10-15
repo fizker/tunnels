@@ -1,6 +1,6 @@
 import Binary
 
-struct QuestionRecord {
+struct QuestionRecord: Equatable {
 	var name: DomainName
 	var type: `Type`
 	var `class`: Class
@@ -34,7 +34,7 @@ struct QuestionRecord {
 	/// | CH		| 3		| the CHAOS class												|
 	/// | HS		| 4		| Hesiod [Dyer 87]												|
 	/// | \*		| 255		| any class 													|
-	enum Class {
+	enum Class: Equatable {
 		/// the Internet
 		case internet
 		/// the CSNET class (Obsolete - used only for examples in some obsolete RFCs)
@@ -86,7 +86,7 @@ struct QuestionRecord {
 	/// | MAILB		| 253		| A request for mailbox-related records (MB, MG or MR)		|
 	/// | MAILA		| 254		| A request for mail agent RRs (Obsolete - see MX)		|
 	/// | \*			| 255		| A request for all records							|
-	enum `Type` {
+	enum `Type`: Equatable {
 		/// A
 		case hostAddress
 		/// NS

@@ -1,18 +1,15 @@
 import Binary
 import Foundation
 
-enum ParseError: Error {
-	/// The bytes did not add up to the expected count.
-	case endOfStream
-	/// The data extracted could not be parsed as ASCII.
-	case notASCII(Data)
-}
-
-struct DomainName {
+struct DomainName: Equatable {
 	var components: [String]
 
 	var value: String {
 		components.joined(separator: ".")
+	}
+
+	init(components: [String]) {
+		self.components = components
 	}
 
 	init(iterator: inout BitIterator) throws {
