@@ -84,11 +84,6 @@ struct Header: Equatable {
 		self.additionalCount = additionalCount
 	}
 
-	init?<S: Sequence>(bytes: S) where S.Element == UInt8 {
-		var iterator = bytes.makeBitIterator()
-		self.init(iterator: &iterator)
-	}
-
 	init?(iterator: inout BitIterator) {
 		guard
 			let id = iterator.next16(),

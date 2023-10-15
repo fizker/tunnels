@@ -16,14 +16,21 @@ public struct BitIterator: IteratorProtocol {
 	public typealias Element = Bit
 	public typealias Number = BinaryInteger & UnsignedInteger
 
-	var iterator: () -> (any Number)?
+	/// The bit width of ``Number``.
+	let bitWidth: Int
+	let currentFromIndex: (Int) -> (any Number)?
 	var current: (any Number)?
 	var position: Int = 0
+	var currentIndex: Int = 0
+	let endIndex: Int
 
 	/// Creates a new BitIterator that enumerates all bits in the given `Sequence`.
-	public init<S: Sequence>(_ numbers: S) where S.Element: Number {
-		var i = numbers.makeIterator()
-		iterator = { i.next() }
+	public init<S: RandomAccessCollection>(_ numbers: S) where S.Element: Number, S.Index == Int {
+		currentFromIndex = { $0 < numbers.endIndex ? numbers[$0] : nil }
+
+		current = numbers.first
+		bitWidth = current?.bitWidth ?? 0
+		endIndex = numbers.endIndex
 	}
 
 	/// Creates a new BitIterator that enumerates all bits in the given number.
@@ -33,21 +40,67 @@ public struct BitIterator: IteratorProtocol {
 
 	/// Advances to the next ``Bit`` and returns it, or `nil` if no next element exists.
 	public mutating func next() -> Bit? {
-		if current == nil {
-			current = iterator()
+		if current == nil && currentIndex != endIndex {
+			currentIndex += 1
+			current = currentFromIndex(currentIndex)
+			position = 0
 		}
 
 		guard let current
 		else { return nil }
 
+
 		let bit = Bit(current, positionFromMostSignificant: position)
 
 		position += 1
-		if position == current.bitWidth {
+		if position == bitWidth {
 			self.current = nil
-			position = 0
 		}
 
 		return bit
+	}
+
+	/// The current index of the bit iterator.
+	///
+	/// This is the index of the next bit to be returned by ``next()``.
+	public var bitIndex: Int {
+		get { currentIndex * bitWidth + position }
+		set {
+			guard bitWidth != 0
+			else { return }
+
+			// The remainder is found by relying on the flooring nature of integer arithmetics
+			currentIndex = newValue / bitWidth
+			position = newValue - currentIndex * bitWidth
+			current = currentFromIndex(currentIndex)
+		}
+	}
+
+	/// The current index of the iterator, by counting full bytes from the start of the iterator.
+	///
+	/// **Note**: If the iterator is currently mid-byte (by advancing or setting the ``bitIndex`` to a value between full bytes),
+	/// this value will be the index of the next full byte, thus it will skip forward.
+	///
+	/// For example:
+	/// ```swift
+	/// var iterator = BitIterator(0xdeadbeef as UInt32)
+	/// _ = iterator.next(4)
+	/// assert(4 == iterator.bitIndex)
+	/// assert(1 == iterator.byteIndex) // the index of the next full byte
+	///
+	/// // we are now in effect skipping the remaining 4 bits of the first byte
+	/// iterator.byteIndex = iterator.byteIndex
+	/// assert(8 == iterator.bitIndex)
+	/// ```
+	/// This is the index of the next bit to be returned by ``next()``.
+	public var byteIndex: Int {
+		get {
+			var index = bitIndex / 8
+			if position % 8 != 0 {
+				index += 1
+			}
+			return index
+		}
+		set { bitIndex = newValue * 8 }
 	}
 }

@@ -131,4 +131,74 @@ final class BitIteratorTests: XCTestCase {
 
 		XCTAssertNil(actual)
 	}
+
+	func test__bitIndex__skippingAround_backedByMultipleUInt16__indexUpdatedCorrectly() throws {
+		let input: [UInt16] = [
+			// 0xdead
+			0b1101_1110_1010_1101,
+			// 0xbeef
+			0b1011_1110_1110_1111,
+		]
+
+		var iterator = BitIterator(input)
+
+		XCTAssertEqual(iterator.bitIndex, 0)
+		XCTAssertEqual(iterator.next8(), 0b1101_1110)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.bitIndex, 8)
+
+		iterator.bitIndex = 2
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.next8(), 0b01_1110_10)
+		XCTAssertEqual(iterator.byteIndex, 2)
+		XCTAssertEqual(iterator.bitIndex, 10)
+
+		iterator.bitIndex = 21
+		XCTAssertEqual(iterator.byteIndex, 3)
+		XCTAssertEqual(iterator.next(5), 0b110_11)
+		XCTAssertEqual(iterator.byteIndex, 4)
+		XCTAssertEqual(iterator.bitIndex, 26)
+
+		iterator.bitIndex = 1
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.next8(), 0b101_1110_1)
+		XCTAssertEqual(iterator.byteIndex, 2)
+		XCTAssertEqual(iterator.bitIndex, 9)
+	}
+
+	func test__byteIndex__skippingAround_backedByMultipleUInt16__indexUpdatedCorrectly() throws {
+		let input: [UInt16] = [ 0xdead, 0xbeef ]
+
+		var iterator = BitIterator(input)
+
+		XCTAssertEqual(iterator.byteIndex, 0)
+		XCTAssertEqual(iterator.next8(), 0xde)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.bitIndex, 8)
+
+		iterator.byteIndex = 2
+		XCTAssertEqual(iterator.next8(), 0xbe)
+		XCTAssertEqual(iterator.byteIndex, 3)
+		XCTAssertEqual(iterator.bitIndex, 24)
+
+		iterator.byteIndex = 1
+		XCTAssertEqual(iterator.next8(), 0xad)
+		XCTAssertEqual(iterator.byteIndex, 2)
+		XCTAssertEqual(iterator.bitIndex, 16)
+		XCTAssertEqual(iterator.next8(), 0xbe)
+		XCTAssertEqual(iterator.next8(), 0xef)
+	}
+
+	/// Note: This code comes from the DocC comment for ``BitIterator/byteIndex``.
+	func test__byteIndex__settingIndexFrom4BitsToNextByte__indexUpdatedCorrectly() throws {
+		var iterator = BitIterator(0xdeadbeef as UInt32)
+		_ = iterator.next(4)
+		XCTAssertEqual(4, iterator.bitIndex)
+		XCTAssertEqual(1, iterator.byteIndex)
+
+		// we are now in effect skipping the remaining 4 bits of the first byte
+		iterator.byteIndex = iterator.byteIndex
+		XCTAssertEqual(8, iterator.bitIndex)
+		XCTAssertEqual(1, iterator.byteIndex)
+	}
 }
