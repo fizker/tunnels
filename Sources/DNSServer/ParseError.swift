@@ -6,4 +6,7 @@ enum ParseError: Error {
 	case endOfStream
 	/// The data extracted could not be parsed as ASCII.
 	case notASCII(Data)
+
+	/// The DNSPacket was not a ``Header/Kind/query``, which was required.
+	case notQuery
 }
