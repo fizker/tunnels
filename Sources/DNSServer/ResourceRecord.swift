@@ -9,12 +9,12 @@ struct ResourceRecord: Equatable {
 	var length: UInt16
 	var data: Data
 
-	init(name: DomainName, type: `Type`, `class`: Class, timeToLive: UInt32, length: UInt16, data: Data) {
+	init(name: DomainName, type: `Type`, `class`: Class, timeToLive: UInt32, data: Data) {
 		self.name = name
 		self.type = type
 		self.class = `class`
 		self.timeToLive = timeToLive
-		self.length = length
+		self.length = data.count
 		self.data = data
 	}
 
@@ -192,6 +192,13 @@ struct ResourceRecord: Equatable {
 	enum Data: Equatable {
 		case ipV4(UInt8, UInt8, UInt8, UInt8)
 		case unknown(Foundation.Data)
+
+		var count: UInt16 {
+			switch self {
+			case .ipV4: 4
+			case let .unknown(data): UInt16(data.count)
+			}
+		}
 
 		init(type: `Type`, class: Class, data: Foundation.Data) {
 			switch (type, `class`) {

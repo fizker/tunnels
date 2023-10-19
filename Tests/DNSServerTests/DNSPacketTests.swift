@@ -77,7 +77,6 @@ final class DNSPacketTests: XCTestCase {
 					type: .hostAddress,
 					class: .internet,
 					timeToLive: 0x125,
-					length: 4,
 					data: .ipV4(0xd8, 0x3a, 0xd3, 0x8e)
 				)
 			]
@@ -155,7 +154,6 @@ final class DNSPacketTests: XCTestCase {
 					type: .hostAddress,
 					class: .internet,
 					timeToLive: 0x125,
-					length: 4,
 					data: .ipV4(0xd8, 0x3a, 0xd3, 0x8e)
 				)
 			]
@@ -209,7 +207,6 @@ final class DNSPacketTests: XCTestCase {
 					type: .hostAddress,
 					class: .internet,
 					timeToLive: 0x125,
-					length: 4,
 					data: .ipV4(0xd8, 0x3a, 0xd3, 0x8e)
 				)
 			]
