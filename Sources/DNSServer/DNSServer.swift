@@ -5,41 +5,31 @@ typealias HostMap = [String: ResourceRecord.Data]
 
 class DNSServer {
 	var port: Int
-	var channel: Channel?
+	var channel: Channel!
 	var hostMap: HostMap
 
-	public init(port: Int = 53, hostMap: HostMap) {
+	public init(port: Int = 53, hostMap: HostMap) async throws {
 		self.port = port
 		self.hostMap = hostMap
-	}
-
-	public func connect() async throws {
-		let hostMap = hostMap
 
 		let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 		let bootstrap = DatagramBootstrap(group: group)
 			.channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
 			.channelInitializer {
-				$0.pipeline.addHandler(QueryPacketHandler(hostMap: hostMap))
+				$0.pipeline.addHandler(self)
 			}
 
 		channel = try await bootstrap.bind(host: "0.0.0.0", port: port).get()
 	}
 
 	public func waitUntilClose() async throws {
-		try await channel?.closeFuture.get()
+		try await channel.closeFuture.get()
 	}
 }
 
-class QueryPacketHandler: ChannelInboundHandler {
+extension DNSServer: ChannelInboundHandler {
 	typealias InboundIn = AddressedEnvelope<ByteBuffer>
 	typealias OutboundOut = AddressedEnvelope<ByteBuffer>
-
-	var hostMap: HostMap
-
-	init(hostMap: HostMap) {
-		self.hostMap = hostMap
-	}
 
 	func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 		let addressedEnvelope = unwrapInboundIn(data)

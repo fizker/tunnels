@@ -43,8 +43,7 @@ struct Command: AsyncParsableCommand {
 		""")
 
 		let kvPairs = servers.map { ($0.host, ResourceRecord.Data.ipV4($0.ip[0], $0.ip[1], $0.ip[2], $0.ip[3])) }
-		let server = DNSServer(port: port, hostMap: .init(kvPairs, uniquingKeysWith: { a, b in a }))
-		try await server.connect()
+		let server = try await DNSServer(port: port, hostMap: .init(kvPairs, uniquingKeysWith: { a, b in a }))
 		print("Server is up")
 		try await server.waitUntilClose()
 	}
