@@ -1,4 +1,5 @@
 import ArgumentParser
+import Dispatch
 
 private struct RemoteAddress {
 	var address: String
@@ -88,6 +89,13 @@ struct Command: AsyncParsableCommand {
 			hostMap: .init(kvPairs, uniquingKeysWith: { a, b in a })
 		)
 		print("Server is up")
+
+		let sigintSource = DispatchSource.makeSignalSource(signal: SIGINT)
+		sigintSource.setEventHandler {
+			Self.exit(withError: nil)
+		}
+		sigintSource.resume()
+
 		try await server.waitUntilClose()
 	}
 }

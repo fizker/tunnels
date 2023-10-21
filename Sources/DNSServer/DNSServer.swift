@@ -52,12 +52,11 @@ extension DNSServer: ChannelInboundHandler {
 	typealias OutboundOut = AddressedEnvelope<ByteBuffer>
 
 	func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-		let addressedEnvelope = unwrapInboundIn(data)
-		let input = addressedEnvelope
+		let input = unwrapInboundIn(data)
 
 		print("Received message from \(input.remoteAddress)")
 
-		var iterator = addressedEnvelope.data.readableBytesView.makeBitIterator()
+		var iterator = input.data.readableBytesView.makeBitIterator()
 		do {
 			let packet = try DNSPacket(iterator: &iterator)
 
