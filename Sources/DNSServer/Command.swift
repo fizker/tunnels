@@ -1,11 +1,11 @@
 import ArgumentParser
 
-private struct Server {
-	var host: String
+private struct KnownDomainName {
+	var domainName: String
 	var ip: [UInt8]
 }
 
-extension Server: ExpressibleByArgument {
+extension KnownDomainName: ExpressibleByArgument {
 	init?(argument: String) {
 		do {
 			try self.init(arg: argument)
@@ -25,7 +25,7 @@ extension Server: ExpressibleByArgument {
 		guard ip.count == 4
 		else { throw ValidationError("Host map must follow the form <host>=<ip> where host is a host name and ip is a valid IPv4 address.") }
 
-		self.host = String(components[0])
+		self.domainName = String(components[0])
 	}
 }
 
@@ -33,16 +33,16 @@ extension Server: ExpressibleByArgument {
 struct Command: AsyncParsableCommand {
 	@Argument var port: Int = 53
 
-	@Option
-	private var servers: [Server]
+	@Option(name: .shortAndLong, parsing: .remaining)
+	private var domainNames: [KnownDomainName]
 
 	func run() async throws {
 		print("""
 		Known servers:
-		\(servers.map { "\($0.host): \($0.ip.map(\.description).joined(separator: "."))" }.joined(separator: "\n"))
+		\(domainNames.map { "\($0.domainName): \($0.ip.map(\.description).joined(separator: "."))" }.joined(separator: "\n"))
 		""")
 
-		let kvPairs = servers.map { ($0.host, ResourceRecord.Data.ipV4($0.ip[0], $0.ip[1], $0.ip[2], $0.ip[3])) }
+		let kvPairs = domainNames.map { ($0.domainName, ResourceRecord.Data.ipV4($0.ip[0], $0.ip[1], $0.ip[2], $0.ip[3])) }
 		let server = try await DNSServer(port: port, hostMap: .init(kvPairs, uniquingKeysWith: { a, b in a }))
 		print("Server is up")
 		try await server.waitUntilClose()
