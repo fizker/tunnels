@@ -7,10 +7,19 @@ class DNSServer {
 	var port: Int
 	var channel: Channel!
 	var hostMap: HostMap
+	var dnsProxyAddress: SocketAddress
 
-	public init(port: Int = 53, hostMap: HostMap) async throws {
+	/// The key is the DNSPacket ID, and the value is the address of the original sender, that should get the response
+	var pendingProxyRequests: [UInt16: SocketAddress] = [:]
+
+	public init(
+		port: Int = 53,
+		dnsProxyAddress: SocketAddress = try! .init(ipAddress: "1.1.1.1", port: 53),
+		hostMap: HostMap
+	) async throws {
 		self.port = port
 		self.hostMap = hostMap
+		self.dnsProxyAddress = dnsProxyAddress
 
 		let group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 		let bootstrap = DatagramBootstrap(group: group)
@@ -41,8 +50,18 @@ extension DNSServer: ChannelInboundHandler {
 		do {
 			let packet = try DNSPacket(iterator: &iterator)
 
-			guard packet.header.kind == .query
-			else { throw ParseError.notQuery }
+			if packet.header.kind == .response {
+				guard let remoteAddress = pendingProxyRequests[packet.header.id]
+				else {
+					print("Got response for unknown packet")
+					return
+				}
+
+				print("Received response for \(packet.header.id)")
+				let output = AddressedEnvelope(remoteAddress: remoteAddress, data: input.data)
+				context.write(wrapOutboundOut(output), promise: nil)
+				return
+			}
 
 			let ipRequests = packet.questions.filter {
 				$0.type == .hostAddress && $0.class == .internet
@@ -61,6 +80,20 @@ extension DNSServer: ChannelInboundHandler {
 					timeToLive: 100,
 					data: data
 				)
+			}
+
+			if answers.count != packet.questions.count {
+				print("Unknown hosts were requested")
+				if !answers.isEmpty {
+					print("Some requested hosts were known though")
+					print(packet.questions)
+				}
+
+				print("Sending \(packet.header.id) to proxy")
+				pendingProxyRequests[packet.header.id] = input.remoteAddress
+				let output = AddressedEnvelope(remoteAddress: dnsProxyAddress, data: input.data)
+				context.write(wrapOutboundOut(output), promise: nil)
+				return
 			}
 
 			let response = DNSPacket(
@@ -86,24 +119,8 @@ extension DNSServer: ChannelInboundHandler {
 			let output = AddressedEnvelope(remoteAddress: input.remoteAddress, data: ByteBuffer(bytes: response.asData))
 			context.write(wrapOutboundOut(output) , promise: nil)
 		} catch {
-			iterator.bitIndex = 0
-			let header = Header(iterator: &iterator)
-
-			let response = DNSPacket(header: Header(
-				id: header?.id ?? 0,
-				kind: .response,
-				opcode: .query,
-				isAuthoritativeAnswer: false,
-				isTruncated: false,
-				isRecursionDesired: false,
-				isRecursionAvailable: false,
-				z: 0,
-				responseCode: .formatError,
-				questionCount: 0,
-				answerCount: 0,
-				authorityCount: 0,
-				additionalCount: 0
-			), questions: [], answers: [])
+			print("Failed to read content")
+			context.fireChannelRead(data)
 		}
 	}
 
