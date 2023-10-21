@@ -3,6 +3,8 @@ import NIO
 
 typealias HostMap = [String: ResourceRecord.Data]
 
+private let cloudflareAddress = try! SocketAddress(ipAddress: "1.1.1.1", port: 53)
+
 class DNSServer {
 	var port: Int
 	var channel: Channel!
@@ -14,7 +16,7 @@ class DNSServer {
 
 	public init(
 		port: Int = 53,
-		dnsProxyAddress: SocketAddress = try! .init(ipAddress: "1.1.1.1", port: 53),
+		dnsProxyAddress: SocketAddress = cloudflareAddress,
 		hostMap: HostMap
 	) async throws {
 		self.port = port
@@ -29,6 +31,15 @@ class DNSServer {
 			}
 
 		channel = try await bootstrap.bind(host: "0.0.0.0", port: port).get()
+	}
+
+	public convenience init(port: Int = 53, dnsProxyAddress: (address: String, port: Int)?, hostMap: HostMap) async throws {
+		let proxy = try dnsProxyAddress.map { try SocketAddress(ipAddress: $0.address, port: $0.port) } ?? cloudflareAddress
+		try await self.init(
+			port: port,
+			dnsProxyAddress: proxy,
+			hostMap: hostMap
+		)
 	}
 
 	public func waitUntilClose() async throws {
