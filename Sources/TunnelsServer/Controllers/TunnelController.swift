@@ -19,6 +19,10 @@ class TunnelController {
 	func add(req: Request) async throws -> TunnelDTO {
 		let dto = try req.content.decode(TunnelUpdateRequest.self)
 		let model = TunnelDTO(host: dto.host)
+
+		guard tunnels[model.host] == nil
+		else { throw Abort(.badRequest, reason: "Host already in use") }
+
 		tunnels[model.host] = model
 		return model
 	}
