@@ -18,6 +18,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 			return headers
 		})
 		let request = HTTPRequest(
+			host: host,
 			url: URL(string: request.url.description)!,
 			method: request.method.string,
 			headers: headers,
