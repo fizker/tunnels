@@ -6,6 +6,8 @@ import Vapor
 class Client {
 	let webSocket: WebSocket
 
+	var hosts: [String] = []
+
 	var pendingRequests: [HTTPRequest.ID: CheckedContinuation<HTTPResponse, Never>] = [:]
 	var pendingResponses: [HTTPResponse] = []
 

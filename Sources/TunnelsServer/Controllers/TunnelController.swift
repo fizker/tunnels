@@ -11,7 +11,7 @@ struct TunnelUpdateRequest: Codable {
 
 class TunnelController {
 	var tunnels: [String: TunnelDTO] = [:]
-	var connectedClients: [(tunnel: TunnelDTO, client: Client)] = []
+	var connectedClients: [Client] = []
 
 	func all(req: Request) async throws -> [TunnelDTO] {
 		return tunnels.map(\.value)
@@ -44,17 +44,25 @@ class TunnelController {
 		tunnels.removeValue(forKey: host)
 	}
 
+	func client(forHost host: String) -> Client? {
+		return connectedClients.first { client in
+			client.hosts.contains(host)
+		}
+	}
+
 	func connectClient(req: Request, webSocket ws: WebSocket, host: String) throws {
-		guard let dto = tunnels[host]
+		guard let _ = tunnels[host]
 		else { throw TunnelError.notFound }
 
-		guard !connectedClients.contains(where: { $0.tunnel.host == host })
+		guard client(forHost: host) != nil
 		else { throw TunnelError.alreadyBound }
 
-		connectedClients.append((dto, Client(webSocket: ws)))
+		let client = Client(webSocket: ws)
+		client.hosts.append(host)
+		connectedClients.append(client)
 
 		ws.onClose.whenComplete { [weak self] _ in
-			self?.connectedClients.removeAll { $0.client.webSocket.isClosed }
+			self?.connectedClients.removeAll { $0.webSocket.isClosed }
 		}
 	}
 }
