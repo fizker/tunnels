@@ -44,24 +44,20 @@ class TunnelController {
 		tunnels.removeValue(forKey: host)
 	}
 
+	func connectClient(req: Request, webSocket: WebSocket) throws {
+		let client = Client(webSocket: webSocket)
+		add(client)
+	}
+
 	func client(forHost host: String) -> Client? {
 		return connectedClients.first { client in
 			client.hosts.contains(host)
 		}
 	}
 
-	func connectClient(req: Request, webSocket ws: WebSocket, host: String) throws {
-		guard let _ = tunnels[host]
-		else { throw TunnelError.notFound }
-
-		guard client(forHost: host) != nil
-		else { throw TunnelError.alreadyBound }
-
-		let client = Client(webSocket: ws)
-		client.hosts.append(host)
+	private func add(_ client: Client) {
 		connectedClients.append(client)
-
-		ws.onClose.whenComplete { [weak self] _ in
+		client.webSocket.onClose.whenComplete { [weak self] _ in
 			self?.connectedClients.removeAll { $0.webSocket.isClosed }
 		}
 	}

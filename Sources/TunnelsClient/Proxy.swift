@@ -18,7 +18,7 @@ public class Proxy {
 	public func connect() async throws {
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
-			WebSocket.connect(to: "ws://localhost:8110/tunnels/\(host)/client", on: elg) { ws in
+			WebSocket.connect(to: "ws://localhost:8110/tunnels/client", on: elg) { ws in
 				continuation.resume(returning: ws)
 			}.whenFailure { error in
 				continuation.resume(throwing: error)

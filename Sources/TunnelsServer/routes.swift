@@ -26,9 +26,8 @@ func routes(_ app: Application) throws {
 				try await tunnelController.delete(req: $0, host: $0.parameters.require("host"))
 				return HTTPStatus.noContent
 			}
-
-			app.webSocket("client") { try tunnelController.connectClient(req: $0, webSocket: $1, host: $0.parameters.require("host")) }
 		}
 
+		app.webSocket("client") { try tunnelController.connectClient(req: $0, webSocket: $1) }
 	}
 }
