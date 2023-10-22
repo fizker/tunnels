@@ -2,6 +2,10 @@ import Foundation
 import Models
 import Vapor
 
+protocol TunnelStore {
+	func addTunnel(config: TunnelConfiguration) async -> Result<TunnelDTO, TunnelError>
+}
+
 /// An instance of TunnelsClient, from the perspective of the server. It supports sending a HTTPRequeste and awaiting the response.
 class Client {
 	let webSocket: WebSocket
@@ -11,7 +15,7 @@ class Client {
 	var pendingRequests: [HTTPRequest.ID: CheckedContinuation<HTTPResponse, Never>] = [:]
 	var pendingResponses: [HTTPResponse] = []
 
-	init(webSocket: WebSocket) {
+	init(webSocket: WebSocket, tunnelStore: TunnelStore) {
 		self.webSocket = webSocket
 
 		webSocket.onClientMessage { [weak self] ws, data in
@@ -21,6 +25,15 @@ class Client {
 			switch data {
 			case let .response(res):
 				try handle(res)
+			case let .addTunnel(config):
+				switch await tunnelStore.addTunnel(config: config) {
+				case let .success(tunnel):
+					hosts.append(tunnel.host)
+				case let .failure(error):
+					try await ws.send(.error(error))
+				}
+			case let .removeTunnel(host: host):
+				hosts.removeAll { $0 == host }
 			}
 		}
 	}

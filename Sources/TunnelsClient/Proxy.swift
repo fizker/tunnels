@@ -28,6 +28,8 @@ public class Proxy {
 		webSocket?.onServerMessage { [weak self] ws, value in
 			try await self?.handle(value)
 		}
+
+		try await webSocket?.send(.addTunnel(.init(host: host)))
 	}
 
 	public func waitUntilClose() async throws {
@@ -48,9 +50,7 @@ public class Proxy {
 			try await webSocket?.send(.response(res))
 		case let .error(error):
 			switch error {
-			case .notFound:
-				print("Error: The requested host name is not created on the server.")
-			case .alreadyBound:
+			case let .alreadyBound(host):
 				print("Error: The requested host was already bound to another client.")
 			}
 
