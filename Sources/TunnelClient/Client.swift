@@ -3,18 +3,27 @@ import Models
 import NIO
 import WebSocketKit
 
+let httpSchemeRegex = try! Regex("^http")
+
 public class Client {
+	var serverURL: URL
+	var webSocketURL: URL
 	var proxies: [Proxy]
 	var webSocket: WebSocket?
 
-	public init(proxies: [Proxy]) {
+	public init?(serverURL: URL, proxies: [Proxy]) {
+		guard serverURL.path().isEmpty || serverURL.path() == "/"
+		else { return nil }
+
+		self.serverURL = serverURL
+		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
 	}
 
 	public func connect() async throws {
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
-			WebSocket.connect(to: "ws://localhost:8110/tunnels/client", on: elg) { ws in
+			WebSocket.connect(to: webSocketURL.appending(path: "tunnels/client"), on: elg) { ws in
 				continuation.resume(returning: ws)
 			}.whenFailure { error in
 				continuation.resume(throwing: error)

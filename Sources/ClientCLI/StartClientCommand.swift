@@ -7,10 +7,19 @@ struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .shortAndLong, parsing: .upToNextOption)
 	var proxies: [Proxy]
 
-	@Option var tunnelServer: String = "http://localhost:8110"
+	@Option(name: .shortAndLong, transform: {
+		guard let url = URL(string: $0)
+		else { throw ValidationError("Invalid URL.") }
+		guard url.path().isEmpty || url.path() == "/"
+		else { throw ValidationError("Server URL must be scheme, host and port only.") }
+		return url
+	})
+	var server: URL = URL(string: "http://localhost:8110")!
 
 	func run() async throws {
-		let client = Client(proxies: proxies)
+		guard let client = Client(serverURL: server, proxies: proxies)
+		else { throw ValidationError("Failed to create client.") }
+
 		try await client.connect()
 
 		try await client.waitUntilClose()
