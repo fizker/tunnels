@@ -27,16 +27,8 @@ func routes(_ app: Application) throws {
 				return HTTPStatus.noContent
 			}
 
-			app.webSocket("client") { try? tunnelController.connectClient(req: $0, webSocket: $1, host: $0.parameters.require("host")) }
+			app.webSocket("client") { try tunnelController.connectClient(req: $0, webSocket: $1, host: $0.parameters.require("host")) }
 		}
-	}
-}
 
-extension Optional: AsyncResponseEncodable where Wrapped: AsyncResponseEncodable {
-	public func encodeResponse(for request: Request) async throws -> Response {
-		guard let value = self.wrapped
-		else { return Response.init(status: .notFound) }
-
-		return try await value.encodeResponse(for: request)
 	}
 }

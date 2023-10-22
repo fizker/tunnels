@@ -1,3 +1,4 @@
+import Models
 import Vapor
 
 struct TunnelDTO: Codable {
@@ -45,10 +46,10 @@ class TunnelController {
 
 	func connectClient(req: Request, webSocket ws: WebSocket, host: String) throws {
 		guard let dto = tunnels[host]
-		else { throw Abort(.notFound) }
+		else { throw TunnelError.notFound }
 
 		guard !connectedClients.contains(where: { $0.tunnel.host == host })
-		else { throw Abort(.conflict) }
+		else { throw TunnelError.alreadyBound }
 
 		connectedClients.append((dto, Client(webSocket: ws)))
 
