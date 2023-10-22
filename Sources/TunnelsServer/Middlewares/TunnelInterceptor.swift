@@ -17,7 +17,12 @@ struct TunnelInterceptor: AsyncMiddleware {
 			headers.add(value: $1.value, for: $1.name)
 			return headers
 		})
-		let request = HTTPRequest(url: URL(string: request.url.description)!, method: request.method.string, headers: headers, body: request.body.string.flatMap { .text($0) })
+		let request = HTTPRequest(
+			url: URL(string: request.url.description)!,
+			method: request.method.string,
+			headers: headers,
+			body: request.body.string.flatMap { .text($0) }
+		)
 		let response = try await matchingRoute.client.send(request)
 
 		return response.asVaporResponse

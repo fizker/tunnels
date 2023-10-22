@@ -4,15 +4,13 @@ import TunnelsClient
 
 @main
 struct Client: AsyncParsableCommand {
-	//@Argument var remoteName: String
-	@Argument
-	var remoteID: UUID
+	@Argument var host: String
 	@Argument var port: Int
 
 	@Option var tunnelServer: String = "http://localhost:8110"
 
 	func run() async throws {
-		let proxy = Proxy(localPort: port, remoteID: remoteID)
+		let proxy = Proxy(localPort: port, host: host)
 		try await proxy.connect()
 
 		print("Client started for local port \(port)")

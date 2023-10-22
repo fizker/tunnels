@@ -6,21 +6,19 @@ import WebSocketKit
 
 public class Proxy {
 	var localPort: Int
-	var remoteName: String
-	var remoteID: UUID
+	var host: String
 
 	var webSocket: WebSocket?
 
-	public init(localPort: Int, remoteName: String = "", remoteID: UUID) {
+	public init(localPort: Int, host: String) {
 		self.localPort = localPort
-		self.remoteName = remoteName
-		self.remoteID = remoteID
+		self.host = host
 	}
 
 	public func connect() async throws {
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
-			WebSocket.connect(to: "ws://localhost:8110/tunnels/\(remoteID)", on: elg) { ws in
+			WebSocket.connect(to: "ws://localhost:8110/tunnels/\(host)", on: elg) { ws in
 				continuation.resume(returning: ws)
 			}.whenFailure { error in
 				continuation.resume(throwing: error)

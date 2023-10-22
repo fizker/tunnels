@@ -19,15 +19,15 @@ func routes(_ app: Application) throws {
 		app.get { try await tunnelController.all(req: $0) }
 		app.post { try await tunnelController.add(req: $0) }
 
-		app.group(":id") { app in
-			app.get { try await tunnelController.get(req: $0, id: $0.parameters.require("id")) }
-			app.put { try await tunnelController.update(req: $0, id: $0.parameters.require("id")) }
+		app.group(":host") { app in
+			app.get { try await tunnelController.get(req: $0, host: $0.parameters.require("host")) }
+			app.put { try await tunnelController.update(req: $0, host: $0.parameters.require("host")) }
 			app.delete {
-				try await tunnelController.delete(req: $0, id: $0.parameters.require("id"))
+				try await tunnelController.delete(req: $0, host: $0.parameters.require("host"))
 				return HTTPStatus.noContent
 			}
 
-			app.webSocket { try? tunnelController.connectClient(req: $0, webSocket: $1, id: $0.parameters.require("id")) }
+			app.webSocket { try? tunnelController.connectClient(req: $0, webSocket: $1, host: $0.parameters.require("host")) }
 		}
 	}
 }

@@ -1,7 +1,6 @@
 import Vapor
 
 struct TunnelDTO: Codable {
-	var id: UUID
 	var host: String
 }
 
@@ -10,7 +9,7 @@ struct TunnelUpdateRequest: Codable {
 }
 
 class TunnelController {
-	var tunnels: [UUID: TunnelDTO] = [:]
+	var tunnels: [String: TunnelDTO] = [:]
 	var connectedClients: [(tunnel: TunnelDTO, client: Client)] = []
 
 	func all(req: Request) async throws -> [TunnelDTO] {
@@ -19,29 +18,29 @@ class TunnelController {
 
 	func add(req: Request) async throws -> TunnelDTO {
 		let dto = try req.content.decode(TunnelUpdateRequest.self)
-		let model = TunnelDTO(id: UUID(), host: dto.host)
-		tunnels[model.id] = model
+		let model = TunnelDTO(host: dto.host)
+		tunnels[model.host] = model
 		return model
 	}
 
-	func get(req: Request, id: UUID) async throws -> TunnelDTO? {
-		return tunnels[id]
+	func get(req: Request, host: String) async throws -> TunnelDTO? {
+		return tunnels[host]
 	}
 
-	func update(req: Request, id: UUID) async throws -> TunnelDTO {
+	func update(req: Request, host: String) async throws -> TunnelDTO {
 		let dto = try req.content.decode(TunnelUpdateRequest.self)
-		var model = tunnels[id] ?? .init(id: id, host: "")
+		var model = tunnels[host] ?? .init(host: host)
 		model.host = dto.host
-		tunnels[id] = model
+		tunnels[host] = model
 		return model
 	}
 
-	func delete(req: Request, id: UUID) async throws {
-		tunnels.removeValue(forKey: id)
+	func delete(req: Request, host: String) async throws {
+		tunnels.removeValue(forKey: host)
 	}
 
-	func connectClient(req: Request, webSocket ws: WebSocket, id: UUID) throws {
-		guard let dto = tunnels[id]
+	func connectClient(req: Request, webSocket ws: WebSocket, host: String) throws {
+		guard let dto = tunnels[host]
 		else { throw Abort(.notFound) }
 
 		connectedClients.append((dto, Client(webSocket: ws)))
