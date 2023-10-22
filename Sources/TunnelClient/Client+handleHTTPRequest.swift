@@ -1,7 +1,7 @@
 import AsyncHTTPClient
 import Models
 
-extension TunnelClient {
+extension Client {
 	func handle(_ req: HTTPRequest) async throws -> HTTPResponse {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }

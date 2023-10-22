@@ -3,14 +3,14 @@ import Foundation
 import TunnelClient
 
 @main
-struct Client: AsyncParsableCommand {
+struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .shortAndLong, parsing: .upToNextOption)
 	var proxies: [Proxy]
 
 	@Option var tunnelServer: String = "http://localhost:8110"
 
 	func run() async throws {
-		let client = TunnelClient(proxies: proxies)
+		let client = Client(proxies: proxies)
 		try await client.connect()
 
 		try await client.waitUntilClose()

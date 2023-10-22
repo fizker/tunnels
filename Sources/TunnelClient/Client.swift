@@ -3,7 +3,7 @@ import Models
 import NIO
 import WebSocketKit
 
-public class TunnelClient {
+public class Client {
 	var proxies: [Proxy]
 	var webSocket: WebSocket?
 
