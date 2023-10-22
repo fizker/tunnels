@@ -9,7 +9,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 		guard let host = portlessHost(for: request), host != ownHost
 		else { return try await next.respond(to: request) }
 
-		guard let matchingRoute = controller.connectedClients.first(where: { $0.tunnel.host == host })
+		guard let matchingRoute = controller.client(forHost: host)
 		else { return Response(status: .notFound) }
 
 		let headers = request.headers.reduce(Models.HTTPHeaders(), {
@@ -17,8 +17,14 @@ struct TunnelInterceptor: AsyncMiddleware {
 			headers.add(value: $1.value, for: $1.name)
 			return headers
 		})
-		let request = HTTPRequest(url: URL(string: request.url.description)!, method: request.method.string, headers: headers, body: request.body.string.flatMap { .text($0) })
-		let response = try await matchingRoute.client.send(request)
+		let request = HTTPRequest(
+			host: host,
+			url: URL(string: request.url.description)!,
+			method: request.method.string,
+			headers: headers,
+			body: request.body.string.flatMap { .text($0) }
+		)
+		let response = try await matchingRoute.send(request)
 
 		return response.asVaporResponse
 	}

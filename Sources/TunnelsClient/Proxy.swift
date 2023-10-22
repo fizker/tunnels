@@ -4,32 +4,44 @@ import Models
 import NIO
 import WebSocketKit
 
-public class Proxy {
-	var localPort: Int
-	var remoteName: String
-	var remoteID: UUID
+public struct Proxy {
+	public var localPort: Int
+	public var host: String
 
+	public init(localPort: Int, host: String) {
+		self.localPort = localPort
+		self.host = host
+	}
+
+	var config: TunnelConfiguration {
+		.init(host: host)
+	}
+}
+
+public class TunnelClient {
+	var proxies: [Proxy]
 	var webSocket: WebSocket?
 
-	public init(localPort: Int, remoteName: String = "", remoteID: UUID) {
-		self.localPort = localPort
-		self.remoteName = remoteName
-		self.remoteID = remoteID
+	public init(proxies: [Proxy]) {
+		self.proxies = proxies
 	}
 
 	public func connect() async throws {
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
-			WebSocket.connect(to: "ws://localhost:8110/tunnels/\(remoteID)", on: elg) { ws in
+			WebSocket.connect(to: "ws://localhost:8110/tunnels/client", on: elg) { ws in
 				continuation.resume(returning: ws)
 			}.whenFailure { error in
 				continuation.resume(throwing: error)
 			}
 		}
 
-		webSocket?.onText { [weak self] ws, value in
-			try? await self?.handleText(value: value)
-			print("From server: \(value)")
+		webSocket?.onServerMessage { [weak self] ws, value in
+			try await self?.handle(value)
+		}
+
+		for proxy in proxies {
+			try await webSocket?.send(.addTunnel(proxy.config))
 		}
 	}
 
@@ -44,19 +56,28 @@ public class Proxy {
 		}
 	}
 
-	func handleText(value: String) async throws {
-		let data = value.data(using: .utf8)!
-		let decoder = JSONDecoder()
-		if let req = try? decoder.decode(HTTPRequest.self, from: data) {
+	func handle(_ message: WebSocketServerMessage) async throws {
+		switch message {
+		case let .request(req):
 			let res = try await handle(req)
-			let encoder = JSONEncoder()
-			let json = try encoder.encode(res)
-			try await webSocket?.send(String(data: json, encoding: .utf8)!)
+			try await webSocket?.send(.response(res))
+		case let .error(error):
+			switch error {
+			case let .alreadyBound(host):
+				print("Error: The requested host \(host) was already bound to another client.")
+				proxies.removeAll { $0.host == host }
+				if proxies.isEmpty {
+					try await webSocket?.close()
+				}
+			}
 		}
 	}
 
 	func handle(_ req: HTTPRequest) async throws -> HTTPResponse {
-		var request = HTTPClientRequest(url: "http://localhost:\(localPort)\(req.url)")
+		guard let proxy = proxies.first(where: { $0.host == req.host })
+		else { throw ClientError.invalidHost(req.host) }
+
+		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.url)")
 		request.method = .RAW(value: req.method)
 		request.headers = .init(req.headers.map { ($0, $1.joined(separator: " ")) })
 		request.body = switch req.body {
