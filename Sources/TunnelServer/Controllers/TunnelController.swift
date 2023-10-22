@@ -72,19 +72,3 @@ extension TunnelController: TunnelStore {
 		return .success(tunnel)
 	}
 }
-
-extension TunnelError: AbortError {
-	public var status: HTTPResponseStatus {
-		switch self {
-		case .alreadyBound:
-			.conflict
-		}
-	}
-
-	public var reason: String {
-		switch self {
-		case let .alreadyBound(host):
-			"Host \(host) already in use"
-		}
-	}
-}
