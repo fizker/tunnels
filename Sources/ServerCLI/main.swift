@@ -1,4 +1,4 @@
-import TunnelsServer
+import TunnelServer
 import Vapor
 
 let pi = ProcessInfo.processInfo

@@ -7,8 +7,8 @@ let package = Package(
 	platforms: [ .macOS(.v13) ],
 	products: [
 		.executable(name: "dns-server", targets: ["DNSServer"]),
-		.executable(name: "tunnels-client", targets: ["ClientCLI"]),
-		.executable(name: "tunnels-server", targets: ["ServerCLI"]),
+		.executable(name: "tunnel-client", targets: ["ClientCLI"]),
+		.executable(name: "tunnel-server", targets: ["ServerCLI"]),
 	],
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.3"),
@@ -29,7 +29,7 @@ let package = Package(
 		),
 		.target(name: "Models"),
 		.target(
-			name: "TunnelsClient",
+			name: "TunnelClient",
 			dependencies: [
 				"Models",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
@@ -37,17 +37,19 @@ let package = Package(
 			]
 		),
 		.target(
-			name: "TunnelsServer",
+			name: "TunnelServer",
 			dependencies: [
 				"Models",
 				.product(name: "Vapor", package: "vapor"),
 			]
 		),
 		.executableTarget(name: "ClientCLI", dependencies: [
-			"TunnelsClient",
+			"TunnelClient",
 			.product(name: "ArgumentParser", package: "swift-argument-parser"),
 		]),
-		.executableTarget(name: "ServerCLI", dependencies: [ "TunnelsServer" ]),
+		.executableTarget(name: "ServerCLI", dependencies: [
+			"TunnelServer",
+		]),
 		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
 		.testTarget(name: "DNSServerTests", dependencies: ["DNSServer"]),
 	]

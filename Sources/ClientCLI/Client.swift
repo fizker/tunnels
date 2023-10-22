@@ -1,6 +1,6 @@
 import ArgumentParser
 import Foundation
-import TunnelsClient
+import TunnelClient
 
 @main
 struct Client: AsyncParsableCommand {
