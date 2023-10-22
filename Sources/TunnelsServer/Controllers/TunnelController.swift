@@ -47,6 +47,9 @@ class TunnelController {
 		guard let dto = tunnels[host]
 		else { throw Abort(.notFound) }
 
+		guard !connectedClients.contains(where: { $0.tunnel.host == host })
+		else { throw Abort(.conflict) }
+
 		connectedClients.append((dto, Client(webSocket: ws)))
 
 		ws.onClose.whenComplete { [weak self] _ in
