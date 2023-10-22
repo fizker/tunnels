@@ -25,16 +25,8 @@ public class Proxy {
 			}
 		}
 
-		webSocket?.onText { [weak self] ws, value in
-			do {
-				try await self?.handleText(value: value)
-			} catch {
-				print("""
-				Failed to handle message: \(error)
-				Raw message:
-				\(value)
-				""")
-			}
+		webSocket?.onServerMessage { [weak self] ws, value in
+			try await self?.handle(value)
 		}
 	}
 
@@ -49,18 +41,12 @@ public class Proxy {
 		}
 	}
 
-	func handleText(value: String) async throws {
-		let data = value.data(using: .utf8)!
-		let decoder = JSONDecoder()
-		if let req = try? decoder.decode(HTTPRequest.self, from: data) {
+	func handle(_ message: WebSocketServerMessage) async throws {
+		switch message {
+		case let .request(req):
 			let res = try await handle(req)
-			let encoder = JSONEncoder()
-			let json = try encoder.encode(res)
-			try await webSocket?.send(String(data: json, encoding: .utf8)!)
-			return
-		}
-
-		if let error = try? decoder.decode(TunnelError.self, from: data) {
+			try await webSocket?.send(.response(res))
+		case let .error(error):
 			switch error {
 			case .notFound:
 				print("Error: The requested host name is not created on the server.")
@@ -69,10 +55,7 @@ public class Proxy {
 			}
 
 			try await webSocket?.close()
-			return
 		}
-
-		print("Unknown message: \(value)")
 	}
 
 	func handle(_ req: HTTPRequest) async throws -> HTTPResponse {

@@ -1,3 +1,4 @@
+import Models
 import Vapor
 
 extension RoutesBuilder {
@@ -11,19 +12,26 @@ extension RoutesBuilder {
 		},
 		onUpgrade: @Sendable @escaping (Request, WebSocket) throws -> ()
 	) -> Route {
-		return webSocket(path, maxFrameSize: maxFrameSize, shouldUpgrade: shouldUpgrade, onUpgrade: {
+		return webSocket(path, maxFrameSize: maxFrameSize, shouldUpgrade: shouldUpgrade, onUpgrade: { req, ws in
 			do {
-				try onUpgrade($0, $1)
+				try onUpgrade(req, ws)
 			} catch {
+				if let error = error as? TunnelError {
+					Task {
+						try? await ws.send(.error(error))
+					}
+					return
+				}
+
 				let encoder = JSONEncoder()
 				if
 					let error = error as? Encodable,
 					let data = try? encoder.encode(error),
 					let json = String(data: data, encoding: .utf8)
 				{
-					$1.send(json)
+					ws.send(json)
 				} else {
-					$1.send(error.localizedDescription)
+					ws.send(error.localizedDescription)
 				}
 			}
 		})

@@ -12,16 +12,19 @@ class Client {
 	init(webSocket: WebSocket) {
 		self.webSocket = webSocket
 
-		webSocket.onText { [weak self] ws, data in
-			try! self?.handleResponse(json: data)
+		webSocket.onClientMessage { [weak self] ws, data in
+			guard let self
+			else { return }
+
+			switch data {
+			case let .response(res):
+				try handle(res)
+			}
 		}
 	}
 
 	func send(_ req: HTTPRequest) async throws -> HTTPResponse {
-		let encoder = JSONEncoder()
-		let data = try encoder.encode(req)
-		let json = String(data: data, encoding: .utf8)!
-		try await webSocket.send(json)
+		try await webSocket.send(.request(req))
 
 		if let res = pendingResponses.first(where: { $0.id == req.id }) {
 			pendingResponses.removeAll(where: { $0.id == req.id })
@@ -33,11 +36,7 @@ class Client {
 		}
 	}
 
-	private func handleResponse(json: String) throws {
-		let decoder = JSONDecoder()
-		let data = json.data(using: .utf8)!
-		let res = try decoder.decode(HTTPResponse.self, from: data)
-
+	private func handle(_ res: HTTPResponse) throws {
 		guard let cont = pendingRequests[res.id]
 		else {
 			pendingResponses.append(res)
