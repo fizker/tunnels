@@ -4,23 +4,27 @@ import TunnelsClient
 
 @main
 struct Client: AsyncParsableCommand {
-	@Argument var host: String
-	@Argument var port: Int
+	@Option(name: .shortAndLong, parsing: .upToNextOption)
+	var proxies: [Proxy]
 
 	@Option var tunnelServer: String = "http://localhost:8110"
 
 	func run() async throws {
-		let proxy = Proxy(localPort: port, host: host)
-		try await proxy.connect()
+		let client = TunnelClient(proxies: proxies)
+		try await client.connect()
 
-		print("Client started for local port \(port)")
-
-		try await proxy.waitUntilClose()
+		try await client.waitUntilClose()
 	}
 }
 
-extension UUID: ExpressibleByArgument {
+extension Proxy: ExpressibleByArgument {
 	public init?(argument: String) {
-		self.init(uuidString: argument)
+		let components = argument.split(separator: "=")
+		guard
+			components.count == 2,
+			let port = Int(components[1])
+		else { return nil }
+
+		self.init(localPort: port, host: String(components[0]))
 	}
 }

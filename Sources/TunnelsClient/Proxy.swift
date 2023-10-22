@@ -4,15 +4,26 @@ import Models
 import NIO
 import WebSocketKit
 
-public class Proxy {
-	var localPort: Int
-	var host: String
-
-	var webSocket: WebSocket?
+public struct Proxy {
+	public var localPort: Int
+	public var host: String
 
 	public init(localPort: Int, host: String) {
 		self.localPort = localPort
 		self.host = host
+	}
+
+	var config: TunnelConfiguration {
+		.init(host: host)
+	}
+}
+
+public class TunnelClient {
+	var proxies: [Proxy]
+	var webSocket: WebSocket?
+
+	public init(proxies: [Proxy]) {
+		self.proxies = proxies
 	}
 
 	public func connect() async throws {
@@ -29,7 +40,9 @@ public class Proxy {
 			try await self?.handle(value)
 		}
 
-		try await webSocket?.send(.addTunnel(.init(host: host)))
+		for proxy in proxies {
+			try await webSocket?.send(.addTunnel(proxy.config))
+		}
 	}
 
 	public func waitUntilClose() async throws {
@@ -51,15 +64,20 @@ public class Proxy {
 		case let .error(error):
 			switch error {
 			case let .alreadyBound(host):
-				print("Error: The requested host was already bound to another client.")
+				print("Error: The requested host \(host) was already bound to another client.")
+				proxies.removeAll { $0.host == host }
+				if proxies.isEmpty {
+					try await webSocket?.close()
+				}
 			}
-
-			try await webSocket?.close()
 		}
 	}
 
 	func handle(_ req: HTTPRequest) async throws -> HTTPResponse {
-		var request = HTTPClientRequest(url: "http://localhost:\(localPort)\(req.url)")
+		guard let proxy = proxies.first(where: { $0.host == req.host })
+		else { throw ClientError.invalidHost(req.host) }
+
+		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.url)")
 		request.method = .RAW(value: req.method)
 		request.headers = .init(req.headers.map { ($0, $1.joined(separator: " ")) })
 		request.body = switch req.body {
