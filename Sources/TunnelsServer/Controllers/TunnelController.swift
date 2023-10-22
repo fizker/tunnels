@@ -63,7 +63,7 @@ class TunnelController {
 
 extension TunnelController: TunnelStore {
 	func addTunnel(config: TunnelConfiguration) async -> Result<TunnelDTO, TunnelError> {
-		guard self.client(forHost: config.host) != nil
+		guard self.client(forHost: config.host) == nil
 		else { return .failure(.alreadyBound(host: config.host)) }
 
 		let tunnel = TunnelDTO(configuration: config)
