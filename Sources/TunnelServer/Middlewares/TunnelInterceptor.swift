@@ -9,7 +9,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 		guard let host = portlessHost(for: request), host != ownHost
 		else { return try await next.respond(to: request) }
 
-		guard let matchingRoute = controller.client(forHost: host)
+		guard let matchingRoute = await controller.store.client(forHost: host)
 		else { return Response(status: .notFound) }
 
 		let headers = request.headers.reduce(Models.HTTPHeaders(), {

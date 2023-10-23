@@ -14,61 +14,32 @@ struct TunnelDTO: Codable {
 }
 
 class TunnelController {
-	var tunnels: [String: TunnelDTO] = [:]
-	var connectedClients: [Client] = []
+	var store = TunnelStoreDB()
 
 	func all(req: Request) async throws -> [TunnelDTO] {
-		return tunnels.map(\.value)
+		return await store.tunnels.map(\.value)
 	}
 
 	func add(req: Request) async throws -> TunnelDTO {
 		let config = try req.content.decode(TunnelConfiguration.self)
-		return try await addTunnel(config: config).get()
+		return try await store.addTunnel(config: config).get()
 	}
 
 	func get(req: Request, host: String) async throws -> TunnelDTO? {
-		return tunnels[host]
+		return await store.tunnels[host]
 	}
 
 	func update(req: Request, host: String) async throws -> TunnelDTO {
 		let config = try req.content.decode(TunnelConfiguration.self)
-		var model = tunnels[host] ?? .init(host: host)
-		model.host = config.host
-		tunnels[host] = model
-		return model
+		return try await store.updateTunnel(host: host, config: config)
 	}
 
 	func delete(req: Request, host: String) async throws {
-		tunnels.removeValue(forKey: host)
+		try await store.removeTunnels(forHost: host)
 	}
 
-	func connectClient(req: Request, webSocket: WebSocket) throws {
-		let client = Client(webSocket: webSocket, tunnelStore: self)
-		add(client)
-	}
-
-	func client(forHost host: String) -> Client? {
-		return connectedClients.first { client in
-			client.hosts.contains(host)
-		}
-	}
-
-	private func add(_ client: Client) {
-		connectedClients.append(client)
-		client.webSocket.onClose.whenComplete { [weak self] _ in
-			self?.connectedClients.removeAll { $0.webSocket.isClosed }
-		}
-	}
-}
-
-extension TunnelController: TunnelStore {
-	func addTunnel(config: TunnelConfiguration) async -> Result<TunnelDTO, TunnelError> {
-		guard self.client(forHost: config.host) == nil
-		else { return .failure(.alreadyBound(host: config.host)) }
-
-		let tunnel = TunnelDTO(configuration: config)
-		tunnels[config.host] = tunnel
-
-		return .success(tunnel)
+	func connectClient(req: Request, webSocket: WebSocket) async throws {
+		let client = Client(webSocket: webSocket, tunnelStore: store)
+		await store.add(client)
 	}
 }
