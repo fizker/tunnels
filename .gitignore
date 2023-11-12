@@ -8,3 +8,6 @@ DerivedData/
 .netrc
 .build
 .swiftpm
+
+# docker related
+docker-compose.override.yml

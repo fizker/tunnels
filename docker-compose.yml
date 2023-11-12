@@ -1,0 +1,8 @@
+services:
+  tunnel-server:
+    image: tunnel-server:latest
+    build:
+      context: .
+      dockerfile: Dockerfile-tunnel-server
+    ports:
+      - '8110:80'
