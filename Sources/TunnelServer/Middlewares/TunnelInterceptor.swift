@@ -6,11 +6,19 @@ struct TunnelInterceptor: AsyncMiddleware {
 	var controller: TunnelController
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+		let logger = request.logger
+
 		guard let host = portlessHost(for: request), host != ownHost
-		else { return try await next.respond(to: request) }
+		else {
+			logger.info("Handling request with regular routes")
+			return try await next.respond(to: request)
+		}
 
 		guard let matchingRoute = await controller.store.client(forHost: host)
-		else { return Response(status: .notFound) }
+		else {
+			logger.info("Could not find client for host \(host)")
+			return Response(status: .notFound)
+		}
 
 		let headers = request.headers.reduce(Models.HTTPHeaders(), {
 			var headers = $0
@@ -24,7 +32,12 @@ struct TunnelInterceptor: AsyncMiddleware {
 			headers: headers,
 			body: request.body.string.flatMap { .text($0) }
 		)
+
+		logger.info("Routing \(request)")
+
 		let response = try await matchingRoute.send(request)
+
+		logger.info("Got response \(response)")
 
 		return response.asVaporResponse
 	}
