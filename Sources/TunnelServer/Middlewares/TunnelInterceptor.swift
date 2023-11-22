@@ -6,7 +6,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 	var controller: TunnelController
 
 	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
-		let logger = request.logger
+		let logger = request.logger()
 
 		guard let host = portlessHost(for: request), host != ownHost
 		else {
