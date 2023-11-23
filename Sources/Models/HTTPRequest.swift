@@ -21,3 +21,9 @@ public struct HTTPRequest: Codable {
 		self.body = body
 	}
 }
+
+extension HTTPRequest: CustomStringConvertible {
+	public var description: String {
+		"HTTPRequest (\(id)): \(host) \(method) \(url)"
+	}
+}
