@@ -7,15 +7,15 @@ public struct HTTPRequest: Codable {
 
 	public var id: ID
 	public var host: String
-	public var url: URL
+	public var path: String
 	public var method: HTTPMethod
 	public var headers: HTTPHeaders
 	public var body: HTTPBody?
 
-	public init(id: UUID = .init(), host: String, url: URL, method: HTTPMethod, headers: HTTPHeaders = .init(), body: HTTPBody? = nil) {
+	public init(id: UUID = .init(), host: String, path: String, method: HTTPMethod, headers: HTTPHeaders = .init(), body: HTTPBody? = nil) {
 		self.id = id
 		self.host = host
-		self.url = url
+		self.path = path
 		self.method = method
 		self.headers = headers
 		self.body = body
@@ -24,6 +24,6 @@ public struct HTTPRequest: Codable {
 
 extension HTTPRequest: CustomStringConvertible {
 	public var description: String {
-		"HTTPRequest (\(id)): \(host) \(method) \(url)"
+		"HTTPRequest (\(id)): \(host) \(method) \(path)"
 	}
 }

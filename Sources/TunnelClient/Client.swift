@@ -66,7 +66,7 @@ public class Client {
 		case let .request(req):
 			logger.info("Received request", metadata: [
 				"id": "\(req.id)",
-				"path": "\(req.url)",
+				"path": "\(req.path)",
 				"method": "\(req.method)",
 				"host": "\(req.host)",
 			])

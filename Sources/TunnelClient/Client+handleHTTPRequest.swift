@@ -6,7 +6,7 @@ extension Client {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
 
-		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.url)")
+		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.path)")
 		request.method = .RAW(value: req.method)
 		request.headers = .init(req.headers.map { ($0, $1.joined(separator: " ")) })
 		request.body = switch req.body {
