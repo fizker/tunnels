@@ -7,7 +7,7 @@ public actor LogStorage {
 		self.storagePath = storagePath
 	}
 
-	func add(log: Log) {
+	func add(_ log: Log) {
 		summaries.append(.init(log: log))
 		logs[log.id] = log
 	}

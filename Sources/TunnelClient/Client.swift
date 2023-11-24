@@ -55,7 +55,15 @@ public class Client {
 	func handle(_ message: WebSocketServerMessage) async throws {
 		switch message {
 		case let .request(req):
+			let start = Date.now
 			let res = try await handle(req)
+			#warning("we should catch errors and log the error")
+			await logStorage.add(Log(
+				requestReceived: start,
+				responseSent: .now,
+				request: req,
+				response: res
+			))
 			try await webSocket?.send(.response(res))
 		case let .error(error):
 			switch error {
