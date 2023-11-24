@@ -6,16 +6,23 @@ public actor LogStorage {
 	private(set) var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
 	private let storagePath: URL
+	private let summaryURL: URL
+	private let summaryPath: String
 	private let encoder: JSONEncoder = .init()
 	private let decoder: JSONDecoder = .init()
 	private let fileManager: FileManager = .default
 
 	public init(storagePath: String) throws {
-		try self.init(storagePath: URL(filePath: storagePath))
+		try self.init(storage: URL(filePath: storagePath))
 	}
 
-	public init(storagePath: URL) throws {
-		self.storagePath = storagePath
+	public init(storage: URL) throws {
+		let summaryURL = storage.appending(path: "summary.json")
+		let summaryPath = summaryURL.path
+
+		self.storagePath = storage
+		self.summaryURL = summaryURL
+		self.summaryPath = summaryPath
 
 		encoder.outputFormatting = [
 			.prettyPrinted,
@@ -24,10 +31,23 @@ public actor LogStorage {
 		]
 		encoder.dateEncodingStrategy = .iso8601
 
+		decoder.dateDecodingStrategy = .iso8601
+
 		try fileManager.createDirectory(
 			at: storagePath,
 			withIntermediateDirectories: true
 		)
+
+		if let data = fileManager.contents(atPath: summaryPath) {
+			do {
+				summaries = try decoder.decode([LogSummary].self, from: data)
+			} catch {
+				logger.error("Failed to decode summary.json", metadata: [
+					"error": "\(error)",
+					"path": "\(summaryPath)",
+				])
+			}
+		}
 	}
 
 	func add(_ log: Log) {
@@ -38,8 +58,8 @@ public actor LogStorage {
 			try write(log)
 		} catch {
 			logger.error("Failed to write log", metadata: [
-				"error": .string(error.localizedDescription),
-				"logID": .string(log.id.uuidString),
+				"error": "\(error)",
+				"logID": "\(log.id)",
 			])
 		}
 	}
@@ -63,7 +83,7 @@ public actor LogStorage {
 
 		let summaryData = try encoder.encode(summaries)
 		fileManager.createFile(
-			at: storagePath.appending(path: "summary.json"),
+			atPath: summaryPath,
 			contents: summaryData
 		)
 	}
