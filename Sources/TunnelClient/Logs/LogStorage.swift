@@ -1,6 +1,11 @@
-actor RequestLogger {
+public actor LogStorage {
 	private(set) var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
+	private var storagePath: String
+
+	public init(storagePath: String) {
+		self.storagePath = storagePath
+	}
 
 	func add(log: Log) {
 		summaries.append(.init(log: log))

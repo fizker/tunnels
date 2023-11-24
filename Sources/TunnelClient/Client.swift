@@ -10,14 +10,16 @@ public class Client {
 	var webSocketURL: URL
 	var proxies: [Proxy]
 	var webSocket: WebSocket?
+	var logStorage: LogStorage
 
-	public init?(serverURL: URL, proxies: [Proxy]) {
+	public init?(serverURL: URL, proxies: [Proxy], logStorage: LogStorage) {
 		guard serverURL.path().isEmpty || serverURL.path() == "/"
 		else { return nil }
 
 		self.serverURL = serverURL
 		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
+		self.logStorage = logStorage
 	}
 
 	public func connect() async throws {
