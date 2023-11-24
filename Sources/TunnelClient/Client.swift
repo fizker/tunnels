@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 import Models
 import NIO
 import WebSocketKit
@@ -6,6 +7,7 @@ import WebSocketKit
 let httpSchemeRegex = try! Regex("^http")
 
 public class Client {
+	let logger = Logger(label: "Client")
 	var serverURL: URL
 	var webSocketURL: URL
 	var proxies: [Proxy]
@@ -25,9 +27,16 @@ public class Client {
 	public func connect() async throws {
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
+			logger.info("Connecting client", metadata: [
+				"serverURL": .string(webSocketURL.absoluteString),
+			])
 			WebSocket.connect(to: webSocketURL.appending(path: "tunnels/client"), on: elg) { ws in
+				self.logger.info("Client connected")
 				continuation.resume(returning: ws)
 			}.whenFailure { error in
+				self.logger.error("Failed to connect", metadata: [
+					"error": .string(error.localizedDescription),
+				])
 				continuation.resume(throwing: error)
 			}
 		}
@@ -55,8 +64,18 @@ public class Client {
 	func handle(_ message: WebSocketServerMessage) async throws {
 		switch message {
 		case let .request(req):
+			logger.info("Received request", metadata: [
+				"id": "\(req.id)",
+				"path": "\(req.url)",
+				"method": "\(req.method)",
+				"host": "\(req.host)",
+			])
 			let start = Date.now
 			let res = try await handle(req)
+			logger.info("Got response", metadata: [
+				"id": "\(req.id)",
+				"status": "\(res.status)",
+			])
 			#warning("we should catch errors and log the error")
 			await logStorage.add(Log(
 				requestReceived: start,
@@ -68,9 +87,12 @@ public class Client {
 		case let .error(error):
 			switch error {
 			case let .alreadyBound(host):
-				print("Error: The requested host \(host) was already bound to another client.")
+				logger.error("Requested host was already bound to another client", metadata: [
+					"host": "\(host)",
+				])
 				proxies.removeAll { $0.host == host }
 				if proxies.isEmpty {
+					logger.info("Last host rejected. Shutting down client")
 					try await webSocket?.close()
 				}
 			}
