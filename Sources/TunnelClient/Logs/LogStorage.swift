@@ -65,7 +65,27 @@ public actor LogStorage {
 	}
 
 	func log(id: Log.ID) -> Log? {
-		logs[id]
+		if let log = logs[id] {
+			return log
+		}
+
+		let path = storagePath
+			.appending(path: id.uuidString)
+			.appending(path: "log.json")
+		guard let data = fileManager.contents(atPath: path.path())
+		else { return nil }
+
+		do {
+			let log = try decoder.decode(Log.self, from: data)
+			logs[id] = log
+			return log
+		} catch {
+			logger.error("Failed to read log", metadata: [
+				"logID": "\(id)",
+				"error": "\(error)",
+			])
+			return nil
+		}
 	}
 
 	private func write(_ log: Log) throws {
