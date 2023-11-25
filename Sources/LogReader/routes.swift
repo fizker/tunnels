@@ -2,13 +2,7 @@ import Foundation
 import Vapor
 
 func routes(_ app: Application) throws {
-	app.get { req in
-		Response(
-			headers: ["content-type": "text/html"],
-			body: """
-			<!doctype html>
-			Hello world!
-			"""
-		)
-	}
+	let logController = try LogController(storagePath: app.environment.storagePath)
+
+	app.get { await logController.summaries(req: $0) }
 }
