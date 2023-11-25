@@ -3,7 +3,7 @@ import Logging
 
 public actor LogStorage {
 	private let logger = Logger(label: "LogStorage")
-	private(set) var summaries: [LogSummary] = []
+	private(set) public var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
 	private let storagePath: URL
 	private let summaryURL: URL
@@ -64,7 +64,7 @@ public actor LogStorage {
 		}
 	}
 
-	func log(id: Log.ID) -> Log? {
+	public func log(id: Log.ID) -> Log? {
 		if let log = logs[id] {
 			return log
 		}
