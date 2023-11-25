@@ -91,6 +91,15 @@
       }
     },
     {
+      "identity" : "swift-environment-variables",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fizker/swift-environment-variables.git",
+      "state" : {
+        "revision" : "37f5b5a77780a882ea886ead09c4081793bee8fc",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "swift-log",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
