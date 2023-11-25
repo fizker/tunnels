@@ -16,8 +16,13 @@ struct StartClientCommand: AsyncParsableCommand {
 	})
 	var server: URL = URL(string: "http://localhost:8110")!
 
+	@Option(name: .shortAndLong)
+	var logs: String = "logs"
+
 	func run() async throws {
-		guard let client = Client(serverURL: server, proxies: proxies)
+		let logStorage = try LogStorage(storagePath: logs)
+
+		guard let client = Client(serverURL: server, proxies: proxies, logStorage: logStorage)
 		else { throw ValidationError("Failed to create client.") }
 
 		try await client.connect()
