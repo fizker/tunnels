@@ -80,6 +80,7 @@ public class Client {
 			await logStorage.add(Log(
 				requestReceived: start,
 				responseSent: .now,
+				responseTime: start.timeIntervalSinceNow * -1000,
 				request: req,
 				response: res
 			))
