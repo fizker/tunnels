@@ -1,14 +1,16 @@
 import Foundation
 import Models
 
-struct LogSummary: Codable {
-	var id: Log.ID
-	var host: String
-	var path: String
-	var requestReceived: Date
-	var requestMethod: HTTPMethod
-	var responseSent: Date
-	var responseStatus: HTTPStatus
+public struct LogSummary: Codable {
+	public var id: Log.ID
+	public var host: String
+	public var path: String
+	public var requestReceived: Date
+	public var requestMethod: HTTPMethod
+	public var responseSent: Date
+	public var responseStatus: HTTPStatus
+	/// The response time in milliseconds
+	public var responseTime: Double
 }
 extension LogSummary {
 	init(log: Log) {
@@ -19,5 +21,6 @@ extension LogSummary {
 		requestMethod = log.request.method
 		responseSent = log.responseSent
 		responseStatus = log.response.status
+		responseTime = log.responseTime
 	}
 }

@@ -9,10 +9,12 @@ let package = Package(
 		.executable(name: "dns-server", targets: ["DNSServer"]),
 		.executable(name: "tunnel-client", targets: ["ClientCLI"]),
 		.executable(name: "tunnel-server", targets: ["ServerCLI"]),
+		.executable(name: "tunnel-logs", targets: ["LogReader"]),
 	],
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.3"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.59.0"),
+		.package(url: "https://github.com/fizker/swift-environment-variables.git", .upToNextMinor(from: "1.0.0")),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.9.0"),
 		.package(url: "https://github.com/vapor/vapor.git", from: "4.84.1"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
@@ -49,6 +51,12 @@ let package = Package(
 		]),
 		.executableTarget(name: "ServerCLI", dependencies: [
 			"TunnelServer",
+		]),
+		.executableTarget(name: "LogReader", dependencies: [
+			"Models",
+			"TunnelClient",
+			.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
+			.product(name: "Vapor", package: "vapor"),
 		]),
 		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
 		.testTarget(name: "DNSServerTests", dependencies: ["DNSServer"]),

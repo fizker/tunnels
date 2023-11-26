@@ -1,21 +1,23 @@
 import Foundation
 import Models
 
-enum BodyStorage: String, Codable {
+public enum BodyStorage: String, Codable {
 	/// The body, if present, is stored inside the HTTPRequest.
-	case `internal`
+	case included
 	/// The body is stored next to the JSON file.
-	case external
+	case separate
 }
 
-struct Log: Codable {
-	typealias ID = HTTPRequest.ID
+public struct Log: Codable {
+	public typealias ID = HTTPRequest.ID
 
-	var requestReceived: Date
-	var responseSent: Date
-	var id: ID { request.id }
+	public var requestReceived: Date
+	public var responseSent: Date
+	/// The response time in milliseconds
+	public var responseTime: Double
+	public var id: ID { request.id }
 
-	var request: HTTPRequest
-	var requestBody: BodyStorage = .internal
-	var response: HTTPResponse
+	public var request: HTTPRequest
+	public var requestBody: BodyStorage = .included
+	public var response: HTTPResponse
 }
