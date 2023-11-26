@@ -11,30 +11,22 @@ class LogController {
 	func summaries(req: Request) async -> Response {
 		let summaries = await storage.summaries
 
-		return Response(
-			headers: [
-				"content-type": "text/html"
-			],
-			body: .init(string: """
-			<!doctype html>
-
-			<h1>Logs</h1>
-			\(summaries.isEmpty
-				? "<p>No logs</p>"
-				: """
-				<table>
-					<tr>
-						<th>Method</th>
-						<th>Path</th>
-						<th>Status</th>
-						<th>Host</th>
-					</tr>
-					\(summaries.map(map).joined())
-				</table>
-				"""
-			)
+		return html("""
+		<h1>Logs</h1>
+		\(summaries.isEmpty
+			? "<p>No logs</p>"
+			: """
+			<table>
+				<tr>
+					<th>Method</th>
+					<th>Path</th>
+					<th>Status</th>
+					<th>Host</th>
+				</tr>
+				\(summaries.map(map).joined())
+			</table>
 			""")
-		)
+		""")
 	}
 
 	func map(_ summary: LogSummary) -> String {
@@ -46,5 +38,16 @@ class LogController {
 				<td>\(summary.host)</td>
 			</tr>
 		"""
+	}
+
+	func html(_ body: String) -> Response {
+		Response(
+			headers: ["content-type": "text/html"],
+			body: .init(string: """
+			<!doctype html>
+
+			\(body)
+			""")
+		)
 	}
 }
