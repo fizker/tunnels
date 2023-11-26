@@ -28,6 +28,8 @@ class LogController {
 				\(summaries.map(map).joined())
 			</table>
 			""")
+
+		\(summaryUpdateCode)
 		""")
 	}
 
@@ -77,6 +79,12 @@ class LogController {
 			</tr>
 		"""
 	}
+
+	let summaryUpdateCode = """
+		<script>
+		setTimeout(() => { location.reload() }, 2_000)
+		</script>
+		"""
 
 	func map(_ headers: Models.HTTPHeaders) -> String {
 		return """
