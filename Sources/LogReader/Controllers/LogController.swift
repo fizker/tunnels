@@ -4,9 +4,28 @@ import TunnelClient
 
 class LogController {
 	let storage: LogStorage
+	var summaryListeners: [WebSocket] = []
 
-	init(storagePath: String) throws {
-		storage = try LogStorage(storagePath: storagePath)
+	init(storagePath: String) async throws {
+		storage = try await LogStorage(storagePath: storagePath)
+		try await storage.listenForUpdates { [weak self] summaries in
+			guard let self
+			else { return }
+
+			for idx in summaryListeners.indices.reversed() {
+				let listener = summaryListeners[idx]
+				guard !listener.isClosed
+				else {
+					summaryListeners.remove(at: idx)
+					continue
+				}
+				listener.send(summaries.map(map).joined())
+			}
+		}
+	}
+
+	func addSummaryListener(webSocket: WebSocket) {
+		summaryListeners.append(webSocket)
 	}
 
 	func summaries(req: Request) async -> Response {
@@ -18,14 +37,18 @@ class LogController {
 			? "<p>No logs</p>"
 			: """
 			<table class="hlist">
-				<tr>
-					<th>Method</th>
-					<th>Path</th>
-					<th>Status</th>
-					<th>Host</th>
-					<th></th>
-				</tr>
-				\(summaries.map(map).joined())
+				<thead>
+					<tr>
+						<th>Method</th>
+						<th>Path</th>
+						<th>Status</th>
+						<th>Host</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody class="summary-list">
+					\(summaries.map(map).joined())
+				</tbody>
 			</table>
 			""")
 
@@ -82,7 +105,10 @@ class LogController {
 
 	let summaryUpdateCode = """
 		<script>
-		setTimeout(() => { location.reload() }, 2_000)
+		const socket = new WebSocket("/summaries.ws")
+		socket.addEventListener("message", (event) => {
+			document.querySelector(".summary-list").innerHTML = event.data
+		})
 		</script>
 		"""
 
