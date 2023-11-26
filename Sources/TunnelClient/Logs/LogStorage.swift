@@ -11,12 +11,13 @@ public actor LogStorage {
 	private let encoder: JSONEncoder = .init()
 	private let decoder: JSONDecoder = .init()
 	private let fileManager: FileManager = .default
+	private var listener: FileSystemWatcher?
 
-	public init(storagePath: String) throws {
-		try self.init(storage: URL(filePath: storagePath))
+	public init(storagePath: String) async throws {
+		try await self.init(storage: URL(filePath: storagePath))
 	}
 
-	public init(storage: URL) throws {
+	public init(storage: URL) async throws {
 		let summaryURL = storage.appending(path: "summary.json")
 		let summaryPath = summaryURL.path
 
@@ -38,14 +39,39 @@ public actor LogStorage {
 			withIntermediateDirectories: true
 		)
 
+		readSummaryFile()
+	}
+
+	@discardableResult
+	private func readSummaryFile() -> [LogSummary] {
 		if let data = fileManager.contents(atPath: summaryPath) {
 			do {
 				summaries = try decoder.decode([LogSummary].self, from: data)
+				return summaries
 			} catch {
+				summaries = []
 				logger.error("Failed to decode summary.json", metadata: [
 					"error": "\(error)",
 					"path": "\(summaryPath)",
 				])
+			}
+		}
+
+		return summaries
+	}
+
+	public func listenForUpdates(onUpdate: @escaping ([LogSummary]) -> Void) throws {
+		guard listener == nil
+		else { return }
+
+		logger.info("Starting listener")
+		listener = try FileSystemWatcher(watching: summaryPath) { [weak self] _ in
+			guard let self
+			else { return }
+
+			Task {
+				self.logger.info("Summary was updated")
+				onUpdate(await self.readSummaryFile())
 			}
 		}
 	}
