@@ -42,12 +42,13 @@ class LogController {
 						<th>Method</th>
 						<th>Path</th>
 						<th>Status</th>
+						<th>Response time</th>
 						<th>Host</th>
 						<th></th>
 					</tr>
 				</thead>
 				<tbody class="summary-list">
-					\(summaries.map(map).joined())
+					\(summaries.sorted { $0.responseSent > $1.responseSent }.map(map).joined())
 				</tbody>
 			</table>
 			""")
@@ -70,7 +71,7 @@ class LogController {
 				<td>\(log.response.status)</td>
 			</tr>
 			<tr>
-				<th>Status:</th>
+				<th>Response time:</th>
 				<td>\(log.responseTime) ms</td>
 			</tr>
 		</table>
@@ -97,6 +98,7 @@ class LogController {
 				<td>\(summary.requestMethod)</td>
 				<td>\(summary.path)</td>
 				<td>\(summary.responseStatus)</td>
+				<td style="text-align: right">\(summary.responseTime) ms</td>
 				<td>\(summary.host)</td>
 				<td><a href="/\(summary.id)">Details</a></td>
 			</tr>

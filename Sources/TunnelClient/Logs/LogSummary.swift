@@ -9,6 +9,8 @@ public struct LogSummary: Codable {
 	public var requestMethod: HTTPMethod
 	public var responseSent: Date
 	public var responseStatus: HTTPStatus
+	/// The response time in milliseconds
+	public var responseTime: Double
 }
 extension LogSummary {
 	init(log: Log) {
@@ -19,5 +21,6 @@ extension LogSummary {
 		requestMethod = log.request.method
 		responseSent = log.responseSent
 		responseStatus = log.response.status
+		responseTime = log.responseTime
 	}
 }
