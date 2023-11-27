@@ -15,6 +15,10 @@ func routes(_ app: Application) throws {
 		return "Hello, world!"
 	}
 
+	app.group("auth") { app in
+		app.get("summary") { try await $0.authController().summary() }
+	}
+
 	app.group("tunnels") { app in
 		app.get { try await tunnelController.all(req: $0) }
 		app.post { try await tunnelController.add(req: $0) }
