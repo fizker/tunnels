@@ -42,6 +42,7 @@ let package = Package(
 			name: "TunnelServer",
 			dependencies: [
 				"Models",
+				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
 			]
 		),

@@ -5,7 +5,7 @@ extension TunnelDTO: Content {}
 
 func routes(_ app: Application) throws {
 	let tunnelController = TunnelController()
-	app.middleware.use(TunnelInterceptor(ownHost: "localhost", controller: tunnelController))
+	app.middleware.use(TunnelInterceptor(ownHost: app.environment.host, controller: tunnelController))
 
 	app.get { req in
 		return "It works!"
