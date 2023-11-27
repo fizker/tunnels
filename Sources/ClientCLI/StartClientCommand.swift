@@ -20,7 +20,7 @@ struct StartClientCommand: AsyncParsableCommand {
 	var logs: String = "logs"
 
 	func run() async throws {
-		let logStorage = try LogStorage(storagePath: logs)
+		let logStorage = try await LogStorage(storagePath: logs)
 
 		guard let client = Client(serverURL: server, proxies: proxies, logStorage: logStorage)
 		else { throw ValidationError("Failed to create client.") }
