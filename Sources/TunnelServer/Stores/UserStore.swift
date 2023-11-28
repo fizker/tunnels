@@ -1,3 +1,5 @@
+import Vapor
+
 struct User {
 	var username: String
 }
@@ -9,5 +11,16 @@ actor UserStore {
 		} else {
 			nil
 		}
+	}
+}
+
+private struct UserStoreStorageKey: StorageKey {
+	typealias Value = UserStore
+}
+
+extension Application {
+	var userStore: UserStore {
+		get { storage[UserStoreStorageKey.self]! }
+		set { storage[UserStoreStorageKey.self] = newValue }
 	}
 }

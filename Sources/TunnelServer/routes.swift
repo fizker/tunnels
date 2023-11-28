@@ -17,6 +17,7 @@ func routes(_ app: Application) throws {
 
 	app.group("auth") { app in
 		app.get("summary") { try await $0.authController().summary() }
+		app.post("token") { try await $0.authController().oauth2Token(req: $0) }
 	}
 
 	app.group("tunnels") { app in
