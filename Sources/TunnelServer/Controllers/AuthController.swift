@@ -29,9 +29,9 @@ class AuthController {
 				throw ErrorResponse(code: .invalidGrant, description: try .init("Invalid credentials"))
 			}
 
-			let token = UUID().description
-			let response = AccessTokenResponse(accessToken: token, type: .bearer, expiresIn: .oneHour)
-			return response
+			let login = Login(user: user)
+			await userStore.add(login)
+			return login.accessTokenResponse(type: .bearer)
 		case .refreshToken(_):
 			throw ErrorResponse(code: .unsupportedGrantType, description: nil)
 		}
