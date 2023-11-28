@@ -14,7 +14,8 @@ let package = Package(
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.2.3"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.59.0"),
-		.package(url: "https://github.com/fizker/swift-environment-variables.git", .upToNextMinor(from: "1.0.0")),
+		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.0"),
+		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.3.0")),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.9.0"),
 		.package(url: "https://github.com/vapor/vapor.git", from: "4.84.1"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
@@ -43,6 +44,7 @@ let package = Package(
 			dependencies: [
 				"Models",
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
+				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "Vapor", package: "vapor"),
 			]
 		),
