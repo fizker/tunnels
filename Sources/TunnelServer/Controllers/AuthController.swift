@@ -16,6 +16,7 @@ class AuthController {
 
 		return """
 		Username: \(user.username)
+		Scopes: \(user.scopes)
 		"""
 	}
 

@@ -3,7 +3,20 @@ import OAuth2Models
 import Vapor
 
 struct User: Authenticatable {
+	enum Scope: CustomStringConvertible {
+		case admin, sysAdmin
+
+		var description: String {
+			switch self {
+			case .admin: "admin"
+			case .sysAdmin: "sysadmin"
+			}
+		}
+	}
+
 	var username: String
+	var password: String
+	var scopes: Set<Scope> = []
 }
 
 struct Login {
@@ -38,11 +51,18 @@ struct Login {
 actor UserStore {
 	private var logins: [Login.ID: Login] = [:]
 
+	private var users: [User] = [
+		User(username: "admin", password: "1234", scopes: [ .admin ]),
+		User(username: "sys", password: "1234", scopes: [ .sysAdmin ]),
+		User(username: "regular", password: "1234", scopes: []),
+	]
+
 	func user(username: String, password: String) -> User? {
-		if username == "admin" && password == "1234" {
-			User(username: "admin")
+		let user = users.first { $0.username == username }
+		if user?.password == password {
+			return user
 		} else {
-			nil
+			return nil
 		}
 	}
 
