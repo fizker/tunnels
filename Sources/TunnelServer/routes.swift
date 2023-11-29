@@ -23,6 +23,12 @@ func routes(_ app: Application) throws {
 		app.post("token") { try await $0.authController().oauth2Token(req: $0) }
 	}
 
+	app
+	.grouped(RequireUserMiddleware(.admin))
+	.group("users") { app in
+		app.get { req in "here be page for checking users"}
+	}
+
 	app.group("tunnels") { app in
 		app.get { try await tunnelController.all(req: $0) }
 		app.post { try await tunnelController.add(req: $0) }
