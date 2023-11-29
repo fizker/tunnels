@@ -2,7 +2,7 @@ import Foundation
 import OAuth2Models
 import Vapor
 
-struct User {
+struct User: Authenticatable {
 	var username: String
 }
 

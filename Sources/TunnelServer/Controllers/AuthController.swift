@@ -11,7 +11,12 @@ class AuthController {
 	}
 
 	func summary() async throws -> String {
-		"Not logged in"
+		guard let user = req.auth.get(User.self)
+		else { return "Not logged in" }
+
+		return """
+		Username: \(user.username)
+		"""
 	}
 
 	func oauth2Token(req: Request) async throws -> AccessTokenResponse {
