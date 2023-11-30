@@ -30,7 +30,9 @@ class AuthController {
 		case .clientCredentialsAccessToken(_):
 			throw ErrorResponse(code: .unsupportedGrantType, description: nil)
 		case let .passwordAccessToken(request):
-			guard let user = await userStore.user(username: request.username, password: request.password)
+			guard
+				let user = await userStore.user(username: request.username),
+				user.password == request.password
 			else {
 				throw ErrorResponse(code: .invalidGrant, description: try .init("Invalid credentials"))
 			}

@@ -17,7 +17,15 @@ class UserController {
 
 	func upsertUser(usernameParam: String) async throws -> User {
 		let username = try req.parameters.require(usernameParam)
-		let user = try req.content.decode(User.self)
+		let upsertRequest = try req.content.decode(UpsertUserRequest.self)
+
+		let oldUser = await userStore.user(username: username)
+		guard let password = upsertRequest.password ?? oldUser?.password
+		else { throw Abort(.badRequest, reason: "New users must have a password") }
+
+		let scopes = upsertRequest.scopes ?? oldUser?.scopes ?? []
+
+		let user = User(username: upsertRequest.username, password: password, scopes: scopes)
 
 		if user.scopes.contains(.sysadmin) && !currentUser.scopes.contains(.sysadmin) {
 			throw Abort(.forbidden, reason: "Only sysadmin can set other users to be sysadmin")
@@ -27,6 +35,12 @@ class UserController {
 
 		return user
 	}
+}
+
+struct UpsertUserRequest: Codable {
+	var username: String
+	var scopes: Set<User.Scope>?
+	var password: String?
 }
 
 extension Request {

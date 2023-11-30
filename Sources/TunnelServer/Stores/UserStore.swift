@@ -58,13 +58,8 @@ actor UserStore {
 		User(username: "regular", password: "1234", scopes: []),
 	]
 
-	func user(username: String, password: String) -> User? {
-		let user = users.first { $0.username == username }
-		if user?.password == password {
-			return user
-		} else {
-			return nil
-		}
+	func user(username: String) -> User? {
+		users.first { $0.username == username }
 	}
 
 	func upsert(user: User, oldUsername: String) throws {
