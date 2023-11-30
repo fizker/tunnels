@@ -3,11 +3,22 @@ import OAuth2Models
 import Vapor
 
 struct User: Codable, Equatable, Authenticatable {
-	enum Scope: String, Codable, CustomStringConvertible {
+	enum Scope: String, Codable, CustomStringConvertible, Comparable {
 		case admin, sysadmin
 
 		var description: String {
 			rawValue
+		}
+
+		static func <(lhs: Scope, rhs: Scope) -> Bool {
+			switch (lhs, rhs) {
+			case (.admin, .admin), (.sysadmin, .sysadmin):
+				false
+			case (.admin, .sysadmin):
+				false
+			case (.sysadmin, .admin):
+				true
+			}
 		}
 	}
 
@@ -48,6 +59,9 @@ struct Login {
 actor UserStore {
 	enum Error: Swift.Error {
 		case usernameExists
+		case cannotRemoveLastSysadmin
+		case cannotRemoveLastAdmin
+		case adminsCannotRemoveSysadmin
 	}
 
 	private var logins: [Login.ID: Login] = [:]
@@ -60,6 +74,26 @@ actor UserStore {
 
 	func user(username: String) -> User? {
 		users.first { $0.username == username }
+	}
+
+	func remove(username: String, scopeOfCurrentUser: User.Scope) throws {
+		guard let user = user(username: username)
+		else { return }
+
+		if user.scopes.contains(.sysadmin) {
+			guard scopeOfCurrentUser == .sysadmin
+			else { throw Error.adminsCannotRemoveSysadmin }
+
+			guard users.filter({ $0.scopes.contains(.sysadmin) }).count > 1
+			else { throw Error.cannotRemoveLastSysadmin }
+		}
+
+		if user.scopes.contains(.admin) && scopeOfCurrentUser != .sysadmin {
+			guard users.filter({ $0.scopes.contains(.admin) }).count > 1
+			else { throw Error.cannotRemoveLastAdmin }
+		}
+
+		users.removeAll { $0.username == username }
 	}
 
 	func upsert(user: User, oldUsername: String) throws {

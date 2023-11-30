@@ -35,6 +35,15 @@ class UserController {
 
 		return user
 	}
+
+	func removeUser(usernameParam: String) async throws {
+		let username = try req.parameters.require(usernameParam)
+
+		guard let scope = currentUser.scopes.sorted().last
+		else { throw Abort(.forbidden) }
+
+		try await userStore.remove(username: username, scopeOfCurrentUser: scope)
+	}
 }
 
 struct UpsertUserRequest: Codable {

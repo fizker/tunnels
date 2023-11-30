@@ -28,6 +28,10 @@ func routes(_ app: Application) throws {
 	.group("users") { app in
 		app.get { try await $0.userController().users() }
 		app.put(":username") { try await $0.userController().upsertUser(usernameParam: "username") }
+		app.delete(":username") {
+			try await $0.userController().removeUser(usernameParam: "username")
+			return HTTPResponseStatus.noContent
+		}
 	}
 
 	app.group("tunnels") { app in
