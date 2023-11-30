@@ -4,7 +4,8 @@ import Vapor
 
 final class UserControllerTests: XCTestCase {
 	let usernameParam = "username"
-	let adminUser = User(username: "admin", password: "1234", scopes: [.admin])
+	static let adminUser = User(username: "admin", password: "1234", scopes: [.admin])
+	static let sysadminUser = User(username: "sys", password: "1234", scopes: [.sysadmin])
 
 	func test__upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
 		let userStore = UserStore()
@@ -42,6 +43,47 @@ final class UserControllerTests: XCTestCase {
 
 		let updatedUsers = await userStore.users()
 		XCTAssertEqual(updatedUsers, users)
+	}
+
+	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotInserted() async throws {
+		let userStore = UserStore()
+
+		let users = await userStore.users()
+
+		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar", loggedInUser: Self.adminUser)
+
+		let controller = try UserController(request: request, userStore: userStore)
+
+		do {
+			_ = try await controller.upsertUser(usernameParam: usernameParam)
+			XCTFail("Expected a throw")
+		} catch {
+			guard let error = error as? AbortError
+			else { throw error }
+
+			XCTAssertEqual(error.status, .forbidden)
+		}
+
+		let updatedUsers = await userStore.users()
+		XCTAssertEqual(users, updatedUsers)
+	}
+
+	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsSysadmin__userIsInserted() async throws {
+		let userStore = UserStore()
+
+		var users = await userStore.users(includeSysAdmin: true)
+
+		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar", loggedInUser: Self.sysadminUser)
+
+		let controller = try UserController(request: request, userStore: userStore)
+
+		let result = try await controller.upsertUser(usernameParam: usernameParam)
+
+		XCTAssertEqual(result, User(username: "foo", password: "bar", scopes: [.sysadmin]))
+
+		users.append(result)
+		let updatedUsers = await userStore.users(includeSysAdmin: true)
+		XCTAssertEqual(users, updatedUsers)
 	}
 
 	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__userIsUnchanged() async throws {
@@ -126,12 +168,59 @@ final class UserControllerTests: XCTestCase {
 		XCTAssertEqual(users, updatedUsers)
 	}
 
-	func upsertUserRequest(username: String, scopes: Set<User.Scope>?, password: String?, oldUsername: String? = nil) throws -> Request {
-		let upsertRequest = UpsertUserRequest(username: username, scopes: scopes, password: password)
-		return try request(method: .PUT, body: upsertRequest, parameters: [usernameParam: oldUsername ?? username])
+	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotUpdated() async throws {
+		let userStore = UserStore()
+
+		let user = User(username: "foo", password: "bar", scopes: [.admin])
+		try await userStore.upsert(user: user, oldUsername: "foo")
+
+		let users = await userStore.users()
+
+		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil, loggedInUser: Self.adminUser)
+
+		let controller = try UserController(request: request, userStore: userStore)
+
+		do {
+			_ = try await controller.upsertUser(usernameParam: usernameParam)
+			XCTFail("Expected a throw")
+		} catch {
+			guard let error = error as? AbortError
+			else { throw error }
+
+			XCTAssertEqual(error.status, .forbidden)
+		}
+
+		let updatedUsers = await userStore.users()
+		XCTAssertEqual(users, updatedUsers)
 	}
 
-	func request(method: HTTPMethod, body: any Encodable, parameters: [String: String] = [:]) throws -> Request {
+	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsSysadmin__userIsUpdated() async throws {
+		let userStore = UserStore()
+
+		var users = await userStore.users(includeSysAdmin: true)
+
+		let user = User(username: "foo", password: "bar", scopes: [.admin])
+		try await userStore.upsert(user: user, oldUsername: "foo")
+
+		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil, loggedInUser: Self.sysadminUser)
+
+		let controller = try UserController(request: request, userStore: userStore)
+
+		let result = try await controller.upsertUser(usernameParam: usernameParam)
+
+		XCTAssertEqual(result, User(username: "foo", password: "bar", scopes: [.sysadmin]))
+
+		users.append(result)
+		let updatedUsers = await userStore.users(includeSysAdmin: true)
+		XCTAssertEqual(users, updatedUsers)
+	}
+
+	func upsertUserRequest(username: String, scopes: Set<User.Scope>?, password: String?, oldUsername: String? = nil, loggedInUser: User = adminUser) throws -> Request {
+		let upsertRequest = UpsertUserRequest(username: username, scopes: scopes, password: password)
+		return try request(method: .PUT, body: upsertRequest, parameters: [usernameParam: oldUsername ?? username], loggedInUser: loggedInUser)
+	}
+
+	func request(method: HTTPMethod, body: any Encodable, parameters: [String: String] = [:], loggedInUser: User) throws -> Request {
 		let app = Application()
 		let request = Request(
 			application: app,
@@ -147,7 +236,7 @@ final class UserControllerTests: XCTestCase {
 		for (key, value) in parameters {
 			request.parameters.set(key, to: value)
 		}
-		request.auth.login(adminUser)
+		request.auth.login(loggedInUser)
 
 		return request
 	}
