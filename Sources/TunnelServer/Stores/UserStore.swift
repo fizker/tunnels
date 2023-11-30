@@ -4,7 +4,7 @@ import Vapor
 
 struct User: Codable, Authenticatable {
 	enum Scope: String, Codable, CustomStringConvertible {
-		case admin, sysAdmin
+		case admin, sysadmin
 
 		var description: String {
 			rawValue
@@ -50,7 +50,7 @@ actor UserStore {
 
 	private var users: [User] = [
 		User(username: "admin", password: "1234", scopes: [ .admin ]),
-		User(username: "sys", password: "1234", scopes: [ .sysAdmin ]),
+		User(username: "sys", password: "1234", scopes: [ .sysadmin ]),
 		User(username: "regular", password: "1234", scopes: []),
 	]
 
@@ -67,7 +67,7 @@ actor UserStore {
 		if includeSysAdmin {
 			self.users
 		} else {
-			self.users.filter { !$0.scopes.contains(.sysAdmin) }
+			self.users.filter { !$0.scopes.contains(.sysadmin) }
 		}
 	}
 

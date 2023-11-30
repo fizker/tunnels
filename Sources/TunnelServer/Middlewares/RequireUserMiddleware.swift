@@ -10,7 +10,7 @@ struct RequireUserMiddleware: SimpleMiddleware {
 	func next(_ request: Request) async throws -> Response? {
 		let user = try request.auth.require(User.self)
 
-		if user.scopes.contains(.sysAdmin) {
+		if user.scopes.contains(.sysadmin) {
 			return nil
 		}
 
