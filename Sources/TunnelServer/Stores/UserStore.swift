@@ -46,6 +46,10 @@ struct Login {
 }
 
 actor UserStore {
+	enum Error: Swift.Error {
+		case usernameExists
+	}
+
 	private var logins: [Login.ID: Login] = [:]
 
 	private var users: [User] = [
@@ -61,6 +65,14 @@ actor UserStore {
 		} else {
 			return nil
 		}
+	}
+
+	func upsert(user: User, oldUsername: String) throws {
+		guard user.username == oldUsername || !users.contains(where: { $0.username == user.username })
+		else { throw Error.usernameExists }
+
+		users.removeAll { $0.username == oldUsername }
+		users.append(user)
 	}
 
 	func users(includeSysAdmin: Bool = false) -> [User] {

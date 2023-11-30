@@ -26,7 +26,8 @@ func routes(_ app: Application) throws {
 	app
 	.grouped(RequireUserMiddleware(.admin))
 	.group("users") { app in
-		app.get { await $0.userController().users() }
+		app.get { try await $0.userController().users() }
+		app.put(":username") { try await $0.userController().upsertUser(usernameParam: "username") }
 	}
 
 	app.group("tunnels") { app in
