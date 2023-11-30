@@ -1,3 +1,4 @@
+import Models
 import OAuth2Models
 import Vapor
 
@@ -89,9 +90,7 @@ class AuthController {
 	}
 }
 
-struct ClientCredentials: Codable, Content {
-	var clientID: String
-	var clientSecret: String
+extension ClientCredentials: Content {
 }
 
 extension Request {
