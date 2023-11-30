@@ -36,6 +36,7 @@ let package = Package(
 			dependencies: [
 				"Models",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
+				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			]
 		),

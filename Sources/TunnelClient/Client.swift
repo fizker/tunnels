@@ -13,11 +13,18 @@ public class Client {
 	var proxies: [Proxy]
 	var webSocket: WebSocket?
 	var logStorage: LogStorage
+	var credentials: ClientCredentials
 
-	public init?(serverURL: URL, proxies: [Proxy], logStorage: LogStorage) {
+	public init?(
+		serverURL: URL,
+		proxies: [Proxy],
+		clientCredentials: ClientCredentials,
+		logStorage: LogStorage
+	) {
 		guard serverURL.path().isEmpty || serverURL.path() == "/"
 		else { return nil }
 
+		self.credentials = clientCredentials
 		self.serverURL = serverURL
 		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
