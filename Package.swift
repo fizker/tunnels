@@ -63,5 +63,6 @@ let package = Package(
 		]),
 		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
 		.testTarget(name: "DNSServerTests", dependencies: ["DNSServer"]),
+		.testTarget(name: "TunnelServerTests", dependencies: ["TunnelServer"]),
 	]
 )

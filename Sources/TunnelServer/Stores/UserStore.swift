@@ -2,7 +2,7 @@ import Foundation
 import OAuth2Models
 import Vapor
 
-struct User: Codable, Authenticatable {
+struct User: Codable, Equatable, Authenticatable {
 	enum Scope: String, Codable, CustomStringConvertible {
 		case admin, sysadmin
 
