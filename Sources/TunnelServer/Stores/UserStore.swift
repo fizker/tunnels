@@ -2,15 +2,12 @@ import Foundation
 import OAuth2Models
 import Vapor
 
-struct User: Authenticatable {
-	enum Scope: CustomStringConvertible {
+struct User: Codable, Authenticatable {
+	enum Scope: String, Codable, CustomStringConvertible {
 		case admin, sysAdmin
 
 		var description: String {
-			switch self {
-			case .admin: "admin"
-			case .sysAdmin: "sysadmin"
-			}
+			rawValue
 		}
 	}
 
@@ -63,6 +60,14 @@ actor UserStore {
 			return user
 		} else {
 			return nil
+		}
+	}
+
+	func users(includeSysAdmin: Bool = false) -> [User] {
+		if includeSysAdmin {
+			self.users
+		} else {
+			self.users.filter { !$0.scopes.contains(.sysAdmin) }
 		}
 	}
 

@@ -26,7 +26,7 @@ func routes(_ app: Application) throws {
 	app
 	.grouped(RequireUserMiddleware(.admin))
 	.group("users") { app in
-		app.get { req in "here be page for checking users"}
+		app.get { await $0.userController().users() }
 	}
 
 	app.group("tunnels") { app in
