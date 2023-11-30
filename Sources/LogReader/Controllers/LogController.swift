@@ -130,8 +130,8 @@ class LogController {
 	func map(_ body: Models.HTTPBody?, contentHeader: String?) -> String {
 		return switch body {
 		case nil: ""
-		case .binary(let value): value.description
-		case .text(let value): value
+		case let .binary(value): value.description
+		case let .text(value): value
 		}
 	}
 

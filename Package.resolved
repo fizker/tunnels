@@ -172,6 +172,15 @@
       }
     },
     {
+      "identity" : "swift-oauth2-models",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fizker/swift-oauth2-models.git",
+      "state" : {
+        "revision" : "337ebe5521c48543976a8398303965addb5d02c5",
+        "version" : "0.3.0"
+      }
+    },
+    {
       "identity" : "vapor",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/vapor.git",
