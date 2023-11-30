@@ -11,13 +11,13 @@ struct AuthMiddleware: SimpleMiddleware {
 		guard let auth = req.headers.bearerAuthorization
 		else { return nil }
 
-		guard let login = await userStore.login(forToken: auth.token)
+		guard let (login, user) = await userStore.login(forToken: auth.token)
 		else { throw Abort(.unauthorized) }
 
 		guard login.expiresAt > .now
 		else { throw Abort(.unauthorized, reason: "Token expired") }
 
-		req.auth.login(login.user)
+		req.auth.login(user)
 
 		return nil
 	}

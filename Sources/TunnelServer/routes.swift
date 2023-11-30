@@ -21,6 +21,16 @@ func routes(_ app: Application) throws {
 	app.group("auth") { app in
 		app.get("summary") { try await $0.authController().summary() }
 		app.post("token") { try await $0.authController().oauth2Token(req: $0) }
+
+		app
+		.group("client-credentials") { app in
+			app.get { try $0.authController().clientCredentials(for: $0.auth.require()) }
+			app.post { try await $0.authController().createClientCredentials(for: $0.auth.require()) }
+			app.delete {
+				try await $0.authController().removeClientCredentials(for: $0.auth.require())
+				return HTTPResponseStatus.noContent
+			}
+		}
 	}
 
 	app

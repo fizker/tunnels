@@ -22,22 +22,28 @@ struct User: Codable, Equatable, Authenticatable {
 		}
 	}
 
+	typealias ID = String
+
+	var id: ID { username }
+
 	var username: String
 	var password: String
 	var scopes: Set<Scope> = []
+
+	var clientSecret: String? = nil
 }
 
 struct Login {
 	typealias ID = UUID
 
 	var id: ID
-	var user: User
+	var userID: User.ID
 	var loggedInAt: Date
 	var expiresAt: Date
 
 	init(id: ID = ID(), user: User, expiresIn: TokenExpiration = .oneHour) {
 		self.id = id
-		self.user = user
+		self.userID = user.id
 		self.loggedInAt = .now
 		self.expiresAt = expiresIn.date(in: .theFuture)
 	}
@@ -71,6 +77,10 @@ actor UserStore {
 		User(username: "sys", password: "1234", scopes: [ .sysadmin ]),
 		User(username: "regular", password: "1234", scopes: []),
 	]
+
+	func user(id: User.ID) -> User? {
+		users.first { $0.id == id }
+	}
 
 	func user(username: String) -> User? {
 		users.first { $0.username == username }
@@ -116,11 +126,14 @@ actor UserStore {
 		logins[login.id] = login
 	}
 
-	func login(forToken token: String) -> Login? {
-		guard let id = Login.id(forToken: token)
+	func login(forToken token: String) -> (Login, User)? {
+		guard
+			let id = Login.id(forToken: token),
+			let login = logins[id],
+			let user = user(id: login.userID)
 		else { return nil }
 
-		return logins[id]
+		return (login, user)
 	}
 }
 
