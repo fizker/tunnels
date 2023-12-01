@@ -2,6 +2,7 @@ import Foundation
 import Logging
 import Models
 import NIO
+import OAuth2Models
 import WebSocketKit
 
 let httpSchemeRegex = try! Regex("^http")
@@ -13,11 +14,18 @@ public class Client {
 	var proxies: [Proxy]
 	var webSocket: WebSocket?
 	var logStorage: LogStorage
+	var credentialsStore: CredentialsStore
 
-	public init?(serverURL: URL, proxies: [Proxy], logStorage: LogStorage) {
+	public init?(
+		serverURL: URL,
+		proxies: [Proxy],
+		clientCredentials: ClientCredentials,
+		logStorage: LogStorage
+	) {
 		guard serverURL.path().isEmpty || serverURL.path() == "/"
 		else { return nil }
 
+		self.credentialsStore = .init(credentials: clientCredentials, serverURL: serverURL)
 		self.serverURL = serverURL
 		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
@@ -25,12 +33,18 @@ public class Client {
 	}
 
 	public func connect() async throws {
+		let authHeader = try await credentialsStore.httpHeaders
+
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		webSocket = try await withCheckedThrowingContinuation { continuation in
 			logger.info("Connecting client", metadata: [
 				"serverURL": .string(webSocketURL.absoluteString),
 			])
-			WebSocket.connect(to: webSocketURL.appending(path: "tunnels/client"), on: elg) { ws in
+			WebSocket.connect(
+				to: webSocketURL.appending(path: "tunnels/client"),
+				headers: authHeader,
+				on: elg
+			) { ws in
 				self.logger.info("Client connected")
 				continuation.resume(returning: ws)
 			}.whenFailure { error in

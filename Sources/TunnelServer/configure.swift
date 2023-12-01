@@ -10,6 +10,7 @@ public func configure(_ app: Application) throws {
 	app.userStore = .init()
 
 	app.middleware.use(CORSMiddleware())
+	app.middleware.use(OAuthErrorMiddleware())
 
 	try routes(app)
 }

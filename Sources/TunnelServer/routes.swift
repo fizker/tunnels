@@ -44,7 +44,9 @@ func routes(_ app: Application) throws {
 		}
 	}
 
-	app.group("tunnels") { app in
+	app
+	.grouped(RequireUserMiddleware())
+	.group("tunnels") { app in
 		app.get { try await tunnelController.all(req: $0) }
 		app.post { try await tunnelController.add(req: $0) }
 

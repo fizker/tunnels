@@ -1,5 +1,6 @@
 import ArgumentParser
 import Foundation
+import Models
 import TunnelClient
 
 @main
@@ -19,10 +20,18 @@ struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .shortAndLong)
 	var logs: String = "logs"
 
+	@Option(name: .shortAndLong, transform: ClientCredentials.init(argument:))
+	var credentials: ClientCredentials
+
 	func run() async throws {
 		let logStorage = try await LogStorage(storagePath: logs)
 
-		guard let client = Client(serverURL: server, proxies: proxies, logStorage: logStorage)
+		guard let client = Client(
+			serverURL: server,
+			proxies: proxies,
+			clientCredentials: credentials,
+			logStorage: logStorage
+		)
 		else { throw ValidationError("Failed to create client.") }
 
 		try await client.connect()
@@ -40,5 +49,18 @@ extension Proxy: ExpressibleByArgument {
 		else { return nil }
 
 		self.init(localPort: port, host: String(components[0]))
+	}
+}
+
+extension ClientCredentials {
+	init(argument: String) throws {
+		let components = argument.split(separator: "=", maxSplits: 1)
+		guard components.count == 2
+		else { throw ValidationError("Credentials must be formatted like <clientID>=<clientSecret>") }
+
+		self.init(
+			clientID: String(components[0]),
+			clientSecret: String(components[1])
+		)
 	}
 }
