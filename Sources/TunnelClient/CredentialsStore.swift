@@ -1,5 +1,6 @@
 import AsyncHTTPClient
 import Foundation
+import Logging
 import Models
 import NIOHTTP1
 import OAuth2Models
@@ -8,8 +9,10 @@ actor CredentialsStore {
 	enum Error: Swift.Error {
 		case noContent
 		case invalidContentType(String)
+		case invalidCredentials
 	}
 
+	private let logger = Logger(label: "CredentialsStore")
 	private var credentials: ClientCredentials
 	private var serverURL: URL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
@@ -24,6 +27,7 @@ actor CredentialsStore {
 			switch accessToken {
 			case let .success(s):
 				if s.expires <= .now {
+					logger.info("Existing token has expired. Discarding.")
 					self.accessToken = nil
 					break hasToken
 				}
@@ -45,9 +49,12 @@ actor CredentialsStore {
 		request.method = .POST
 
 		let client = HTTPClient()
+
+		logger.info("Requesting new AccessToken")
 		let response = try await client.execute(request, timeout: .seconds(30))
 
 		do {
+			logger.debug("Received response. Parsing body")
 			let result = try await parseBody(from: response)
 			try await client.shutdown()
 
@@ -81,21 +88,42 @@ actor CredentialsStore {
 
 		let decoder = JSONDecoder()
 		if let success = try? decoder.decode(AccessTokenResponse.self, from: content) {
+			logger.info("Response received. AccessToken was returned")
 			return .success(success)
 		} else {
-			return .failure(try decoder.decode(ErrorResponse.self, from: content))
+			do {
+				let error = try decoder.decode(ErrorResponse.self, from: content)
+				logger.error("Response received with OAuth2 error", metadata: [
+					"error": "\(error)",
+				])
+				return .failure(error)
+			} catch {
+				logger.error("Response received with unknown body", metadata: [
+					"error": "\(error)",
+				])
+				throw error
+			}
 		}
 	}
 
 	var httpHeaders: NIOHTTP1.HTTPHeaders {
 		get async throws {
-			let token = try await accessToken().get()
-			let headerValue: String
-			switch token.type {
-			case .bearer: headerValue = "Bearer \(token.accessToken)"
-			case .mac: fatalError("not implemented")
+			switch try await accessToken() {
+			case let .success(response):
+				let headerValue: String
+				switch response.type {
+				case .bearer: headerValue = "Bearer \(response.accessToken)"
+				case .mac: fatalError("not implemented")
+				}
+				return ["authorization": headerValue]
+			case let .failure(response):
+				switch response.code {
+				case .invalidGrant, .invalidClient, .unauthorizedClient, .accessDenied:
+					throw Error.invalidCredentials
+				default:
+					throw response
+				}
 			}
-			return ["authorization": headerValue]
 		}
 	}
 }
