@@ -9,7 +9,7 @@ protocol SimpleMiddleware: AsyncMiddleware {
 }
 
 extension SimpleMiddleware {
-	func respond(to request: Request, chainingTo next: AsyncResponder) async throws -> Response {
+	func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
 		if let response = try await self.next(request) {
 			return response
 		}

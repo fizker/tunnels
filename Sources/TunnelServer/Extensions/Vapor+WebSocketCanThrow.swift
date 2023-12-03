@@ -25,7 +25,7 @@ extension RoutesBuilder {
 
 				let encoder = JSONEncoder()
 				if
-					let error = error as? Encodable,
+					let error = error as? any Encodable,
 					let data = try? encoder.encode(error),
 					let json = String(data: data, encoding: .utf8)
 				{
@@ -58,7 +58,7 @@ extension RoutesBuilder {
 
 				let encoder = JSONEncoder()
 				if
-					let error = error as? Encodable,
+					let error = error as? any Encodable,
 					let data = try? encoder.encode(error),
 					let json = String(data: data, encoding: .utf8)
 				{

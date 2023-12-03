@@ -15,7 +15,7 @@ class Client {
 	var pendingRequests: [HTTPRequest.ID: CheckedContinuation<HTTPResponse, Never>] = [:]
 	var pendingResponses: [HTTPResponse] = []
 
-	init(webSocket: WebSocket, tunnelStore: TunnelStore) {
+	init(webSocket: WebSocket, tunnelStore: some TunnelStore) {
 		self.webSocket = webSocket
 
 		webSocket.onClientMessage { [weak self, weak tunnelStore] ws, data in

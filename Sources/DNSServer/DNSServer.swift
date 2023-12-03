@@ -7,7 +7,7 @@ private let cloudflareAddress = try! SocketAddress(ipAddress: "1.1.1.1", port: 5
 
 class DNSServer {
 	var port: Int
-	var channel: Channel!
+	var channel: (any Channel)!
 	var hostMap: HostMap
 	var dnsProxyAddress: SocketAddress
 
@@ -138,7 +138,7 @@ extension DNSServer: ChannelInboundHandler {
 		context.flush()
 	}
 
-	func errorCaught(context: ChannelHandlerContext, error: Error) {
+	func errorCaught(context: ChannelHandlerContext, error: some Error) {
 		print("error: \(error)")
 		context.close(promise: nil)
 	}

@@ -2,6 +2,15 @@
 
 import PackageDescription
 
+let upcomingFeatures: [SwiftSetting] = [
+	.enableUpcomingFeature("ConciseMagicFile"),
+	.enableUpcomingFeature("ForwardTrailingClosures"),
+	.enableUpcomingFeature("ExistentialAny"),
+	.enableUpcomingFeature("StrictConcurrency"),
+	.enableUpcomingFeature("ImplicitOpenExistentials"),
+	.enableUpcomingFeature("BareSlashRegexLiterals"),
+]
+
 let package = Package(
 	name: "tunnels",
 	platforms: [ .macOS(.v13) ],
@@ -21,16 +30,23 @@ let package = Package(
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
 	],
 	targets: [
-		.target(name: "Binary"),
+		.target(
+			name: "Binary",
+			swiftSettings: upcomingFeatures
+		),
 		.executableTarget(
 			name: "DNSServer",
 			dependencies: [
 				"Binary",
 				.product(name: "ArgumentParser", package: "swift-argument-parser"),
 				.product(name: "NIO", package: "swift-nio"),
-			]
+			],
+			swiftSettings: upcomingFeatures
 		),
-		.target(name: "Models"),
+		.target(
+			name: "Models",
+			swiftSettings: upcomingFeatures
+		),
 		.target(
 			name: "TunnelClient",
 			dependencies: [
@@ -38,7 +54,8 @@ let package = Package(
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
-			]
+			],
+			swiftSettings: upcomingFeatures
 		),
 		.target(
 			name: "TunnelServer",
@@ -47,23 +64,47 @@ let package = Package(
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "Vapor", package: "vapor"),
-			]
+			],
+			swiftSettings: upcomingFeatures
 		),
-		.executableTarget(name: "ClientCLI", dependencies: [
-			"TunnelClient",
-			.product(name: "ArgumentParser", package: "swift-argument-parser"),
-		]),
-		.executableTarget(name: "ServerCLI", dependencies: [
-			"TunnelServer",
-		]),
-		.executableTarget(name: "LogReader", dependencies: [
-			"Models",
-			"TunnelClient",
-			.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
-			.product(name: "Vapor", package: "vapor"),
-		]),
-		.testTarget(name: "BinaryTests", dependencies: ["Binary"]),
-		.testTarget(name: "DNSServerTests", dependencies: ["DNSServer"]),
-		.testTarget(name: "TunnelServerTests", dependencies: ["TunnelServer"]),
+		.executableTarget(
+			name: "ClientCLI",
+			dependencies: [
+				"TunnelClient",
+				.product(name: "ArgumentParser", package: "swift-argument-parser"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.executableTarget(
+			name: "ServerCLI",
+			dependencies: [
+				"TunnelServer",
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.executableTarget(
+			name: "LogReader",
+			dependencies: [
+				"Models",
+				"TunnelClient",
+				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
+				.product(name: "Vapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures),
+		.testTarget(
+			name: "BinaryTests",
+			dependencies: ["Binary"],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
+			name: "DNSServerTests",
+			dependencies: ["DNSServer"],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
+			name: "TunnelServerTests",
+			dependencies: ["TunnelServer"],
+			swiftSettings: upcomingFeatures
+		),
 	]
 )

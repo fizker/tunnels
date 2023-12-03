@@ -2,14 +2,14 @@ import Logging
 import Vapor
 
 extension Request {
-	func logger(file: String = #fileID, function: String = #function) -> LabelledLogger {
+	func logger(file: String = #file, function: String = #function) -> LabelledLogger {
 		LabelledLogger(logger: logger, metadata: [
 			"file": .string(file),
 			"func": .string(function),
 		])
 	}
 
-	func logger(label: String, file: String = #fileID, function: String = #function) -> LabelledLogger {
+	func logger(label: String, file: String = #file, function: String = #function) -> LabelledLogger {
 		LabelledLogger(logger: logger, metadata: [
 			"label": .string(label),
 			"file": .string(file),

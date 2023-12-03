@@ -20,7 +20,7 @@ public class FileSystemWatcher {
 			}
 		}
 	}
-	private var dispatchSource : DispatchSourceFileSystemObject?
+	private var dispatchSource : (any DispatchSourceFileSystemObject)?
 
 	public func watch(path: String, callback: @escaping Callback) throws {
 		// Open the directory

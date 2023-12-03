@@ -5,7 +5,7 @@ import NIO
 import OAuth2Models
 import WebSocketKit
 
-let httpSchemeRegex = try! Regex("^http")
+let httpSchemeRegex = /^http/
 
 public class Client {
 	let logger = Logger(label: "Client")

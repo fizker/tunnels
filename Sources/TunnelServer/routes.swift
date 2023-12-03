@@ -59,6 +59,6 @@ func routes(_ app: Application) throws {
 			}
 		}
 
-		app.webSocket("client") { try await tunnelController.connectClient(req: $0, webSocket: $1) }
+		app.webSocket("client", onUpgrade: { try await tunnelController.connectClient(req: $0, webSocket: $1) })
 	}
 }
