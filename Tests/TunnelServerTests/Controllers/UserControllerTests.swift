@@ -34,7 +34,7 @@ final class UserControllerTests: XCTestCase {
 			_ = try await controller.upsertUser(usernameParam: usernameParam)
 			XCTFail("Expected a throw")
 		} catch {
-			guard let error = error as? AbortError
+			guard let error = error as? any AbortError
 			else { throw error }
 
 			XCTAssertEqual(error.status, .badRequest)
@@ -58,7 +58,7 @@ final class UserControllerTests: XCTestCase {
 			_ = try await controller.upsertUser(usernameParam: usernameParam)
 			XCTFail("Expected a throw")
 		} catch {
-			guard let error = error as? AbortError
+			guard let error = error as? any AbortError
 			else { throw error }
 
 			XCTAssertEqual(error.status, .forbidden)
@@ -184,7 +184,7 @@ final class UserControllerTests: XCTestCase {
 			_ = try await controller.upsertUser(usernameParam: usernameParam)
 			XCTFail("Expected a throw")
 		} catch {
-			guard let error = error as? AbortError
+			guard let error = error as? any AbortError
 			else { throw error }
 
 			XCTAssertEqual(error.status, .forbidden)
