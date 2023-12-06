@@ -14,32 +14,14 @@ struct TunnelDTO: Codable {
 }
 
 class TunnelController {
-	var store = TunnelStoreDB()
+	var clientStore = ClientStore()
 
 	func all(req: Request) async throws -> [TunnelDTO] {
-		return await store.tunnels.map(\.value)
-	}
-
-	func add(req: Request) async throws -> TunnelDTO {
-		let config = try req.content.decode(TunnelConfiguration.self)
-		return try await store.addTunnel(config: config).get()
-	}
-
-	func get(req: Request, host: String) async throws -> TunnelDTO? {
-		return await store.tunnels[host]
-	}
-
-	func update(req: Request, host: String) async throws -> TunnelDTO {
-		let config = try req.content.decode(TunnelConfiguration.self)
-		return try await store.updateTunnel(host: host, config: config)
-	}
-
-	func delete(req: Request, host: String) async throws {
-		try await store.removeTunnels(forHost: host)
+		return await clientStore.connectedClients.flatMap(\.hosts).map(TunnelDTO.init(host:))
 	}
 
 	func connectClient(req: Request, webSocket: WebSocket) async throws {
-		let client = Client(webSocket: webSocket, tunnelStore: store)
-		await store.add(client)
+		let client = Client(webSocket: webSocket)
+		await clientStore.add(client)
 	}
 }

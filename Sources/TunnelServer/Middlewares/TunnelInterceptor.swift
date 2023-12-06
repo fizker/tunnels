@@ -14,7 +14,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 			return try await next.respond(to: request)
 		}
 
-		guard let matchingRoute = await controller.store.client(forHost: host)
+		guard let matchingRoute = await controller.clientStore.client(forHost: host)
 		else {
 			logger.info("Could not find client for host \(host)")
 			return Response(status: .notFound)

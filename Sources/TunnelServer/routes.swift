@@ -48,16 +48,6 @@ func routes(_ app: Application) throws {
 	.grouped(RequireUserMiddleware())
 	.group("tunnels") { app in
 		app.get { try await tunnelController.all(req: $0) }
-		app.post { try await tunnelController.add(req: $0) }
-
-		app.group(":host") { app in
-			app.get { try await tunnelController.get(req: $0, host: $0.parameters.require("host")) }
-			app.put { try await tunnelController.update(req: $0, host: $0.parameters.require("host")) }
-			app.delete {
-				try await tunnelController.delete(req: $0, host: $0.parameters.require("host"))
-				return HTTPStatus.noContent
-			}
-		}
 
 		app.webSocket("client", onUpgrade: { try await tunnelController.connectClient(req: $0, webSocket: $1) })
 	}
