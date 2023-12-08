@@ -28,14 +28,13 @@ class ACMEController {
 
 	private let host: String
 	private let contactEmail: String
-	private var accountKey: String?
 	private let acmeEndpoint: AcmeEndpoint
 
-	var certificateChain: [NIOSSLCertificateSource]?
-	var privateKey: NIOSSLPrivateKeySource?
+	private var accountKey: String?
+	private var certificateChain: [NIOSSLCertificateSource]?
+	private var privateKey: NIOSSLPrivateKeySource?
 
-	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String, accountKey: String?) {
-		self.accountKey = accountKey
+	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String) {
 		self.acmeEndpoint = acmeEndpoint
 		self.contactEmail = contactEmail
 		self.host = host
