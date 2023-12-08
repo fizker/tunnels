@@ -4,6 +4,7 @@ import Vapor
 
 enum EnvVar: String, CaseIterable {
 	case host
+	case useSSL
 	case acmeEndpoint
 	case acmeContactEmail
 }
@@ -12,6 +13,12 @@ extension EnvironmentVariables where Key == EnvVar {
 	var host: String {
 		get {
 			get(.host, default: "localhost")
+		}
+	}
+
+	var useSSL: Bool {
+		get {
+			get(.useSSL, map: Bool.init, default: false)
 		}
 	}
 

@@ -8,12 +8,14 @@ enum ConfigurationError: Error {
 public func configure(_ app: Application) async throws {
 	app.environment = .init(valueGetter: Environment.get(_:))
 
-	let acmeController = ACMEController(
-		host: app.environment.host,
-		acmeEndpoint: try app.environment.acmeEndpoint,
-		contactEmail: try app.environment.acmeContactEmail
-	)
-	try await acmeController.addCertificate(to: app)
+	if app.environment.useSSL {
+		let acmeController = ACMEController(
+			host: app.environment.host,
+			acmeEndpoint: try app.environment.acmeEndpoint,
+			contactEmail: try app.environment.acmeContactEmail
+		)
+		try await acmeController.addCertificate(to: app)
+	}
 
 	app.userStore = .init()
 
