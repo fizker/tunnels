@@ -4,8 +4,26 @@ import SwiftASN1
 import NIOSSL
 
 class ACMEController {
-	enum Error: Swift.Error {
+	enum Error: Swift.Error, CustomStringConvertible {
+		case pendingChallenges([ChallengeDescription])
 		case validationFailed([AcmeAuthorization.Challenge])
+
+		var description: String {
+			switch self {
+			case let .pendingChallenges(challenges):
+				"""
+				Pending challenges:
+
+				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
+				"""
+			case let .validationFailed(challenges):
+				"""
+				Validation failed:
+
+				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
+				"""
+			}
+		}
 	}
 
 	private let host: String
@@ -51,14 +69,8 @@ class ACMEController {
 		// ... after that, now we can fetch the challenges we need to complete
 		let pendingChallenges = try await acme.orders.describePendingChallenges(from: order, preferring: .dns)
 
-		for desc in pendingChallenges {
-			if desc.type == .http {
-				print("\n • The URL \(desc.endpoint) needs to return \(desc.value)")
-			}
-			else if desc.type == .dns {
-				print("\n • Create the following DNS record: \(desc.endpoint) TXT \(desc.value)")
-			}
-		}
+		guard pendingChallenges.isEmpty
+		else { throw Error.pendingChallenges(pendingChallenges) }
 
 		// At this point, we could programmatically create the challenge DNS records using our DNS provider's API
 //		[.... publish the DNS challenge records ....]
@@ -67,10 +79,8 @@ class ACMEController {
 		// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
 		// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
 		let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
-		guard failed.count == 0
-		else {
-			throw Error.validationFailed(failed)
-		}
+		guard failed.isEmpty
+		else { throw Error.validationFailed(failed) }
 
 		// Let's create a private key and CSR using the rudimentary feature provided by AcmeSwift
 		// If the validation didn't throw any error, we can now send our Certificate Signing Request...
@@ -98,5 +108,24 @@ class ACMEController {
 	private func saveCertificateData(certificateChain: [NIOSSLCertificateSource], privateKey: NIOSSLPrivateKeySource) throws {
 		self.certificateChain = certificateChain
 		self.privateKey = privateKey
+	}
+}
+
+extension ChallengeDescription: CustomStringConvertible {
+	public var description: String {
+		switch type {
+		case .http:
+			"The URL \(endpoint) needs to return \(value)"
+		case .dns:
+			"Create the following DNS record: \(endpoint) TXT \(value)"
+		case .alpn:
+			"TLS-ALPN-01 challenge. Endpoint: \(endpoint), value: \(value)"
+		}
+	}
+}
+
+extension AcmeAuthorization.Challenge: CustomStringConvertible {
+	public var description: String {
+		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
 	}
 }
