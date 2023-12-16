@@ -7,6 +7,7 @@ enum EnvVar: String, CaseIterable {
 	case useSSL
 	case acmeEndpoint
 	case acmeContactEmail
+	case acmeStoragePath
 }
 
 extension EnvironmentVariables where Key == EnvVar {
@@ -40,6 +41,12 @@ extension EnvironmentVariables where Key == EnvVar {
 					nil
 				}
 			}
+		}
+	}
+
+	var acmeStoragePath: String {
+		get throws {
+			try get(.acmeStoragePath)
 		}
 	}
 }

@@ -7,6 +7,7 @@ class ACMEController {
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
 		case validationFailed([AcmeAuthorization.Challenge])
+		case differentEndpointInStoredData(AcmeEndpoint)
 
 		var description: String {
 			switch self {
@@ -22,43 +23,85 @@ class ACMEController {
 
 				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
 				"""
+			case let .differentEndpointInStoredData(endpoint):
+				"The stored data was initialized with the \(endpoint) endpoint"
 			}
 		}
 	}
 
 	private let host: String
 	private let contactEmail: String
-	private let acmeEndpoint: AcmeEndpoint
+	private let storagePath: String
 
-	private var accountKey: String?
-	private var certificateChain: [NIOSSLCertificateSource]?
-	private var privateKey: NIOSSLPrivateKeySource?
+	private var acmeData: ACMEData
 
-	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String) {
-		self.acmeEndpoint = acmeEndpoint
+	struct ACMEData: Codable {
+		var endpoint: AcmeEndpoint
+		var accountKey: String?
+		var certificate: CertificateData?
+	}
+
+	struct CertificateData: Codable {
+		var certificateChain: [Data]
+		var privateKey: Data
+		var expiresAt: Date
+
+		var createdAt: Date = .now
+	}
+
+	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String, storagePath: String) throws {
 		self.contactEmail = contactEmail
 		self.host = host
+		self.storagePath = storagePath
+
+		let fm = FileManager.default
+		if let data = fm.contents(atPath: storagePath) {
+			acmeData = try decode(data)
+
+			guard acmeEndpoint == acmeData.endpoint
+			else { throw Error.differentEndpointInStoredData(acmeData.endpoint) }
+		} else {
+			acmeData = .init(endpoint: acmeEndpoint)
+		}
+	}
+
+	private func lazyLoadData() async throws -> CertificateData {
+		if let certificate = acmeData.certificate {
+			return certificate
+		}
+
+		return try await loadCertificate()
 	}
 
 	func addCertificate(to app: Application) async throws {
-		let (certificateChain, privateKey) = try loadCertificateData()
+		let certificate = try await lazyLoadData()
+
+		let certificateChain = try certificate.certificateChain.map {
+			let cert = try NIOSSLCertificate(bytes: Array($0), format: .der)
+			return NIOSSLCertificateSource.certificate(cert)
+		}
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: privateKey
+			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKey), format: .der))
 		)
 	}
 
-	private func loadCertificate() async throws {
-		// Create the client and load Let's Encrypt credentials
-		let acme = try await AcmeSwift(acmeEndpoint: acmeEndpoint)
-		if let accountKey {
+	private func loadAccount(acme: AcmeSwift) async throws {
+		if let accountKey = acmeData.accountKey {
 			let credentials = try AccountCredentials(contacts: [contactEmail], pemKey: accountKey)
 			try acme.account.use(credentials)
 		} else {
 			let account = try await acme.account.create(contacts: [contactEmail], acceptTOS: true)
-			accountKey = account.privateKeyPem
+			acmeData.accountKey = account.privateKeyPem!
+			try save()
 		}
+	}
+
+	private func loadCertificate() async throws -> CertificateData {
+		// Create the client and load Let's Encrypt credentials
+		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
+		try await loadAccount(acme: acme)
 
 		let domains: [String] = ["*.\(host)", host]
 
@@ -88,25 +131,21 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		try saveCertificateData(
-			certificateChain: try certs.map {
-				let pem = try PEMDocument(pemString: $0)
-				let cert = try NIOSSLCertificate(bytes: pem.derBytes, format: .der)
-				return .certificate(cert)
-			},
-			privateKey: try .privateKey(.init(bytes: privateKey.serializeAsPEM().derBytes, format: .der))
+		#warning("TODO: Pick expiration date from certs and subtract some days")
+		let data = CertificateData(
+			certificateChain: try certs.map { try Data(PEMDocument(pemString: $0).derBytes) },
+			privateKey: Data(try privateKey.serializeAsPEM().derBytes),
+			expiresAt: Date(timeIntervalSinceNow: 86_400 * 60)
 		)
+		acmeData.certificate = data
+		try save()
+
+		return data
 	}
 
-	private func loadCertificateData() throws -> (certificateChain: [NIOSSLCertificateSource], privateKey: NIOSSLPrivateKeySource) {
-		if let certificateChain, let privateKey {
-			return (certificateChain, privateKey)
-		}
-	}
-
-	private func saveCertificateData(certificateChain: [NIOSSLCertificateSource], privateKey: NIOSSLPrivateKeySource) throws {
-		self.certificateChain = certificateChain
-		self.privateKey = privateKey
+	private func save() throws {
+		let data = try encode(acmeData)
+		try data.write(to: URL(filePath: storagePath))
 	}
 }
 
@@ -127,4 +166,24 @@ extension AcmeAuthorization.Challenge: CustomStringConvertible {
 	public var description: String {
 		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
 	}
+}
+
+func encode(_ value: some Encodable) throws -> Data {
+	let encoder = JSONEncoder()
+	encoder.outputFormatting = [
+		.prettyPrinted,
+		.sortedKeys,
+	]
+	encoder.dateEncodingStrategy = .iso8601
+	encoder.dataEncodingStrategy = .base64
+
+	return try encoder.encode(value)
+}
+
+func decode<T: Decodable>(_ data: Data) throws -> T {
+	let decoder = JSONDecoder()
+	decoder.dateDecodingStrategy = .iso8601
+	decoder.dataDecodingStrategy = .base64
+
+	return try decoder.decode(T.self, from: data)
 }
