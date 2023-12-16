@@ -101,6 +101,8 @@ class ACMEController {
 	private func loadCertificate() async throws -> CertificateData {
 		// Create the client and load Let's Encrypt credentials
 		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
+		defer { try? acme.syncShutdown() }
+
 		try await loadAccount(acme: acme)
 
 		let domains: [String] = ["*.\(host)", host]
