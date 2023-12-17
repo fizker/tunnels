@@ -6,6 +6,8 @@ enum ConfigurationError: Error {
 
 // configures your application
 public func configure(_ app: Application) async throws {
+	app.http.server.configuration.hostname = "0.0.0.0"
+
 	app.environment = .init(valueGetter: Environment.get(_:))
 
 	if app.environment.useSSL {
