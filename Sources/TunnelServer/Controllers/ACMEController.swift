@@ -82,7 +82,7 @@ class ACMEController {
 	}
 
 	private func lazyLoadData() async throws -> CertificateData {
-		if let certificate = acmeData.certificate {
+		if let certificate = acmeData.certificate, certificate.expiresAt > .now {
 			return certificate
 		}
 
