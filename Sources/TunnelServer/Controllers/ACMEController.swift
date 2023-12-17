@@ -114,12 +114,10 @@ class ACMEController {
 		// ... after that, now we can fetch the challenges we need to complete
 		let pendingChallenges = try await acme.orders.describePendingChallenges(from: order, preferring: .dns)
 
-		guard pendingChallenges.isEmpty
-		else { throw Error.pendingChallenges(pendingChallenges) }
-
-		// At this point, we could programmatically create the challenge DNS records using our DNS provider's API
-//		[.... publish the DNS challenge records ....]
-
+		if !pendingChallenges.isEmpty {
+			let e = Error.pendingChallenges(pendingChallenges)
+			awaitKeyboardInput(message: e.description + "\n")
+		}
 
 		// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
 		// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
@@ -144,6 +142,14 @@ class ACMEController {
 		try save()
 
 		return data
+	}
+
+	func awaitKeyboardInput(message: String? = nil) {
+		if let message {
+			print(message)
+		}
+		print("Press enter to continue")
+		_ = readLine()
 	}
 
 	private func save() throws {
