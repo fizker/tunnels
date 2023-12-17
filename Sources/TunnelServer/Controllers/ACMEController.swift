@@ -93,6 +93,7 @@ class ACMEController {
 			try acme.account.use(credentials)
 		} else {
 			let account = try await acme.account.create(contacts: [contactEmail], acceptTOS: true)
+			try acme.account.use(account)
 			acmeData.accountKey = account.privateKeyPem!
 			try save()
 		}
