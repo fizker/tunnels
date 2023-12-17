@@ -33,7 +33,7 @@ struct User: Codable, Equatable, Authenticatable {
 	var clientSecret: String? = nil
 }
 
-struct Login {
+struct Login: Codable {
 	typealias ID = UUID
 
 	var id: ID
@@ -68,22 +68,62 @@ actor UserStore {
 		case cannotRemoveLastSysadmin
 		case cannotRemoveLastAdmin
 		case adminsCannotRemoveSysadmin
+		case failedToStoreData
 	}
 
-	private var logins: [Login.ID: Login] = [:]
+	private struct UserData: Codable {
+		var logins: [Login.ID: Login]
+		var users: [User]
+	}
 
-	private var users: [User] = [
-		User(username: "admin", password: "1234", scopes: [ .admin ]),
-		User(username: "sys", password: "1234", scopes: [ .sysadmin ]),
-		User(username: "regular", password: "1234", scopes: []),
-	]
+	private let storagePath: String?
+	private var data: UserData
+
+	/// Creates a new UserData instance.
+	///
+	/// - parameter storagePath: The path to store the users at. If this is nil, users will not be persisted.
+	init(storagePath: String?) throws {
+		self.storagePath = storagePath
+
+		var data: UserData? = nil
+		if let storagePath {
+			data = try Self.load(path: storagePath)
+		}
+
+		self.data = data ?? UserData(logins:
+			[:],
+			users: [
+				User(username: "admin", password: "1234", scopes: [ .admin ]),
+				User(username: "sys", password: "1234", scopes: [ .sysadmin ]),
+				User(username: "regular", password: "1234", scopes: []),
+			]
+		)
+	}
+
+	private static let fm: FileManager = .default
+
+	private static func load(path: String) throws -> UserData? {
+		guard let data = fm.contents(atPath: path)
+		else { return nil }
+
+		return try decode(data)
+	}
+
+	private func save() throws {
+		guard let storagePath
+		else { return }
+
+		let data = try encode(data)
+		guard Self.fm.createFile(atPath: storagePath, contents: data)
+		else { throw Error.failedToStoreData }
+	}
 
 	func user(id: User.ID) -> User? {
-		users.first { $0.id == id }
+		data.users.first { $0.id == id }
 	}
 
 	func user(username: String) -> User? {
-		users.first { $0.username == username }
+		data.users.first { $0.username == username }
 	}
 
 	func remove(username: String, scopeOfCurrentUser: User.Scope) throws {
@@ -94,42 +134,47 @@ actor UserStore {
 			guard scopeOfCurrentUser == .sysadmin
 			else { throw Error.adminsCannotRemoveSysadmin }
 
-			guard users.filter({ $0.scopes.contains(.sysadmin) }).count > 1
+			guard data.users.filter({ $0.scopes.contains(.sysadmin) }).count > 1
 			else { throw Error.cannotRemoveLastSysadmin }
 		}
 
 		if user.scopes.contains(.admin) && scopeOfCurrentUser != .sysadmin {
-			guard users.filter({ $0.scopes.contains(.admin) }).count > 1
+			guard data.users.filter({ $0.scopes.contains(.admin) }).count > 1
 			else { throw Error.cannotRemoveLastAdmin }
 		}
 
-		users.removeAll { $0.username == username }
+		data.users.removeAll { $0.username == username }
+
+		try save()
 	}
 
 	func upsert(user: User, oldUsername: String) throws {
-		guard user.username == oldUsername || !users.contains(where: { $0.username == user.username })
+		guard user.username == oldUsername || !data.users.contains(where: { $0.username == user.username })
 		else { throw Error.usernameExists }
 
-		users.removeAll { $0.username == oldUsername }
-		users.append(user)
+		data.users.removeAll { $0.username == oldUsername }
+		data.users.append(user)
+
+		try save()
 	}
 
 	func users(includeSysAdmin: Bool = false) -> [User] {
 		if includeSysAdmin {
-			self.users
+			data.users
 		} else {
-			self.users.filter { !$0.scopes.contains(.sysadmin) }
+			data.users.filter { !$0.scopes.contains(.sysadmin) }
 		}
 	}
 
-	func add(_ login: Login) {
-		logins[login.id] = login
+	func add(_ login: Login) throws {
+		data.logins[login.id] = login
+		try save()
 	}
 
 	func login(forToken token: String) -> (Login, User)? {
 		guard
 			let id = Login.id(forToken: token),
-			let login = logins[id],
+			let login = data.logins[id],
 			let user = user(id: login.userID)
 		else { return nil }
 

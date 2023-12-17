@@ -20,7 +20,7 @@ public func configure(_ app: Application) async throws {
 		try await acmeController.addCertificate(to: app)
 	}
 
-	app.userStore = .init()
+	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
 
 	app.middleware.use(CORSMiddleware())
 	app.middleware.use(OAuthErrorMiddleware())

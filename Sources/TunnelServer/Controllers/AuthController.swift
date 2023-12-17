@@ -59,7 +59,7 @@ class AuthController {
 		}
 
 		let login = Login(user: user)
-		await userStore.add(login)
+		try await userStore.add(login)
 		return login.accessTokenResponse(type: .bearer)
 	}
 

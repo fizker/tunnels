@@ -8,7 +8,7 @@ final class UserControllerTests: XCTestCase {
 	static let sysadminUser = User(username: "sys", password: "1234", scopes: [.sysadmin])
 
 	func test__upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
 		let request = try upsertUserRequest(username: "foo", scopes: nil, password: "bar")
@@ -23,7 +23,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__insertingNewUser_passwordIsMissing_scopeMissing_usernameIsNotColliding__errorThrown_userIsNotInserted() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users()
 
 		let request = try upsertUserRequest(username: "foo", scopes: nil, password: nil)
@@ -46,7 +46,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotInserted() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		let users = await userStore.users()
 
@@ -69,7 +69,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsSysadmin__userIsInserted() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		var users = await userStore.users(includeSysAdmin: true)
 
@@ -87,7 +87,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__userIsUnchanged() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
 		try await userStore.upsert(user: user, oldUsername: "foo")
@@ -106,7 +106,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_passwordIsDifferent_scopeIsDifferent_usernameIsNotChanged__userIsUpdated() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
@@ -126,7 +126,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsNotColliding__userIsUpdated() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
@@ -146,7 +146,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsColliding__errorThrown_userIsNotUpdated() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
 		try await userStore.upsert(user: user, oldUsername: "foo")
@@ -169,7 +169,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotUpdated() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
 		try await userStore.upsert(user: user, oldUsername: "foo")
@@ -195,7 +195,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsSysadmin__userIsUpdated() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		var users = await userStore.users(includeSysAdmin: true)
 
@@ -216,7 +216,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__nonExistingUser__doesNotThrow_usersAreUnchanged() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		let request = try removeRequest(username: "foo")
@@ -230,7 +230,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasNoScope__userIsRemoved() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		try await userStore.upsert(user: User(username: "foo", password: "bar"), oldUsername: "foo")
@@ -246,7 +246,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope__userIsRemoved() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
@@ -262,7 +262,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsAdmin__throws_usersAreUnchanged() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		XCTAssertEqual(users.filter { $0.scopes.contains(.admin) }.count, 1)
@@ -284,7 +284,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users(includeSysAdmin: true)
 
 		XCTAssertEqual(users.filter { $0.scopes.contains(.admin) }.count, 1)
@@ -303,7 +303,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsAdmin__throwsError_usersAreUnchanged() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 
 		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
 		let users = await userStore.users(includeSysAdmin: true)
@@ -323,7 +323,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
@@ -339,7 +339,7 @@ final class UserControllerTests: XCTestCase {
 	}
 
 	func test__removeUser__userExists_userHasSysadminScope_lastUserWithSysadminScope__throws_usersAreUnchanged() async throws {
-		let userStore = UserStore()
+		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
 		XCTAssertEqual(users.filter { $0.scopes.contains(.sysadmin) }.count, 1)
