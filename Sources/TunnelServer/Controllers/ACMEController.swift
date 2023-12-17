@@ -42,11 +42,27 @@ class ACMEController {
 	}
 
 	struct CertificateData: Codable {
-		var certificateChain: [Data]
-		var privateKey: Data
+		var certificateChain: [Certificate]
+		var privateKey: Certificate
 		var expiresAt: Date
 
-		var createdAt: Date = .now
+		var createdAt: Date
+
+		init(certificateChain: [Certificate], privateKey: Certificate, expiresAt: Date, createdAt: Date = .now) {
+			self.certificateChain = certificateChain
+			self.privateKey = privateKey
+			self.expiresAt = expiresAt
+			self.createdAt = createdAt
+		}
+
+		init(certificateChain: [Certificate], privateKey: Certificate, createdAt: Date = .now) {
+			self.certificateChain = certificateChain
+			self.privateKey = privateKey
+			self.createdAt = createdAt
+
+			let firstExpiration = min(privateKey.expirationDate, certificateChain.map(\.expirationDate).min() ?? .distantFuture)
+			self.expiresAt = firstExpiration - 84_600 * 30
+		}
 	}
 
 	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String, storagePath: String) throws {
@@ -77,13 +93,13 @@ class ACMEController {
 		let certificate = try await lazyLoadData()
 
 		let certificateChain = try certificate.certificateChain.map {
-			let cert = try NIOSSLCertificate(bytes: Array($0), format: .der)
+			let cert = try NIOSSLCertificate(bytes: Array($0.data), format: $0.format.asNIO)
 			return NIOSSLCertificateSource.certificate(cert)
 		}
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKey), format: .der))
+			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKey.data), format: certificate.privateKey.format.asNIO))
 		)
 	}
 
@@ -132,11 +148,9 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		#warning("TODO: Pick expiration date from certs and subtract some days")
 		let data = CertificateData(
-			certificateChain: try certs.map { try Data(PEMDocument(pemString: $0).derBytes) },
-			privateKey: Data(try privateKey.serializeAsPEM().derBytes),
-			expiresAt: Date(timeIntervalSinceNow: 86_400 * 60)
+			certificateChain: try certs.map(Certificate.init(pemString:)),
+			privateKey: try Certificate(pemDocument: try privateKey.serializeAsPEM())
 		)
 		acmeData.certificate = data
 		try save()
@@ -195,4 +209,37 @@ func decode<T: Decodable>(_ data: Data) throws -> T {
 	decoder.dataDecodingStrategy = .base64
 
 	return try decoder.decode(T.self, from: data)
+}
+
+struct Certificate: Codable {
+	var data: Data
+	var expirationDate: Date
+	var format: Format
+
+	init(data: Data, format: Format) throws {
+		self.data = data
+		self.format = format
+
+		let cert = try NIOSSLCertificate(bytes: Array(data), format: format.asNIO)
+		expirationDate = Date(timeIntervalSince1970: TimeInterval(cert.notValidAfter))
+	}
+
+	init(pemString: String) throws {
+		try self.init(pemDocument: try PEMDocument(pemString: pemString))
+	}
+
+	init(pemDocument: PEMDocument) throws {
+		try self.init(data: Data(pemDocument.derBytes), format: .der)
+	}
+
+	enum Format: String, Codable {
+		case pem, der
+
+		var asNIO: NIOSSLSerializationFormats {
+			switch self {
+			case .pem: .pem
+			case .der: .der
+			}
+		}
+	}
 }
