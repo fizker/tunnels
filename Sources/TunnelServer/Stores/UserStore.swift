@@ -98,6 +98,12 @@ actor UserStore {
 				User(username: "regular", password: "1234", scopes: []),
 			]
 		)
+
+		for (key, value) in self.data.logins {
+			if value.expiresAt < .now {
+				self.data.logins[key] = nil
+			}
+		}
 	}
 
 	private static let fm: FileManager = .default
