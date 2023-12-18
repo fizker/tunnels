@@ -3,10 +3,10 @@
     {
       "identity" : "acmeswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/fizker/AcmeSwift.git",
+      "location" : "https://github.com/m-barthelemy/AcmeSwift.git",
       "state" : {
-        "revision" : "a882c217a693e27d04594be3dfc894b45b23c02d",
-        "version" : "1.0.0-beta4"
+        "revision" : "0db76f69f3341bcf6ee492bfc7597c19f227e414",
+        "version" : "1.0.0-beta3"
       }
     },
     {
