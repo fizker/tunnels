@@ -10,6 +10,15 @@ const server = http.createServer(async (req, res) => {
 	const body = await readBody(req)
 	console.log({ url, method, headers, body })
 
+	if(url.startsWith('/redirect')) {
+		res.statusCode = 302
+		const u = new URL(url, `http://${req.headers.host}`)
+		const location = u.searchParams.get('location')
+		res.setHeader('location', location ?? '/after-redirect')
+		res.end()
+		return
+	}
+
 	res.statusCode = 200
 	res.setHeader('Content-Type', 'text/plain')
 	res.end('Hello World at ' + req.url)

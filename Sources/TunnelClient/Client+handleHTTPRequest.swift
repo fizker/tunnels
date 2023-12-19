@@ -18,7 +18,7 @@ extension Client {
 			nil
 		}
 
-		let client = HTTPClient()
+		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
 		let response = try await client.execute(request, timeout: .seconds(30))
 		let res = try await HTTPResponse(id: req.id, response: response)
 		try await client.shutdown()
