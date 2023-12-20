@@ -19,11 +19,16 @@ extension Client {
 		}
 
 		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
-		let response = try await client.execute(request, timeout: .seconds(30))
-		let res = try await HTTPResponse(id: req.id, response: response)
-		try await client.shutdown()
+		do {
+			let response = try await client.execute(request, timeout: .seconds(30))
+			let res = try await HTTPResponse(id: req.id, response: response)
+			try await client.shutdown()
 
-		return res
+			return res
+		} catch {
+			try await client.shutdown()
+			throw error
+		}
 	}
 
 	private func body(for response: HTTPClientResponse) async throws -> HTTPBody? {
