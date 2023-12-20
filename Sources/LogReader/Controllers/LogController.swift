@@ -1,3 +1,4 @@
+import Foundation
 import Models
 import Vapor
 import TunnelClient
@@ -5,6 +6,10 @@ import TunnelClient
 class LogController {
 	let storage: LogStorage
 	var summaryListeners: [WebSocket] = []
+
+	let responseTimeFormat = FloatingPointFormatStyle<Double>()
+		.precision(.fractionLength(2))
+		.grouping(.automatic)
 
 	init(storagePath: String) async throws {
 		storage = try await LogStorage(storagePath: storagePath)
@@ -72,7 +77,7 @@ class LogController {
 			</tr>
 			<tr>
 				<th>Response time:</th>
-				<td>\(log.responseTime) ms</td>
+				<td>\(log.responseTime.formatted(responseTimeFormat)) ms</td>
 			</tr>
 		</table>
 
@@ -98,7 +103,7 @@ class LogController {
 				<td>\(summary.requestMethod)</td>
 				<td>\(summary.path)</td>
 				<td>\(summary.responseStatus)</td>
-				<td style="text-align: right">\(summary.responseTime) ms</td>
+				<td style="text-align: right">\(summary.responseTime.formatted(responseTimeFormat)) ms</td>
 				<td>\(summary.host)</td>
 				<td><a href="/\(summary.id)">Details</a></td>
 			</tr>
