@@ -1,3 +1,4 @@
+import HTTPUpgradeServer
 import Vapor
 
 enum ConfigurationError: Error {
@@ -5,7 +6,7 @@ enum ConfigurationError: Error {
 }
 
 // configures your application
-public func configure(_ app: Application) async throws {
+public func configure(_ app: Application, port: Int) async throws {
 	app.http.server.configuration.hostname = "0.0.0.0"
 
 	app.environment = .init(valueGetter: Environment.get(_:))
@@ -18,6 +19,11 @@ public func configure(_ app: Application) async throws {
 			storagePath: try app.environment.acmeStoragePath
 		)
 		try await acmeController.addCertificate(to: app)
+
+		if let httpPort = app.environment.httpPort {
+			let upgradeServer = UpgradeServer(port: httpPort, upgradedHost: app.environment.host, upgradedPort: port)
+			try upgradeServer.start(topLevelApplication: app)
+		}
 	}
 
 	app.userStore = try .init(storagePath: try app.environment.userStoragePath)

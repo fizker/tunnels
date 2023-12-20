@@ -68,6 +68,7 @@ let package = Package(
 		.target(
 			name: "TunnelServer",
 			dependencies: [
+				"HTTPUpgradeServer",
 				"Models",
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
