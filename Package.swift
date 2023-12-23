@@ -45,6 +45,13 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.target(
+			name: "HTTPUpgradeServer",
+			dependencies: [
+				.product(name: "Vapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.target(
 			name: "Models",
 			swiftSettings: upcomingFeatures
 		),
@@ -61,6 +68,7 @@ let package = Package(
 		.target(
 			name: "TunnelServer",
 			dependencies: [
+				"HTTPUpgradeServer",
 				"Models",
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
