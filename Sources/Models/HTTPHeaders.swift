@@ -1,5 +1,5 @@
 public struct HTTPHeaders: Codable {
-	private var values: [String: [String]]
+	var values: [String: [String]]
 
 	public init(_ values: [String : [String]] = [:]) {
 		self.values = values
