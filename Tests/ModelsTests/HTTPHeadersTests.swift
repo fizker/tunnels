@@ -10,16 +10,36 @@ final class HTTPHeadersTests: XCTestCase {
 		XCTAssertEqual(["foo", "bar"], headers.headers(named: "test"))
 	}
 
+	func test__add__nameHasDifferentCasing__allValuesAreStored() async throws {
+		var headers = HTTPHeaders()
+		headers.add(value: "foo", for: "test")
+		headers.add(value: "bar", for: "Test")
+
+		XCTAssertEqual(["foo", "bar"], headers.headers(named: "test"))
+	}
+
 	func test__firstHeaderNamed__queryHaveSameCasing__allValuesAreReturned() async throws {
 		let headers = HTTPHeaders(["foo": ["bar", "baz"]])
 
 		XCTAssertEqual("bar", headers.firstHeader(named: "foo"))
 	}
 
+	func test__firstHeaderNamed__queryHaveDifferentCasing__allValuesAreReturned() async throws {
+		let headers = HTTPHeaders(["foo": ["bar", "baz"]])
+
+		XCTAssertEqual("bar", headers.firstHeader(named: "Foo"))
+	}
+
 	func test__headersNamed__queryHaveSameCasing__allValuesAreReturned() async throws {
 		let headers = HTTPHeaders(["foo": "bar"])
 
 		XCTAssertEqual(["bar"], headers.headers(named: "foo"))
+	}
+
+	func test__headersNamed__queryHaveDifferentCasing__allValuesAreReturned() async throws {
+		let headers = HTTPHeaders(["foo": "bar"])
+
+		XCTAssertEqual(["bar"], headers.headers(named: "Foo"))
 	}
 
 	func test__map__multipleHeaders__allHeadersAreReported() async throws {
@@ -36,6 +56,13 @@ final class HTTPHeadersTests: XCTestCase {
 	func test__set__nameHasSameCasing__existingValueIsOverwritten() async throws {
 		var headers = HTTPHeaders(["foo": "bar"])
 		headers.set(value: "baz", for: "foo")
+
+		XCTAssertEqual(headers.headers(named: "foo"), ["baz"])
+	}
+
+	func test__set__nameHasDifferentCasing__existingValueIsOverwritten() async throws {
+		var headers = HTTPHeaders(["foo": "bar"])
+		headers.set(value: "baz", for: "Foo")
 
 		XCTAssertEqual(headers.headers(named: "foo"), ["baz"])
 	}

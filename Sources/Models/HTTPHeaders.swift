@@ -1,22 +1,48 @@
 public struct HTTPHeaders: Codable {
-	var values: [String: [String]]
+	struct Header: Codable, Equatable {
+		var name: String
+		var normalizedName: String
+		var values: [String]
+
+		init(name: String, values: [String]) {
+			self.name = name
+			self.normalizedName = Self.normalize(name)
+			self.values = values
+		}
+
+		static func normalize(_ name: String) -> String {
+			name.lowercased()
+		}
+
+		static func ==(lhs: Self, rhs: Self) -> Bool {
+			lhs.normalizedName == rhs.normalizedName && lhs.values == rhs.values
+		}
+	}
+
+	var values: [String: Header]
 
 	public init(_ values: [String : [String]] = [:]) {
-		self.values = values
+		self.values = [:]
+		for (name, values) in values {
+			let header = Header(name: name, values: values)
+			self.values[header.normalizedName] = header
+		}
 	}
 
 	public init(_ values: [String : String]) {
-		self.values = values.mapValues { [$0] }
+		self.init(values.mapValues { [$0] })
 	}
 
 	public mutating func set(value: String, for name: String) {
-		values[name] = [value]
+		let header = Header(name: name, values: [value])
+		values[header.normalizedName] = header
 	}
 
 	public mutating func add(value: String, for name: String) {
 		var values = headers(named: name)
 		values.append(value)
-		self.values[name] = values
+		let header = Header(name: name, values: values)
+		self.values[header.normalizedName] = header
 	}
 
 	public func firstHeader(named name: String) -> String? {
@@ -24,10 +50,12 @@ public struct HTTPHeaders: Codable {
 	}
 
 	public func headers(named name: String) -> [String] {
-		values[name] ?? []
+		values[Header.normalize(name)]?.values ?? []
 	}
 
 	public func map<T>(_ transform: (String, [String]) throws -> T) rethrows -> [T] {
-		try values.map(transform)
+		try values.map { _, header in
+			try transform(header.name, header.values)
+		}
 	}
 }
