@@ -58,4 +58,24 @@ public struct HTTPHeaders: Codable {
 			try transform(header.name, header.values)
 		}
 	}
+
+	fileprivate enum CodingKeys: String, CodingKey {
+		case values
+	}
+}
+
+extension HTTPHeaders {
+	public init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		let values = try container.decode([String: [String]].self, forKey: .values)
+
+		self.init(values)
+	}
+
+	public func encode(to encoder: any Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+
+		let values = Dictionary(uniqueKeysWithValues: self.values.map { ($0.value.name, $0.value.values) })
+		try container.encode(values, forKey: .values)
+	}
 }
