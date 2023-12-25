@@ -30,19 +30,4 @@ extension Client {
 			throw error
 		}
 	}
-
-	private func body(for response: HTTPClientResponse) async throws -> HTTPBody? {
-		guard
-			let type = response.headers.first(name: "content-type")?.lowercased(),
-			let length = response.headers.first(name: "content-length").flatMap(Int.init)
-		else { return nil }
-
-		var rawContent = try await response.body.collect(upTo: length)
-		let content = rawContent.readData(length: length)!
-		if type.starts(with: "text/") || type.starts(with: "application/json") {
-			return .text(String(data: content, encoding: .utf8)!)
-		} else {
-			return .binary(content)
-		}
-	}
 }

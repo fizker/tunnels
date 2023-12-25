@@ -21,7 +21,14 @@ const server = http.createServer(async (req, res) => {
 
 	res.statusCode = 200
 	res.setHeader('Content-Type', 'text/plain')
-	res.end('Hello World at ' + req.url)
+
+	const response = 'Hello World at ' + req.url
+	if(headers['x-include-content-length']) {
+		res.end(response)
+	} else {
+		res.write(response)
+		res.end()
+	}
 })
 
 server.listen(port, () => {

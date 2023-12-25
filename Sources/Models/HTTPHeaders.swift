@@ -1,22 +1,59 @@
 public struct HTTPHeaders: Codable {
-	private var values: [String: [String]]
+	struct Header: Codable, Equatable {
+		var name: String
+		var normalizedName: String
+		var values: [String]
+
+		init(name: String, values: [String]) {
+			self.name = name
+			self.normalizedName = Self.normalize(name)
+			self.values = values
+		}
+
+		static func normalize(_ name: String) -> String {
+			name.lowercased()
+		}
+
+		static func ==(lhs: Self, rhs: Self) -> Bool {
+			lhs.normalizedName == rhs.normalizedName && lhs.values == rhs.values
+		}
+	}
+
+	var values: [String: Header]
 
 	public init(_ values: [String : [String]] = [:]) {
-		self.values = values
+		self.values = [:]
+		for (name, values) in values {
+			let header = Header(name: name, values: values)
+			self.values[header.normalizedName] = header
+		}
 	}
 
 	public init(_ values: [String : String]) {
-		self.values = values.mapValues { [$0] }
+		self.init(values.mapValues { [$0] })
 	}
 
 	public mutating func set(value: String, for name: String) {
-		values[name] = [value]
+		let header = Header(name: name, values: [value])
+		values[header.normalizedName] = header
 	}
 
 	public mutating func add(value: String, for name: String) {
 		var values = headers(named: name)
 		values.append(value)
-		self.values[name] = values
+		let header = Header(name: name, values: values)
+		self.values[header.normalizedName] = header
+	}
+
+	public mutating func remove(value: String, for name: String) {
+		var values = headers(named: name)
+		values.removeAll { $0 == value }
+		let header = Header(name: name, values: values)
+		self.values[header.normalizedName] = values.isEmpty ? nil : header
+	}
+
+	public mutating func removeAll(named name: String) {
+		values[Header.normalize(name)] = nil
 	}
 
 	public func firstHeader(named name: String) -> String? {
@@ -24,10 +61,32 @@ public struct HTTPHeaders: Codable {
 	}
 
 	public func headers(named name: String) -> [String] {
-		values[name] ?? []
+		values[Header.normalize(name)]?.values ?? []
 	}
 
 	public func map<T>(_ transform: (String, [String]) throws -> T) rethrows -> [T] {
-		try values.map(transform)
+		try values.map { _, header in
+			try transform(header.name, header.values)
+		}
+	}
+
+	fileprivate enum CodingKeys: String, CodingKey {
+		case values
+	}
+}
+
+extension HTTPHeaders {
+	public init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		let values = try container.decode([String: [String]].self, forKey: .values)
+
+		self.init(values)
+	}
+
+	public func encode(to encoder: any Encoder) throws {
+		var container = encoder.container(keyedBy: CodingKeys.self)
+
+		let values = Dictionary(uniqueKeysWithValues: self.values.map { ($0.value.name, $0.value.values) })
+		try container.encode(values, forKey: .values)
 	}
 }
