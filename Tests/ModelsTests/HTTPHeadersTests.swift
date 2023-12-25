@@ -53,6 +53,60 @@ final class HTTPHeadersTests: XCTestCase {
 		XCTAssertEqual(expected, actual)
 	}
 
+	func test__removeValueForName__valueMatchesExactly_nameMatchesExactly_multipleValuesWithName__valueIsRemoved() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.remove(value: "bar", for: "foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, ["baz"])
+	}
+
+	func test__removeValueForName__valueMatchesExactly_nameHasDifferentCasing_multipleValuesWithName__valueIsRemoved() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.remove(value: "bar", for: "Foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, ["baz"])
+	}
+
+	func test__removeValueForName__valueHasDifferentCasing_nameMatchesExactly_multipleValuesWithName__valueIsKept() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.remove(value: "Bar", for: "foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, ["bar", "baz"])
+	}
+
+	func test__removeValueForName__valueHasDifferentCasing_nameHasDifferentCasing_multipleValuesWithName__valueIsKept() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.remove(value: "Bar", for: "Foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, ["bar", "baz"])
+	}
+
+	func test__removeAll__nameMatchesCase__allValuesAreRemoved() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.removeAll(named: "foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, [])
+	}
+
+	func test__removeAll__nameHasDifferentCase__allValuesAreRemoved() async throws {
+		var headers = HTTPHeaders([ "foo": ["bar", "baz"], "111": ["222"]])
+
+		headers.removeAll(named: "Foo")
+
+		let values = headers.headers(named: "foo")
+		XCTAssertEqual(values, [])
+	}
+
 	func test__set__nameHasSameCasing__existingValueIsOverwritten() async throws {
 		var headers = HTTPHeaders(["foo": "bar"])
 		headers.set(value: "baz", for: "foo")

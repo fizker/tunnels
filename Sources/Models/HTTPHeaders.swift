@@ -45,6 +45,17 @@ public struct HTTPHeaders: Codable {
 		self.values[header.normalizedName] = header
 	}
 
+	public mutating func remove(value: String, for name: String) {
+		var values = headers(named: name)
+		values.removeAll { $0 == value }
+		let header = Header(name: name, values: values)
+		self.values[header.normalizedName] = values.isEmpty ? nil : header
+	}
+
+	public mutating func removeAll(named name: String) {
+		values[Header.normalize(name)] = nil
+	}
+
 	public func firstHeader(named name: String) -> String? {
 		headers(named: name).first
 	}
