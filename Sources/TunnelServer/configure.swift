@@ -21,7 +21,9 @@ public func configure(_ app: Application, port: Int) async throws {
 		try await acmeController.addCertificate(to: app)
 
 		if let httpPort = app.environment.httpPort {
-			let upgradeServer = UpgradeServer(port: httpPort, upgradedHost: app.environment.host, upgradedPort: port)
+			let upgradeServer = UpgradeServer(port: httpPort) {
+				$0.hasSuffix(app.environment.host) ? .accepted(port: port) : .rejected
+			}
 			try upgradeServer.start(topLevelApplication: app)
 		}
 	}

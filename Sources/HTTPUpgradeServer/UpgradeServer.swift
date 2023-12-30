@@ -8,7 +8,7 @@ public class UpgradeServer {
 
 	var app: Application
 
-	public init(port: Int = 80, upgradedHost: String, upgradedPort: Int? = nil) {
+	public init(port: Int = 80, requestUpgrade: @escaping UpgradeRequest) {
 		var env = Environment(name: "upgrade")
 
 		env.arguments.append("serve")
@@ -19,7 +19,7 @@ public class UpgradeServer {
 
 		app.http.server.configuration.hostname = "0.0.0.0"
 
-		app.middleware.use(UpgradeMiddleware(upgradedHost: upgradedHost, upgradedPort: upgradedPort))
+		app.middleware.use(UpgradeMiddleware(requestUpgrade: requestUpgrade))
 	}
 
 	/// Starts the server and attaches itself to the storage of the given ``Application``.
