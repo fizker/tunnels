@@ -62,6 +62,16 @@ public class Client {
 		for proxy in proxies {
 			try await webSocket?.send(.addTunnel(proxy.config))
 		}
+
+		Task {
+			try await Task.sleep(for: .seconds(5))
+			let pendingProxies = proxies.filter { !$0.isReadyOnServer }
+			if !pendingProxies.isEmpty {
+				logger.error("Some proxies were not registered", metadata: [
+					"proxies": .array(pendingProxies.map { "\($0.host)" }),
+				])
+			}
+		}
 	}
 
 	public func waitUntilClose() async throws {
@@ -111,6 +121,20 @@ public class Client {
 					try await webSocket?.close()
 				}
 			}
+		case let .tunnelAdded(config):
+			guard let index = proxies.firstIndex(where: { $0.host == config.host })
+			else {
+				logger.error("Server informed us of adding an unknown host", metadata: [
+					"host": "\(config.host)",
+				])
+				return
+			}
+			proxies[index].isReadyOnServer = true
+			logger.info("Proxy ready", metadata: [
+				"host": "\(config.host)",
+			])
+		case .tunnelRemoved(_):
+			break
 		}
 	}
 }
