@@ -7,7 +7,7 @@ import WebSocketKit
 
 let httpSchemeRegex = /^http/
 
-public class Client {
+public actor Client {
 	let logger = Logger(label: "Client")
 	var serverURL: URL
 	var webSocketURL: URL
