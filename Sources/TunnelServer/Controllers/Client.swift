@@ -23,8 +23,10 @@ class Client {
 				try handle(res)
 			case let .addTunnel(config):
 				hosts.append(config.host)
+				try await webSocket.send(.tunnelAdded(config))
 			case let .removeTunnel(host: host):
 				hosts.removeAll { $0 == host }
+				try await webSocket.send(.tunnelRemoved(TunnelConfiguration(host: host)))
 			}
 		}
 	}
