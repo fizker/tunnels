@@ -7,7 +7,7 @@ import WebSocketKit
 
 let httpSchemeRegex = /^http/
 
-public class Client {
+public actor Client {
 	let logger = Logger(label: "Client")
 	var serverURL: URL
 	var webSocketURL: URL
@@ -15,6 +15,10 @@ public class Client {
 	var webSocket: WebSocket?
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
+
+	public enum Error: Swift.Error {
+		case failedToRegisterProxies([Proxy])
+	}
 
 	public init?(
 		serverURL: URL,
@@ -36,7 +40,7 @@ public class Client {
 		let authHeader = try await credentialsStore.httpHeaders
 
 		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
-		webSocket = try await withCheckedThrowingContinuation { continuation in
+		let webSocket = try await withCheckedThrowingContinuation { continuation in
 			logger.info("Connecting client", metadata: [
 				"serverURL": .string(webSocketURL.absoluteString),
 			])
@@ -55,12 +59,64 @@ public class Client {
 			}
 		}
 
-		webSocket?.onServerMessage { [weak self] ws, value in
+		self.webSocket = webSocket
+
+		webSocket.onServerMessage { [weak self] ws, value in
 			try await self?.handle(value)
 		}
 
-		for proxy in proxies {
-			try await webSocket?.send(.addTunnel(proxy.config))
+		try await registerProxies(webSocket: webSocket)
+	}
+
+	var pendingProxies: [(continuation: TimedResolution, config: TunnelConfiguration)] = []
+
+	private func register(proxy: Proxy, webSocket: WebSocket, retryCount: Int) async -> Bool {
+		guard !proxy.isReadyOnServer
+		else { return true }
+
+		guard retryCount >= 0
+		else { return false }
+
+		let config = proxy.config
+		let deferred = Deferred(becoming: TimedResolution.Result.self)
+		let timer = TimedResolution(timeout: .seconds(5), onEnd: deferred.resolve(_:))
+		pendingProxies.append((timer, config))
+		defer {
+			pendingProxies.removeAll { $0.config.host == config.host }
+		}
+
+		do {
+			try await webSocket.send(.addTunnel(config))
+			switch try await deferred.value {
+			case .resolved:
+				return true
+			case .timedOut:
+				pendingProxies.removeAll { $0.config.host == config.host }
+				return await register(proxy: proxy, webSocket: webSocket, retryCount: retryCount - 1)
+			}
+		} catch {
+			return false
+		}
+	}
+
+	/// - parameter retryCount: The number of times that this should be retried. If there is an error when this is zero, an error is thrown.
+	private func registerProxies(webSocket: WebSocket, retryCount: Int = 3) async throws {
+		await withTaskGroup(of: (host: String, wasRegistered: Bool).self) { group in
+			for proxy in proxies where !proxy.isReadyOnServer {
+				group.addTask {
+					(proxy.config.host, await self.register(proxy: proxy, webSocket: webSocket, retryCount: retryCount))
+				}
+			}
+
+			await group.waitForAll()
+		}
+
+		let pendingProxies = proxies.filter { !$0.isReadyOnServer }
+		if !pendingProxies.isEmpty {
+			logger.error("Some proxies were not registered", metadata: [
+				"proxies": .array(pendingProxies.map { "\($0.host)" }),
+			])
+			throw Error.failedToRegisterProxies(pendingProxies)
 		}
 	}
 
@@ -111,6 +167,24 @@ public class Client {
 					try await webSocket?.close()
 				}
 			}
+		case let .tunnelAdded(config):
+			guard let index = proxies.firstIndex(where: { $0.host == config.host })
+			else {
+				logger.error("Server informed us of adding an unknown host", metadata: [
+					"host": "\(config.host)",
+				])
+				return
+			}
+			proxies[index].isReadyOnServer = true
+			logger.info("Proxy ready", metadata: [
+				"host": "\(config.host)",
+			])
+
+			guard let idx = pendingProxies.firstIndex(where: { $0.config.host == config.host })
+			else { return }
+			await pendingProxies[idx].continuation.resolve()
+		case .tunnelRemoved(_):
+			break
 		}
 	}
 }

@@ -117,6 +117,11 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(
+			name: "TunnelClientTests",
+			dependencies: ["TunnelClient"],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
 			name: "TunnelServerTests",
 			dependencies: ["TunnelServer"],
 			swiftSettings: upcomingFeatures
