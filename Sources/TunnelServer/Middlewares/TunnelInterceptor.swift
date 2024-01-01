@@ -17,7 +17,17 @@ struct TunnelInterceptor: AsyncMiddleware {
 		guard let matchingRoute = await controller.clientStore.client(forHost: host)
 		else {
 			logger.info("Could not find client for host \(host)")
-			return Response(status: .notFound)
+			return Response(
+				status: .badGateway,
+				headers: ["content-type": "text/html"],
+				body: .init(string: """
+				<!doctype html>
+
+				<h1>No gateway found</h1>
+
+				<p>No gateway was found for host \(host).</p>
+				""")
+			)
 		}
 
 		let headers = request.headers.reduce(Models.HTTPHeaders(), {
