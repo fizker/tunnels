@@ -6,17 +6,27 @@ enum WebSocketError: Error {
 	case couldNotDecode(String)
 }
 
-extension WebSocket {
-	public func onServerMessage(_ callback: @escaping (WebSocket, WebSocketServerMessage) async throws -> ()) {
+public actor WebSocketHandler {
+	public let webSocket: WebSocket
+
+	public init(webSocket: WebSocket) {
+		self.webSocket = webSocket
+	}
+
+	public func close() async throws {
+		try await webSocket.close()
+	}
+
+	public nonisolated func onServerMessage(_ callback: @escaping (WebSocket, WebSocketServerMessage) async throws -> ()) {
 		onMessage(callback)
 	}
 
-	public func onClientMessage(_ callback: @escaping (WebSocket, WebSocketClientMessage) async throws -> ()) {
+	public nonisolated func onClientMessage(_ callback: @escaping (WebSocket, WebSocketClientMessage) async throws -> ()) {
 		onMessage(callback)
 	}
 
-	private func onMessage<T: Decodable>(_ callback: @escaping (WebSocket, T) async throws -> ()) {
-		onText { ws, value in
+	private nonisolated func onMessage<T: Decodable>(_ callback: @escaping (WebSocket, T) async throws -> ()) {
+		webSocket.onText { ws, value in
 			do {
 				let message: T = try decode(value)
 				try await callback(ws, message)
@@ -47,7 +57,7 @@ extension WebSocket {
 	private func send(data: some Encodable) async throws {
 		let encoder = JSONEncoder()
 		let json = try encoder.encode(data)
-		try await send(String(data: json, encoding: .utf8)!)
+		try await webSocket.send(String(data: json, encoding: .utf8)!)
 	}
 }
 

@@ -11,16 +11,32 @@ actor ClientStore {
 
 	func add(_ client: Client) {
 		connectedClients.append(client)
-		client.webSocket.onClose.whenComplete { [weak self] _ in
-			guard let self
-			else { return }
-			Task {
-				await self.removeClosedClients()
+		Task {
+			await client.webSocket.webSocket.onClose.whenComplete { [weak self] _ in
+				guard let self
+				else { return }
+				Task {
+					await self.removeClosedClients()
+				}
 			}
 		}
 	}
 
-	func removeClosedClients() {
-		connectedClients.removeAll { $0.webSocket.isClosed }
+	func removeClosedClients() async {
+		connectedClients = await withTaskGroup(of: (Client, Bool).self) { group in
+			for client in connectedClients {
+				group.addTask {
+					(client, await client.webSocket.webSocket.isClosed)
+				}
+			}
+
+			var clients = [Client]()
+			for await (client, isClosed) in group {
+				if !isClosed {
+					clients.append(client)
+				}
+			}
+			return clients
+		}
 	}
 }

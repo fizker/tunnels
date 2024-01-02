@@ -1,5 +1,6 @@
 import Models
 import Vapor
+import WebSocket
 
 struct TunnelDTO: Codable {
 	var host: String
@@ -20,7 +21,7 @@ class TunnelController {
 		return await clientStore.connectedClients.flatMap(\.hosts).map(TunnelDTO.init(host:))
 	}
 
-	func connectClient(req: Request, webSocket: WebSocket) async throws {
+	func connectClient(req: Request, webSocket: WebSocketHandler) async throws {
 		let client = Client(webSocket: webSocket)
 		await clientStore.add(client)
 	}
