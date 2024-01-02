@@ -56,9 +56,18 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.target(
+			name: "WebSocket",
+			dependencies: [
+				"Models",
+				.product(name: "WebSocketKit", package: "websocket-kit"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.target(
 			name: "TunnelClient",
 			dependencies: [
 				"Models",
+				"WebSocket",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
@@ -70,6 +79,7 @@ let package = Package(
 			dependencies: [
 				"HTTPUpgradeServer",
 				"Models",
+				"WebSocket",
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),

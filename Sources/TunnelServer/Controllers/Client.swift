@@ -1,6 +1,7 @@
 import Foundation
 import Models
 import Vapor
+import WebSocket
 
 /// An instance of TunnelClient, from the perspective of the server. It supports sending a HTTPRequest and awaiting the response.
 class Client {

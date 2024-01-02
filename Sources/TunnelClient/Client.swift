@@ -3,6 +3,7 @@ import Logging
 import Models
 import NIO
 import OAuth2Models
+import WebSocket
 import WebSocketKit
 
 let httpSchemeRegex = /^http/
