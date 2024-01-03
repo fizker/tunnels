@@ -137,5 +137,10 @@ let package = Package(
 			dependencies: ["TunnelServer"],
 			swiftSettings: upcomingFeatures
 		),
+		.testTarget(
+			name: "WebSocketTests",
+			dependencies: ["WebSocket"],
+			swiftSettings: upcomingFeatures
+		),
 	]
 )
