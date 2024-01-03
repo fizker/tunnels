@@ -58,6 +58,7 @@ let package = Package(
 		.target(
 			name: "WebSocket",
 			dependencies: [
+				"Binary",
 				"Models",
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			],
