@@ -1,7 +1,7 @@
 import Foundation
 
 extension IteratorProtocol where Element == Bit {
-	/// Advances to the next `count` ``Bit``s and returns an ``UInt`` with the read value, or `nil` if there are not `count` next element exists.
+	/// Advances to the next `count` ``Bit``s and returns an `UInt` with the read value, or `nil` if there are not `count` next element exists.
 	///
 	/// If the iterator has 4 bits remaining, and 5 bits are requested, the iterator is emptied and `nil` is returned.
 	///
@@ -21,7 +21,7 @@ extension IteratorProtocol where Element == Bit {
 		return value
 	}
 
-	/// Advances to the next 8 ``Bit``s and returns an ``UInt8`` with the read value, or `nil` if there are not `count` next element exists.
+	/// Advances to the next 8 ``Bit``s and returns an `UInt8` with the read value, or `nil` if there are not `count` next element exists.
 	///
 	/// If the iterator has less than 8 bits remaining, the iterator is emptied and `nil` is returned.
 	public mutating func next8() -> UInt8? {
@@ -30,7 +30,7 @@ extension IteratorProtocol where Element == Bit {
 		return UInt8(truncatingIfNeeded: val)
 	}
 
-	/// Advances to the next 16 ``Bit``s and returns an ``UInt16`` with the read value, or `nil` if there are not `count` next element exists.
+	/// Advances to the next 16 ``Bit``s and returns an `UInt16` with the read value, or `nil` if there are not `count` next element exists.
 	///
 	/// If the iterator has less than 16 bits remaining, the iterator is emptied and `nil` is returned.
 	public mutating func next16() -> UInt16? {
@@ -39,7 +39,7 @@ extension IteratorProtocol where Element == Bit {
 		return UInt16(truncatingIfNeeded: val)
 	}
 
-	/// Advances to the next 32 ``Bit``s and returns an ``UInt32`` with the read value, or `nil` if there are not `count` next element exists.
+	/// Advances to the next 32 ``Bit``s and returns an `UInt32` with the read value, or `nil` if there are not `count` next element exists.
 	///
 	/// If the iterator has less than 32 bits remaining, the iterator is emptied and `nil` is returned.
 	public mutating func next32() -> UInt32? {
@@ -48,7 +48,7 @@ extension IteratorProtocol where Element == Bit {
 		return .init(truncatingIfNeeded: val)
 	}
 
-	/// Reads the requested number of bytes, and accumulates then as a ``Foundation/Data``.
+	/// Reads the requested number of bytes, and accumulates then as a `Data`.
 	///
 	/// If the iteratr has less than the requested amount of bytes, `nil` is returned and the iterator is left empty.
 	///
