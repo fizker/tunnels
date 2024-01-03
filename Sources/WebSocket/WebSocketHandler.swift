@@ -26,7 +26,7 @@ public actor WebSocketHandler {
 	}
 
 	private nonisolated func onMessage<T: Decodable>(_ callback: @escaping (WebSocket, T) async throws -> ()) {
-		webSocket.onText { ws, value in
+		webSocket.onBinary { ws, value in
 			do {
 				let message: T = try decode(value)
 				try await callback(ws, message)
@@ -57,13 +57,14 @@ public actor WebSocketHandler {
 	private func send(data: some Encodable) async throws {
 		let encoder = JSONEncoder()
 		let json = try encoder.encode(data)
-		try await webSocket.send(String(data: json, encoding: .utf8)!)
+		try await webSocket.send(Array(json))
 	}
 }
 
-private func decode<T: Decodable>(_ value: String) throws -> T {
-	guard let data = value.data(using: .utf8)
-	else { throw WebSocketError.couldNotDecode("Invalid UTF-8") }
+private func decode<T: Decodable>(_ value: ByteBuffer) throws -> T {
+	var value = value
+	guard let data = value.readData(length: value.readableBytes)
+	else { throw WebSocketError.couldNotDecode("Invalid ByteBuffer") }
 
 	let decoder = JSONDecoder()
 
