@@ -201,4 +201,86 @@ final class BitIteratorTests: XCTestCase {
 		XCTAssertEqual(8, iterator.bitIndex)
 		XCTAssertEqual(1, iterator.byteIndex)
 	}
+
+	func test__remainingBits__singleUInt32_variousStatesOfIteration__returnsRemainingBits() async throws {
+		var iterator = BitIterator(0xdeadbeef as UInt32)
+
+		XCTAssertEqual(iterator.remainingBits, 32)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBits, 31)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBits, 15)
+
+		iterator.bitIndex = 26
+
+		XCTAssertEqual(iterator.remainingBits, 6)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 2)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 0)
+	}
+
+	func test__remainingBits__multipleUInt32_variousStatesOfIteration__returnsRemainingBits() async throws {
+		var iterator = BitIterator([0xdeadbeef, 0xdeadbeef, 0xdeadbeef] as [UInt32])
+
+		XCTAssertEqual(iterator.remainingBits, 96)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBits, 95)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBits, 79)
+
+		iterator.bitIndex = 26
+
+		XCTAssertEqual(iterator.remainingBits, 70)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 66)
+
+		iterator.bitIndex = 90
+
+		XCTAssertEqual(iterator.remainingBits, 6)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 2)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 0)
+	}
+
+	func test__remainingBytes__variousStatesOfIteration__returnsRemainingBytes() async throws {
+		var iterator = BitIterator(0xdeadbeef as UInt32)
+
+		XCTAssertEqual(iterator.remainingBytes, 4)
+
+		_ = iterator.next8()
+
+		XCTAssertEqual(iterator.remainingBytes, 3)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBytes, 2, "It should only count full bytes")
+
+		iterator.bitIndex = 24
+
+		XCTAssertEqual(iterator.remainingBytes, 1)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBytes, 0)
+	}
 }

@@ -103,4 +103,20 @@ public struct BitIterator: IteratorProtocol {
 		}
 		set { bitIndex = newValue * 8 }
 	}
+
+	/// Returns the bits available in the iterator.
+	///
+	/// This is the number of times that ``next()`` can be called before it returns `nil`.
+	public var remainingBits: Int {
+		let remainingUnits = endIndex - currentIndex
+		let remainingUnitsAsBits = remainingUnits * bitWidth
+		return remainingUnitsAsBits - position
+	}
+
+	/// Returns the full number of bytes available in the iterator.
+	///
+	/// This is the number of times that ``next8()`` can be called before it returns `nil`.
+	public var remainingBytes: Int {
+		remainingBits / 8
+	}
 }
