@@ -50,12 +50,12 @@ extension IteratorProtocol where Element == Bit {
 
 	/// Reads the requested number of bytes, and accumulates then as a `Data`.
 	///
-	/// If the iteratr has less than the requested amount of bytes, `nil` is returned and the iterator is left empty.
+	/// If the iterator has less than the requested amount of bytes, `nil` is returned and the iterator is left empty.
 	///
 	/// - parameter bytes: The number of bytes to read.
 	/// - returns: The accumulated `Data`, or `nil` if the bytes run out before `length` is reached.
 	public mutating func data<T: BinaryInteger>(bytes: T) -> Data? {
-		var data = Data()
+		var data = Data(capacity: Int(bytes))
 
 		var count: T = 0
 		while let byte = next8() {
@@ -69,5 +69,17 @@ extension IteratorProtocol where Element == Bit {
 		}
 
 		return nil
+	}
+}
+
+extension BitIterator {
+	/// Reads the remaining number of bytes, and accumulates then as a `Data`.
+	///
+	/// If the iterator is empty, `nil` is returned.
+	///
+	/// - returns: The accumulated `Data`, or `nil` if the iterator is empty.
+	public mutating func data() -> Data? {
+		defer { _ = next8() }
+		return data(bytes: remainingBytes)
 	}
 }
