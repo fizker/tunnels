@@ -66,7 +66,7 @@ public actor WebSocketHandler {
 		let chunks = ChunkWriter(data: json, maxChunkSize: 1 << 14)
 
 		for chunk in chunks {
-			try await webSocket.send(Array(chunk))
+			try await webSocket.send(raw: chunk, opcode: .binary)
 		}
 	}
 
