@@ -2,6 +2,37 @@ import XCTest
 import Binary
 
 final class BitIteratorTests: XCTestCase {
+	func test__next__backedByArraySlice__returnsExpectedBits() async throws {
+		let value: [UInt8] = [0b00101100, 0b11111100, 0b00110100, 0b00011110]
+		let slice = value[1...2]
+
+		XCTAssertEqual([0b11111100, 0b00110100], slice)
+		XCTAssertEqual(slice.startIndex, value.startIndex + 1)
+		XCTAssertEqual(slice.endIndex, value.endIndex - 1)
+
+		var iterator = BitIterator(slice)
+
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+
+		XCTAssertNil(iterator.next())
+	}
+
 	func test__next__backedByUInt8__returnsExpectedBits() async throws {
 		let value: UInt8 = 0b00101100
 		var iterator = BitIterator(value)
@@ -170,6 +201,30 @@ final class BitIteratorTests: XCTestCase {
 
 		XCTAssertEqual(expected, actual)
 		XCTAssertNil(iterator.next())
+	}
+
+	func test__bitIndex__skippingAround_backedByArraySlice__indexUpdatedCorrectly_indexIsNormalizedForArraySlice() async throws {
+		let value: [UInt8] = [0b0010_1100, 0b1111_1100, 0b0011_0100, 0b0001_1110]
+		let slice = value[1...2]
+
+		XCTAssertEqual([0b1111_1100, 0b0011_0100], slice)
+		XCTAssertEqual(slice.startIndex, value.startIndex + 1)
+		XCTAssertEqual(slice.endIndex, value.endIndex - 1)
+
+		var iterator = BitIterator(slice)
+
+		XCTAssertEqual(iterator.byteIndex, 0)
+		XCTAssertEqual(iterator.bitIndex, 0)
+		XCTAssertEqual(iterator.next8(), 0b1111_1100)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.bitIndex, 8)
+
+		iterator.bitIndex = 2
+		XCTAssertEqual(iterator.bitIndex, 2)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.next8(), 0b11_1100_00)
+		XCTAssertEqual(iterator.byteIndex, 2)
+		XCTAssertEqual(iterator.bitIndex, 10)
 	}
 
 	func test__bitIndex__skippingAround_backedByMultipleUInt16__indexUpdatedCorrectly() throws {

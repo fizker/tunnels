@@ -80,7 +80,7 @@ public actor WebSocketHandler {
 		else { throw WebSocketError.couldNotDecode("ID is missing") }
 
 		var chunkLoader = chunkLoaders.removeValue(forKey: id) ?? ChunkLoader(id: id)
-		try chunkLoader.add(Array(value.readableBytesView).makeBitIterator())
+		try chunkLoader.add(value.readableBytesView.makeBitIterator())
 
 		guard let data = chunkLoader.data
 		else {
