@@ -57,3 +57,15 @@ struct ChunkWriter {
 		return .init(b.readableBytesView)
 	}
 }
+
+extension ChunkWriter: Sequence {
+	typealias Element = Data
+	typealias Iterator = Array<Data>.Iterator
+
+	func makeIterator() -> Array<Data>.Iterator {
+		chunks.compactMap {
+			var chunk = $0
+			return chunk.data()
+		}.makeIterator()
+	}
+}

@@ -8,6 +8,7 @@ enum WebSocketError: Error {
 
 public actor WebSocketHandler {
 	public let webSocket: WebSocket
+	var chunkLoaders: [UUID: ChunkLoader] = [:]
 
 	public init(webSocket: WebSocket) {
 		self.webSocket = webSocket
@@ -26,9 +27,13 @@ public actor WebSocketHandler {
 	}
 
 	private nonisolated func onMessage<T: Decodable>(_ callback: @escaping (WebSocket, T) async throws -> ()) {
-		webSocket.onBinary { ws, value in
+		webSocket.onBinary { [weak self] ws, value in
+			guard let self
+			else { return }
+
 			do {
-				let message: T = try decode(value)
+				guard let message: T = try await decode(value)
+				else { return }
 				try await callback(ws, message)
 			} catch let WebSocketError.couldNotDecode(message) {
 				print("""
@@ -57,20 +62,38 @@ public actor WebSocketHandler {
 	private func send(data: some Encodable) async throws {
 		let encoder = JSONEncoder()
 		let json = try encoder.encode(data)
-		try await webSocket.send(Array(json))
+
+		let chunks = ChunkWriter(data: json, maxChunkSize: 1 << 14)
+
+		for chunk in chunks {
+			try await webSocket.send(Array(chunk))
+		}
 	}
-}
 
-private func decode<T: Decodable>(_ value: ByteBuffer) throws -> T {
-	var value = value
-	guard let data = value.readData(length: value.readableBytes)
-	else { throw WebSocketError.couldNotDecode("Invalid ByteBuffer") }
+	/// Decodes the buffer, combining chunks as necessary.
+	///
+	/// If the buffer is part of a chunked message, it will return `nil` until all the chunks are received.
+	private func decode<T: Decodable>(_ value: ByteBuffer) throws -> T? {
+		var value = value
 
-	let decoder = JSONDecoder()
+		guard let id = value.readUUIDBytes()
+		else { throw WebSocketError.couldNotDecode("ID is missing") }
 
-	do {
-		return try decoder.decode(T.self, from: data)
-	} catch {
-		throw WebSocketError.couldNotDecode(error.localizedDescription)
+		var chunkLoader = chunkLoaders.removeValue(forKey: id) ?? ChunkLoader(id: id)
+		try chunkLoader.add(Array(value.readableBytesView).makeBitIterator())
+
+		guard let data = chunkLoader.data
+		else {
+			chunkLoaders[id] = chunkLoader
+			return nil
+		}
+
+		let decoder = JSONDecoder()
+
+		do {
+			return try decoder.decode(T.self, from: data)
+		} catch {
+			throw WebSocketError.couldNotDecode(error.localizedDescription)
+		}
 	}
 }
