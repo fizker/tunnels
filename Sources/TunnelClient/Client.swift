@@ -3,6 +3,7 @@ import Logging
 import Models
 import NIO
 import OAuth2Models
+import WebSocket
 import WebSocketKit
 
 let httpSchemeRegex = /^http/
@@ -12,7 +13,7 @@ public actor Client {
 	var serverURL: URL
 	var webSocketURL: URL
 	var proxies: [Proxy]
-	var webSocket: WebSocket?
+	var webSocket: WebSocketHandler?
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
 
@@ -50,7 +51,8 @@ public actor Client {
 				on: elg
 			) { ws in
 				self.logger.info("Client connected")
-				continuation.resume(returning: ws)
+				let handler = WebSocketHandler(webSocket: ws)
+				continuation.resume(returning: handler)
 			}.whenFailure { error in
 				self.logger.error("Failed to connect", metadata: [
 					"error": .string(error.localizedDescription),
@@ -70,7 +72,7 @@ public actor Client {
 
 	var pendingProxies: [(continuation: TimedResolution, config: TunnelConfiguration)] = []
 
-	private func register(proxy: Proxy, webSocket: WebSocket, retryCount: Int) async -> Bool {
+	private func register(proxy: Proxy, webSocket: WebSocketHandler, retryCount: Int) async -> Bool {
 		guard !proxy.isReadyOnServer
 		else { return true }
 
@@ -100,7 +102,7 @@ public actor Client {
 	}
 
 	/// - parameter retryCount: The number of times that this should be retried. If there is an error when this is zero, an error is thrown.
-	private func registerProxies(webSocket: WebSocket, retryCount: Int = 3) async throws {
+	private func registerProxies(webSocket: WebSocketHandler, retryCount: Int = 3) async throws {
 		await withTaskGroup(of: (host: String, wasRegistered: Bool).self) { group in
 			for proxy in proxies where !proxy.isReadyOnServer {
 				group.addTask {
@@ -121,7 +123,7 @@ public actor Client {
 	}
 
 	public func waitUntilClose() async throws {
-		guard let webSocket
+		guard let webSocket = await webSocket?.webSocket
 		else { return }
 
 		try await withCheckedThrowingContinuation { continuation in

@@ -1,17 +1,18 @@
 import Foundation
 import Models
 import Vapor
+import WebSocket
 
 /// An instance of TunnelClient, from the perspective of the server. It supports sending a HTTPRequest and awaiting the response.
 class Client {
-	let webSocket: WebSocket
+	let webSocket: WebSocketHandler
 
 	var hosts: [String] = []
 
 	var pendingRequests: [HTTPRequest.ID: CheckedContinuation<HTTPResponse, Never>] = [:]
 	var pendingResponses: [HTTPResponse] = []
 
-	init(webSocket: WebSocket) {
+	init(webSocket: WebSocketHandler) {
 		self.webSocket = webSocket
 
 		webSocket.onClientMessage { [weak self] ws, data in

@@ -1,5 +1,6 @@
 import Models
 import Vapor
+import WebSocket
 
 extension RoutesBuilder {
 	@preconcurrency
@@ -10,15 +11,16 @@ extension RoutesBuilder {
 		shouldUpgrade: @escaping (@Sendable (Request) -> EventLoopFuture<HTTPHeaders?>) = {
 			$0.eventLoop.makeSucceededFuture([:])
 		},
-		onUpgrade: @Sendable @escaping (Request, WebSocket) throws -> ()
+		onUpgrade: @Sendable @escaping (Request, WebSocketHandler) throws -> ()
 	) -> Route {
 		return webSocket(path, maxFrameSize: maxFrameSize, shouldUpgrade: shouldUpgrade, onUpgrade: { req, ws in
+			let handler = WebSocketHandler(webSocket: ws)
 			do {
-				try onUpgrade(req, ws)
+				try onUpgrade(req, handler)
 			} catch {
 				if let error = error as? TunnelError {
 					Task {
-						try? await ws.send(.error(error))
+						try? await handler.send(.error(error))
 					}
 					return
 				}
@@ -43,15 +45,16 @@ extension RoutesBuilder {
 		_ path: PathComponent...,
 		maxFrameSize: WebSocketMaxFrameSize = .`default`,
 		shouldUpgrade: @escaping (@Sendable (Request) async throws -> HTTPHeaders?) = { _ in [:] },
-		onUpgrade: @Sendable @escaping (Request, WebSocket) async throws -> ()
+		onUpgrade: @Sendable @escaping (Request, WebSocketHandler) async throws -> ()
 	) -> Route {
 		return self.webSocket(path, maxFrameSize: maxFrameSize, shouldUpgrade: shouldUpgrade, onUpgrade: { req, ws in
+			let handler = WebSocketHandler(webSocket: ws)
 			do {
-				try await onUpgrade(req, ws)
+				try await onUpgrade(req, handler)
 			} catch {
 				if let error = error as? TunnelError {
 					Task {
-						try? await ws.send(.error(error))
+						try? await handler.send(.error(error))
 					}
 					return
 				}

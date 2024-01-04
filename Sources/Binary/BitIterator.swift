@@ -21,16 +21,19 @@ public struct BitIterator: IteratorProtocol {
 	let currentFromIndex: (Int) -> (any Number)?
 	var current: (any Number)?
 	var position: Int = 0
-	var currentIndex: Int = 0
+	var currentIndex: Int
+	let startIndex: Int
 	let endIndex: Int
 
 	/// Creates a new BitIterator that enumerates all bits in the given `Sequence`.
 	public init<S: RandomAccessCollection>(_ numbers: S) where S.Element: Number, S.Index == Int {
-		currentFromIndex = { $0 < numbers.endIndex ? numbers[$0] : nil }
+		currentFromIndex = { $0 >= numbers.startIndex && $0 < numbers.endIndex ? numbers[$0] : nil }
 
 		current = numbers.first
 		bitWidth = current?.bitWidth ?? 0
+		startIndex = numbers.startIndex
 		endIndex = numbers.endIndex
+		currentIndex = startIndex
 	}
 
 	/// Creates a new BitIterator that enumerates all bits in the given number.
@@ -64,15 +67,19 @@ public struct BitIterator: IteratorProtocol {
 	///
 	/// This is the index of the next bit to be returned by ``next()``.
 	public var bitIndex: Int {
-		get { currentIndex * bitWidth + position }
+		get {
+			let index = currentIndex - startIndex
+			return index * bitWidth + position
+		}
 		set {
 			guard bitWidth != 0
 			else { return }
 
 			// The remainder is found by relying on the flooring nature of integer arithmetics
-			currentIndex = newValue / bitWidth
+			let currentIndex = newValue / bitWidth
+			self.currentIndex = currentIndex + startIndex
 			position = newValue - currentIndex * bitWidth
-			current = currentFromIndex(currentIndex)
+			current = currentFromIndex(self.currentIndex)
 		}
 	}
 
@@ -102,5 +109,21 @@ public struct BitIterator: IteratorProtocol {
 			return index
 		}
 		set { bitIndex = newValue * 8 }
+	}
+
+	/// Returns the bits available in the iterator.
+	///
+	/// This is the number of times that ``next()`` can be called before it returns `nil`.
+	public var remainingBits: Int {
+		let remainingUnits = endIndex - currentIndex
+		let remainingUnitsAsBits = remainingUnits * bitWidth
+		return remainingUnitsAsBits - position
+	}
+
+	/// Returns the full number of bytes available in the iterator.
+	///
+	/// This is the number of times that ``next8()`` can be called before it returns `nil`.
+	public var remainingBytes: Int {
+		remainingBits / 8
 	}
 }

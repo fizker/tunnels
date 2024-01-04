@@ -2,6 +2,37 @@ import XCTest
 import Binary
 
 final class BitIteratorTests: XCTestCase {
+	func test__next__backedByArraySlice__returnsExpectedBits() async throws {
+		let value: [UInt8] = [0b00101100, 0b11111100, 0b00110100, 0b00011110]
+		let slice = value[1...2]
+
+		XCTAssertEqual([0b11111100, 0b00110100], slice)
+		XCTAssertEqual(slice.startIndex, value.startIndex + 1)
+		XCTAssertEqual(slice.endIndex, value.endIndex - 1)
+
+		var iterator = BitIterator(slice)
+
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .one)
+		XCTAssertEqual(iterator.next(), .zero)
+		XCTAssertEqual(iterator.next(), .zero)
+
+		XCTAssertNil(iterator.next())
+	}
+
 	func test__next__backedByUInt8__returnsExpectedBits() async throws {
 		let value: UInt8 = 0b00101100
 		var iterator = BitIterator(value)
@@ -119,7 +150,7 @@ final class BitIteratorTests: XCTestCase {
 		XCTAssertEqual(iterator.next8(), 0xf2)
 	}
 
-	func test__dataWithBytes__inputContainsInsufficientBytes__dataIsReturned() throws {
+	func test__dataWithBytes__inputContainsInsufficientBytes__nilIsReturned_iteratorIsLeftEmpty() throws {
 		let input: [UInt8] = [
 			0x86,
 		]
@@ -130,6 +161,70 @@ final class BitIteratorTests: XCTestCase {
 		let actual = iterator.data(bytes: 1)
 
 		XCTAssertNil(actual)
+		XCTAssertNil(iterator.next())
+	}
+
+	func test__data__iteratorIsFresh__allBytesAreReturned_iteratorIsLeftEmpty() async throws {
+		let input: [UInt32] = [
+			0x862a_8180, 0x0001_f201, 0xdead_beef, 0x0667_6f6f,
+		]
+
+		var iterator = BitIterator(input)
+
+		let expected = Data([
+			0x86, 0x2a, 0x81, 0x80,
+			0x00, 0x01, 0xf2, 0x01,
+			0xde, 0xad, 0xbe, 0xef,
+			0x06, 0x67, 0x6f, 0x6f,
+		])
+		let actual = iterator.data()
+
+		XCTAssertEqual(expected, actual)
+		XCTAssertNil(iterator.next())
+	}
+
+	func test__data__partialByteRead__allFullBytesAreReturned_iteratorIsLeftEmpty() async throws {
+		let input: [UInt32] = [
+			0b00101100_01111100_00110100_00011110,
+		]
+
+		var iterator = BitIterator(input)
+
+		_ = iterator.next()
+
+		let expected = Data([
+			0b01011000,
+			0b11111000,
+			0b01101000,
+		])
+		let actual = iterator.data()
+
+		XCTAssertEqual(expected, actual)
+		XCTAssertNil(iterator.next())
+	}
+
+	func test__bitIndex__skippingAround_backedByArraySlice__indexUpdatedCorrectly_indexIsNormalizedForArraySlice() async throws {
+		let value: [UInt8] = [0b0010_1100, 0b1111_1100, 0b0011_0100, 0b0001_1110]
+		let slice = value[1...2]
+
+		XCTAssertEqual([0b1111_1100, 0b0011_0100], slice)
+		XCTAssertEqual(slice.startIndex, value.startIndex + 1)
+		XCTAssertEqual(slice.endIndex, value.endIndex - 1)
+
+		var iterator = BitIterator(slice)
+
+		XCTAssertEqual(iterator.byteIndex, 0)
+		XCTAssertEqual(iterator.bitIndex, 0)
+		XCTAssertEqual(iterator.next8(), 0b1111_1100)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.bitIndex, 8)
+
+		iterator.bitIndex = 2
+		XCTAssertEqual(iterator.bitIndex, 2)
+		XCTAssertEqual(iterator.byteIndex, 1)
+		XCTAssertEqual(iterator.next8(), 0b11_1100_00)
+		XCTAssertEqual(iterator.byteIndex, 2)
+		XCTAssertEqual(iterator.bitIndex, 10)
 	}
 
 	func test__bitIndex__skippingAround_backedByMultipleUInt16__indexUpdatedCorrectly() throws {
@@ -200,5 +295,87 @@ final class BitIteratorTests: XCTestCase {
 		iterator.byteIndex = iterator.byteIndex
 		XCTAssertEqual(8, iterator.bitIndex)
 		XCTAssertEqual(1, iterator.byteIndex)
+	}
+
+	func test__remainingBits__singleUInt32_variousStatesOfIteration__returnsRemainingBits() async throws {
+		var iterator = BitIterator(0xdeadbeef as UInt32)
+
+		XCTAssertEqual(iterator.remainingBits, 32)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBits, 31)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBits, 15)
+
+		iterator.bitIndex = 26
+
+		XCTAssertEqual(iterator.remainingBits, 6)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 2)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 0)
+	}
+
+	func test__remainingBits__multipleUInt32_variousStatesOfIteration__returnsRemainingBits() async throws {
+		var iterator = BitIterator([0xdeadbeef, 0xdeadbeef, 0xdeadbeef] as [UInt32])
+
+		XCTAssertEqual(iterator.remainingBits, 96)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBits, 95)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBits, 79)
+
+		iterator.bitIndex = 26
+
+		XCTAssertEqual(iterator.remainingBits, 70)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 66)
+
+		iterator.bitIndex = 90
+
+		XCTAssertEqual(iterator.remainingBits, 6)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 2)
+
+		_ = iterator.next(4)
+
+		XCTAssertEqual(iterator.remainingBits, 0)
+	}
+
+	func test__remainingBytes__variousStatesOfIteration__returnsRemainingBytes() async throws {
+		var iterator = BitIterator(0xdeadbeef as UInt32)
+
+		XCTAssertEqual(iterator.remainingBytes, 4)
+
+		_ = iterator.next8()
+
+		XCTAssertEqual(iterator.remainingBytes, 3)
+
+		_ = iterator.next()
+
+		XCTAssertEqual(iterator.remainingBytes, 2, "It should only count full bytes")
+
+		iterator.bitIndex = 24
+
+		XCTAssertEqual(iterator.remainingBytes, 1)
+
+		_ = iterator.next16()
+
+		XCTAssertEqual(iterator.remainingBytes, 0)
 	}
 }
