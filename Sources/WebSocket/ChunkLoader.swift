@@ -6,13 +6,17 @@ struct ChunkLoader {
 		case idMissing
 	}
 
-	var id: UUID
+	private var id: UUID
 
-	var started: Date = .now
+	private var started: Date = .now
 
-	var expectedCount: UInt16?
-	var currentCount: UInt16 = 0
+	private var expectedCount: UInt16?
+	private var currentCount: UInt16 = 0
 	var chunks: [UInt16: BitIterator] = [:]
+
+	init(id: UUID) {
+		self.id = id
+	}
 
 	mutating func add(_ chunk: BitIterator) throws {
 		var chunk = chunk
