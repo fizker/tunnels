@@ -21,6 +21,10 @@ const server = http.createServer(async (req, res) => {
 
 	res.statusCode = 200
 	res.setHeader('Content-Type', 'text/plain')
+	res.setHeader('set-cookie', [
+		'first=cookie',
+		'second=cookie',
+	])
 
 	const response = 'Hello World at ' + req.url
 	if(headers['x-include-content-length']) {
