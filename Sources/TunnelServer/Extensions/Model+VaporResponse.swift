@@ -44,9 +44,16 @@ extension Models.HTTPResponse {
 		headers.removeAll(named: "connection")
 		headers.removeAll(named: "date")
 
+		var vaporHeaders = Vapor.HTTPHeaders()
+		for (key, values) in headers.map({ ($0, $1) }) {
+			for value in values {
+				vaporHeaders.add(name: key, value: value)
+			}
+		}
+
 		return Response(
 			status: .custom(code: status.code, reasonPhrase: status.reason),
-			headers: .init(headers.map { ($0, $1.joined(separator: " ")) }),
+			headers: vaporHeaders,
 			body: vaporBody
 		)
 	}
