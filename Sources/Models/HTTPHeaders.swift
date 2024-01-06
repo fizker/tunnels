@@ -1,4 +1,8 @@
-public struct HTTPHeaders: Codable {
+public struct HTTPHeaders: Codable, Sequence {
+	public func makeIterator() -> IndexingIterator<[(String, [String])]> {
+		values.map { ($0.key, $0.value.values) }.makeIterator()
+	}
+
 	struct Header: Codable, Equatable {
 		var name: String
 		var normalizedName: String
@@ -62,12 +66,6 @@ public struct HTTPHeaders: Codable {
 
 	public func headers(named name: String) -> [String] {
 		values[Header.normalize(name)]?.values ?? []
-	}
-
-	public func map<T>(_ transform: (String, [String]) throws -> T) rethrows -> [T] {
-		try values.map { _, header in
-			try transform(header.name, header.values)
-		}
 	}
 
 	fileprivate enum CodingKeys: String, CodingKey {
