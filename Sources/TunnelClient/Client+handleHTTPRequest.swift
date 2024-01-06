@@ -8,7 +8,7 @@ extension Client {
 
 		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.path)")
 		request.method = .RAW(value: req.method)
-		request.headers = .init(req.headers.map { ($0, $1.joined(separator: " ")) })
+		request.headers = .init(req.headers.flatMap { (key, values) in values.map { (key, $0) } })
 		request.body = switch req.body {
 		case let .text(text):
 			.bytes(text.data(using: .utf8)!)
