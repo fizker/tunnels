@@ -46,7 +46,7 @@ extension Models.HTTPResponse {
 
 		return Response(
 			status: .custom(code: status.code, reasonPhrase: status.reason),
-			headers: .init(headers.map { ($0, $1.joined(separator: " ")) }),
+			headers: .init(headers.flatMap { key, values in values.map { (key, $0) } }),
 			body: vaporBody
 		)
 	}
