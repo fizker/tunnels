@@ -17,4 +17,4 @@ try LoggingSystem.bootstrap(from: &env)
 let app = Application(env)
 defer { app.shutdown() }
 try await configure(app, port: Int(port)!)
-try app.run()
+try await app.execute()
