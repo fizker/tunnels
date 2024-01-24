@@ -6,16 +6,29 @@ const { pipeline } = require('node:stream/promises')
 const port = process.env.PORT ?? 8080
 
 const server = http.createServer(async (req, res) => {
-	const { url, method, headers } = req
+	const url = new URL(req.url, `http://${req.headers.host}`)
+	const { method, headers } = req
 	const body = await readBody(req)
 	console.log({ url, method, headers, body })
 
-	if(url.startsWith('/redirect')) {
+	if(url.pathname.startsWith('/redirect')) {
 		res.statusCode = 302
-		const u = new URL(url, `http://${req.headers.host}`)
-		const location = u.searchParams.get('location')
+		const location = url.searchParams.get('location')
 		res.setHeader('location', location ?? '/after-redirect')
 		res.end()
+		return
+	}
+
+	if(url.pathname.startsWith("/ping")) {
+		const counter = +(url.searchParams.get("count") ?? 1)
+		res.statusCode = 200
+		res.setHeader("content-type", "text/plain")
+		res.end(`${counter + 1}`)
+		return
+	}
+
+	if(url.pathname.startsWith("/heartbeat")) {
+		getHeartbeat(req, res, url)
 		return
 	}
 
@@ -54,4 +67,21 @@ async function readBody(req) {
 	})
 
 	return content
+}
+
+function getHeartbeat(req, res, url) {
+	const interval = url.searchParams.get("interval") ?? 3
+	res.statusCode = 200
+	res.setHeader("content-type", "text/html")
+	res.end(`<!doctype html>
+	<div>Counter is 1</div>
+	<script>
+	const div = document.querySelector("div")
+	let counter = 1
+	setInterval(async () => {
+		const response = await fetch("/ping?count=" + counter)
+		counter = await response.json()
+		div.innerText = "Counter is " + counter
+	}, ${interval}000)
+	</script>`)
 }
