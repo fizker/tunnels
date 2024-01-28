@@ -146,7 +146,7 @@ public actor Client {
 				"host": "\(req.host)",
 			])
 			let start = Date.now
-			let res = try await handle(req)
+			let (res, bodyUploader) = try await handle(req)
 			logger.info("Got response", metadata: [
 				"id": "\(req.id)",
 				"status": "\(res.status)",
@@ -160,6 +160,7 @@ public actor Client {
 				response: res
 			))
 			try await webSocket?.send(.response(res))
+			try await bodyUploader()
 		case let .error(error):
 			switch error {
 			case let .alreadyBound(host):

@@ -137,6 +137,7 @@ actor LogController {
 		return switch body {
 		case nil: ""
 		case let .binary(value): value.description
+		case .stream: ""
 		case let .text(value): value
 		}
 	}

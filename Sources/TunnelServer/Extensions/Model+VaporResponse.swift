@@ -10,6 +10,8 @@ extension Models.HTTPResponse {
 				ByteBuffer(string: value)
 			case let .binary(data):
 				ByteBuffer(data: data)
+			case .stream:
+				nil
 			case .none:
 				nil
 			}
@@ -31,6 +33,8 @@ extension Models.HTTPResponse {
 			.init(string: value)
 		case let .binary(data):
 			.init(data: data)
+		case .stream:
+			.empty
 		case .none:
 			.empty
 		}
