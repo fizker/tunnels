@@ -30,4 +30,24 @@ actor TunnelController {
 		let client = Client(webSocket: webSocket)
 		await clientStore.add(client)
 	}
+
+	func requestBody(req: Request, id: HTTPRequest.ID) async throws -> Response {
+		guard let client = await clientStore.client(awaitingRequest: id)
+		else { throw Abort(.notFound) }
+
+		let request = await client.pendingRequests[id]
+
+		guard let stream = request?.body
+		else { throw Abort(.notFound) }
+
+		return Response(body: Response.Body(stream: stream))
+	}
+
+	func collectResponse(req: Request, id: HTTPRequest.ID) async throws {
+		guard let client = await clientStore.client(awaitingRequest: id)
+		else { throw Abort(.notFound) }
+
+		let stream = req.body.stream(on: req.eventLoop.next())
+		await client.registerResponseStream(stream, for: id)
+	}
 }

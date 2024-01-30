@@ -5,7 +5,7 @@ import Vapor
 import WebSocket
 
 typealias RequestStream = AsyncThrowingStream<UInt8, any Error>
-typealias ResponseStream = AsyncStream<UInt8>
+typealias ResponseStream = AsyncThrowingStream<UInt8, any Error>
 
 struct PendingResponse {
 	var response: HTTPResponse?

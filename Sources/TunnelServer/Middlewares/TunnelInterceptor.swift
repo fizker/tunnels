@@ -35,21 +35,21 @@ struct TunnelInterceptor: AsyncMiddleware {
 			headers.add(value: $1.value, for: $1.name)
 			return headers
 		})
-		let request = HTTPRequest(
+		let clientRequest = HTTPRequest(
 			host: host,
 			path: request.url.description,
 			method: request.method.string,
 			headers: headers,
-			body: request.body.string.flatMap { .text($0) }
+			body: .stream
 		)
 
-		logger.info("Routing \(request)")
+		logger.info("Routing \(clientRequest)")
 
-		let response = try await matchingRoute.send(request)
+		let response = try await matchingRoute.send(clientRequest, bodyStream: request.body.stream(on: request.eventLoop.next()))
 
 		logger.info("Got response \(response)")
 
-		return response.asVaporResponse
+		return response.0.asVaporResponse(stream: response.1)
 	}
 
 	private func portlessHost(for request: Request) -> String? {
