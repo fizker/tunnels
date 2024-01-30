@@ -50,7 +50,7 @@ func routes(_ app: Application) throws {
 		app.get { try await tunnelController.all(req: $0) }
 		app.group(":id") { app in
 			app.get("request") { try await tunnelController.requestBody(req: $0, id: $0.parameters.require("id")) }
-			app.post("response") {
+			app.on(.POST,"response", body: .stream) {
 				try await tunnelController.collectResponse(req: $0, id: $0.parameters.require("id"))
 				return HTTPResponseStatus.noContent
 			}
