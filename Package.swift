@@ -85,6 +85,7 @@ let package = Package(
 		.target(
 			name: "TunnelServer",
 			dependencies: [
+				"Common",
 				"HTTPUpgradeServer",
 				"Models",
 				"WebSocket",
