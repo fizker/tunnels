@@ -16,8 +16,8 @@ let package = Package(
 	platforms: [ .macOS(.v13) ],
 	products: [
 		.executable(name: "dns-server", targets: ["DNSServerCLI"]),
-		.executable(name: "tunnel-client", targets: ["ClientCLI"]),
-		.executable(name: "tunnel-server", targets: ["ServerCLI"]),
+		.executable(name: "tunnel-client", targets: ["TunnelClientCLI"]),
+		.executable(name: "tunnel-server", targets: ["TunnelServerCLI"]),
 		.executable(name: "tunnel-logs", targets: ["LogReader"]),
 	],
 	dependencies: [
@@ -89,7 +89,7 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.executableTarget(
-			name: "ClientCLI",
+			name: "TunnelClientCLI",
 			dependencies: [
 				"TunnelClient",
 				.product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -97,7 +97,7 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.executableTarget(
-			name: "ServerCLI",
+			name: "TunnelServerCLI",
 			dependencies: [
 				"TunnelServer",
 			],
