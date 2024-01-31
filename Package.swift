@@ -15,7 +15,7 @@ let package = Package(
 	name: "tunnels",
 	platforms: [ .macOS(.v13) ],
 	products: [
-		.executable(name: "dns-server", targets: ["DNSServer"]),
+		.executable(name: "dns-server", targets: ["DNSServerCLI"]),
 		.executable(name: "tunnel-client", targets: ["ClientCLI"]),
 		.executable(name: "tunnel-server", targets: ["ServerCLI"]),
 		.executable(name: "tunnel-logs", targets: ["LogReader"]),
@@ -35,7 +35,7 @@ let package = Package(
 			name: "Binary",
 			swiftSettings: upcomingFeatures
 		),
-		.executableTarget(
+		.target(
 			name: "DNSServer",
 			dependencies: [
 				"Binary",
@@ -100,6 +100,13 @@ let package = Package(
 			name: "ServerCLI",
 			dependencies: [
 				"TunnelServer",
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.executableTarget(
+			name: "DNSServerCLI",
+			dependencies: [
+				"DNSServer",
 			],
 			swiftSettings: upcomingFeatures
 		),

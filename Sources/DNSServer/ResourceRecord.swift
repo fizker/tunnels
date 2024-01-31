@@ -1,7 +1,7 @@
 import Binary
 import Foundation
 
-struct ResourceRecord: Equatable {
+package struct ResourceRecord: Equatable {
 	var name: DomainName
 	var type: `Type`
 	var `class`: Class
@@ -189,7 +189,7 @@ struct ResourceRecord: Equatable {
 		}
 	}
 
-	enum Data: Equatable {
+	package enum Data: Equatable {
 		case ipV4(UInt8, UInt8, UInt8, UInt8)
 		case unknown(Foundation.Data)
 

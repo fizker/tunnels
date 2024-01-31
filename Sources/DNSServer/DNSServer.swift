@@ -1,11 +1,11 @@
 import Binary
 import NIO
 
-typealias HostMap = [String: ResourceRecord.Data]
+package typealias HostMap = [String: ResourceRecord.Data]
 
 private let cloudflareAddress = try! SocketAddress(ipAddress: "1.1.1.1", port: 53)
 
-class DNSServer {
+package class DNSServer {
 	var port: Int
 	var channel: (any Channel)!
 	var hostMap: HostMap
@@ -48,10 +48,10 @@ class DNSServer {
 }
 
 extension DNSServer: ChannelInboundHandler {
-	typealias InboundIn = AddressedEnvelope<ByteBuffer>
-	typealias OutboundOut = AddressedEnvelope<ByteBuffer>
+	package typealias InboundIn = AddressedEnvelope<ByteBuffer>
+	package typealias OutboundOut = AddressedEnvelope<ByteBuffer>
 
-	func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+	package func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 		let input = unwrapInboundIn(data)
 
 		print("Received message from \(input.remoteAddress)")
@@ -134,7 +134,7 @@ extension DNSServer: ChannelInboundHandler {
 		}
 	}
 
-	func channelReadComplete(context: ChannelHandlerContext) {
+	package func channelReadComplete(context: ChannelHandlerContext) {
 		context.flush()
 	}
 

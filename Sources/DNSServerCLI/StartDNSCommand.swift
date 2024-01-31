@@ -1,5 +1,6 @@
 import ArgumentParser
 import Dispatch
+import DNSServer
 
 private struct RemoteAddress {
 	var address: String
@@ -63,7 +64,7 @@ extension KnownDomainName: ExpressibleByArgument {
 }
 
 @main
-struct Command: AsyncParsableCommand {
+struct StartDNSCommand: AsyncParsableCommand {
 	@Argument var port: Int = 53
 
 	@Option(name: .shortAndLong, parsing: .upToNextOption)
