@@ -3,7 +3,7 @@ import XCTest
 
 final class DeferredTests: XCTestCase {
 	func test__resolve__singleResolve_syncResolve__resolvesAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 
@@ -17,7 +17,7 @@ final class DeferredTests: XCTestCase {
 	}
 
 	func test__resolve__multipleResolve_syncResolve__resolvesAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 
@@ -32,7 +32,7 @@ final class DeferredTests: XCTestCase {
 	}
 
 	func test__reject__singleReject_sync__rejectsAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 
@@ -50,7 +50,7 @@ final class DeferredTests: XCTestCase {
 	}
 
 	func test__reject__multipleReject_sync__rejectsAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 
@@ -69,7 +69,7 @@ final class DeferredTests: XCTestCase {
 	}
 
 	func test__resolve__rejectAfterResolve_sync__resolvesAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 
@@ -84,7 +84,7 @@ final class DeferredTests: XCTestCase {
 	}
 
 	func test__reject__resolveAfterReject_sync__rejectsAsExpected() async throws {
-		var deferred = Deferred(becoming: String.self)
+		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
 

@@ -15,6 +15,7 @@ let package = Package(
 	name: "tunnels",
 	platforms: [ .macOS(.v13) ],
 	products: [
+		.executable(name: "debug-server", targets: ["DebugServerCLI"]),
 		.executable(name: "dns-server", targets: ["DNSServerCLI"]),
 		.executable(name: "tunnel-client", targets: ["TunnelClientCLI"]),
 		.executable(name: "tunnel-server", targets: ["TunnelServerCLI"]),
@@ -88,6 +89,19 @@ let package = Package(
 			],
 			swiftSettings: upcomingFeatures
 		),
+		.target(
+			name: "DebugServer",
+			dependencies: [
+				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
+				.product(name: "Vapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures
+		)
+	] + executableTargets() + testTargets()
+)
+
+func executableTargets() -> [Target] {
+	[
 		.executableTarget(
 			name: "TunnelClientCLI",
 			dependencies: [
@@ -111,6 +125,13 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.executableTarget(
+			name: "DebugServerCLI",
+			dependencies: [
+				"DebugServer",
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.executableTarget(
 			name: "LogReader",
 			dependencies: [
 				"Models",
@@ -118,10 +139,24 @@ let package = Package(
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
 			],
-			swiftSettings: upcomingFeatures),
+			swiftSettings: upcomingFeatures
+		),
+	]
+}
+
+func testTargets() -> [Target] {
+	[
 		.testTarget(
 			name: "BinaryTests",
 			dependencies: ["Binary"],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
+			name: "DebugServerTests",
+			dependencies: [
+				"DebugServer",
+				.product(name: "XCTVapor", package: "vapor"),
+			],
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(
@@ -150,4 +185,4 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 	]
-)
+}
