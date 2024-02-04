@@ -4,6 +4,12 @@ import Vapor
 func catchAll(req: Request) -> Response {
 	let includeContentLength = req.headers.first(name: "x-include-content-length") == "true"
 
+	req.logger.info("Request", metadata: [
+		"method": "\(req.method)",
+		"path": "\(req.url)",
+		"body": "\(req.body.string ?? "")",
+	])
+
 	let body = "Hello World at \(req.url)"
 
 	return Response(
