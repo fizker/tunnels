@@ -152,6 +152,14 @@ func testTargets() -> [Target] {
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(
+			name: "DebugServerTests",
+			dependencies: [
+				"DebugServer",
+				.product(name: "XCTVapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
 			name: "DNSServerTests",
 			dependencies: ["DNSServer"],
 			swiftSettings: upcomingFeatures

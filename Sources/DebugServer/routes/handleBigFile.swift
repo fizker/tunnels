@@ -36,8 +36,9 @@ func data(size: Int) -> AsyncStream<Data> {
 	AsyncStream { writer in
 		var remainder = size
 		for _ in stride(from: 0, to: size, by: chunkSize) {
-			remainder -= chunkSize
-			writer.yield(Data(repeating: a, count: chunkSize))
+			let toWrite = min(remainder, chunkSize)
+			remainder -= toWrite
+			writer.yield(Data(repeating: a, count: toWrite))
 		}
 		if remainder > 0 {
 			writer.yield(Data(repeating: a, count: remainder))
