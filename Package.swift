@@ -23,6 +23,7 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.1"),
+		.package(url: "https://github.com/apple/swift-crypto.git", from: "3.1.0"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.64.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.1"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
@@ -39,6 +40,9 @@ let package = Package(
 		),
 		.target(
 			name: "Common",
+			dependencies: [
+				.product(name: "Crypto", package: "swift-crypto"),
+			],
 			swiftSettings: upcomingFeatures
 		),
 		.target(
@@ -99,6 +103,7 @@ let package = Package(
 		.target(
 			name: "DebugServer",
 			dependencies: [
+				"Common",
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
 			],
