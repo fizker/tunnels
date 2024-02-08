@@ -20,6 +20,7 @@ func handleBigFile(req: Request) async -> Response {
 		headers: [
 			"x-digest-value": digest.hex,
 			"x-digest-alg": "sha256",
+			"content-type": "text/plain",
 		],
 		body: .init(stream: { writer in
 		Task {
