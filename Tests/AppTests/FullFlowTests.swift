@@ -1,19 +1,22 @@
 import AsyncHTTPClient
-import Vapor
+import Common
 import Crypto
 import NIOCore
+import Vapor
 import XCTest
 
 /// # Note
 ///
 /// These tests require the different components to run externally when starting the tests
 final class FullFlowTests: XCTestCase {
+	let timeout: TimeAmount = .seconds(10)
+
 	func test__DebugServer__catchAll__returnsExpectedBody() async throws {
 		let client = HTTPClient()
 		defer { try? client.syncShutdown() }
 
-		let request = try tunnelServerRequest(host: "test.fizkerinc.dk", path: "/foo")
-		let response = try await client.execute(request, timeout: .seconds(30))
+		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/foo")
+		let response = try await client.execute(request, timeout: timeout)
 
 		XCTAssertEqual(response.status, .ok)
 		let data = try await readBody(from: response)
@@ -27,8 +30,8 @@ final class FullFlowTests: XCTestCase {
 
 		let size = 1_000_000
 
-		let request = try tunnelServerRequest(host: "test.fizkerinc.dk", path: "/big-file?size=\(size)")
-		let response = try await client.execute(request, timeout: .seconds(30))
+		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/big-file?size=\(size)")
+		let response = try await client.execute(request, timeout: timeout)
 
 		XCTAssertEqual(response.status, .ok)
 
@@ -44,9 +47,49 @@ final class FullFlowTests: XCTestCase {
 		XCTAssertEqual(expectedDigest, actualDigest.hex)
 	}
 
-	// TODO: Make test sending large body to server
+	func test__DebugServer__upload_smallFile__returnsExpectedBody() async throws {
+		let data = await AsyncStream(generateDataStreamOfSize: 10)
+			.flatten()
+			.collectAll(as: Data.self)
+		let digest = SHA256.hash(data: data)
 
-	func tunnelServerRequest(host: String, path: String) throws -> HTTPClientRequest {
+		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
+		request.method = .POST
+		request.body = .bytes(data, length: .unknown)
+
+		let client = HTTPClient()
+		defer { try! client.syncShutdown() }
+
+		let response = try await client.execute(request, timeout: timeout)
+		XCTAssertEqual(response.status, .ok)
+
+		let body = try await readBody(from: response)
+		let value = body.flatMap { String(data: $0, encoding: .utf8) }
+		XCTAssertEqual(value, "Content received correctly")
+	}
+
+	func test__DebugServer__upload_bigFile__returnsExpectedBody() async throws {
+		let data = await AsyncStream(generateDataStreamOfSize: 1_000_000)
+			.flatten()
+			.collectAll(as: Data.self)
+		let digest = SHA256.hash(data: data)
+
+		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
+		request.method = .POST
+		request.body = .bytes(data, length: .unknown)
+
+		let client = HTTPClient()
+		defer { try! client.syncShutdown() }
+
+		let response = try await client.execute(request, timeout: timeout)
+		XCTAssertEqual(response.status, .ok)
+
+		let body = try await readBody(from: response)
+		let value = body.flatMap { String(data: $0, encoding: .utf8) }
+		XCTAssertEqual(value, "Content received correctly")
+	}
+
+	func tunnelServerRequest(host: String, path: String) -> HTTPClientRequest {
 		var request = HTTPClientRequest(url: "http://localhost:8110\(path)")
 		request.method = .GET
 		request.headers.replaceOrAdd(name: "host", value: host)

@@ -161,6 +161,7 @@ func testTargets() -> [Target] {
 		.testTarget(
 			name: "AppTests",
 			dependencies: [
+				"Common",
 				"DebugServer",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "XCTVapor", package: "vapor"),
