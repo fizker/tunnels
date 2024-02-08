@@ -45,7 +45,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 
 		logger.info("Routing \(clientRequest)")
 
-		let response = try await matchingRoute.send(clientRequest, bodyStream: request.body.stream(on: request.eventLoop.next()))
+		let response = try await matchingRoute.send(clientRequest, bodyStream: request.body.stream(on: request.eventLoop.next(), onFinish: { _ in }))
 
 		logger.info("Got response \(response)")
 

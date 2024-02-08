@@ -1,14 +1,16 @@
 import Vapor
 
 extension Request.Body {
-	func stream(on eventLoop: any EventLoop) -> AsyncThrowingStream<UInt8, any Error> {
+	func stream(on eventLoop: any EventLoop, onFinish: @escaping @Sendable ((any Error)?) -> Void) -> AsyncThrowingStream<UInt8, any Error> {
 		return .init { c in
 			drain { (body: BodyStreamResult) in
 				switch body {
 				case .end:
 					c.finish()
+					onFinish(nil)
 				case let .error(error):
 					c.finish(throwing: error)
+					onFinish(error)
 				case let .buffer(buffer):
 					let d = Data(buffer: buffer)
 					for byte in d {

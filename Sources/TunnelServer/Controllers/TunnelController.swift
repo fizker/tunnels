@@ -1,3 +1,4 @@
+import Common
 import Models
 import Vapor
 import WebSocket
@@ -47,7 +48,15 @@ actor TunnelController {
 		guard let client = await clientStore.client(awaitingRequest: id)
 		else { throw Abort(.notFound) }
 
-		let stream = req.body.stream(on: req.eventLoop.next())
+		let deferred = Deferred(becoming: (any Error)?.self)
+		let stream = req.body.stream(on: req.eventLoop.next()) {
+			deferred.resolve($0)
+		}
 		await client.registerResponseStream(stream, for: id)
+
+		let error = try await deferred.value
+		if let error {
+			throw error
+		}
 	}
 }
