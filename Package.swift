@@ -154,6 +154,15 @@ func executableTargets() -> [Target] {
 func testTargets() -> [Target] {
 	[
 		.testTarget(
+			name: "AppTests",
+			dependencies: [
+				"DebugServer",
+				.product(name: "AsyncHTTPClient", package: "async-http-client"),
+				.product(name: "XCTVapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
 			name: "BinaryTests",
 			dependencies: ["Binary"],
 			swiftSettings: upcomingFeatures
