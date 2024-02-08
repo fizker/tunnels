@@ -24,6 +24,20 @@ final class FullFlowTests: XCTestCase {
 		XCTAssertEqual(value, "Hello World at /foo")
 	}
 
+	func test__DebugServer__redirect__redirectResponseIsReceivedCorrectly() async throws {
+		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
+		defer { try? client.syncShutdown() }
+
+		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/redirect?location=example.com")
+		let response = try await client.execute(request, timeout: timeout)
+
+		XCTAssertEqual(response.status, .temporaryRedirect)
+		XCTAssertEqual(response.headers["location"], ["example.com"])
+
+		let data = try await readBody(from: response)
+		XCTAssertNil(data)
+	}
+
 	func test__DebugServer__bigFile__returnsExpectedBody() async throws {
 		let client = HTTPClient()
 		defer { try? client.syncShutdown() }

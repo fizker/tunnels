@@ -65,10 +65,33 @@ actor Client {
 	}
 
 	private func resolve(request id: HTTPRequest.ID) {
-		guard let p = pendingRequests[id], let res = p.response.response, let stream = p.response.stream
+		guard let p = pendingRequests[id], let res = p.response.response
+		else { return }
+
+		let stream: ResponseStream?
+
+		switch res.body {
+		case .stream:
+			stream = p.response.stream
+		case nil:
+			stream = .init(content: [])
+		case let .binary(data):
+			stream = .init(content: data)
+		case let .text(data):
+			stream = .init(content: data.data(using: .utf8)!)
+		}
+
+		guard let stream
 		else { return }
 
 		p.cont.resolve((res, stream))
 		pendingRequests[res.id] = nil
+	}
+}
+
+extension AsyncThrowingStream {
+	init<S: Sequence>(content: S) where S.Element == Element, Failure == any Error {
+		var iterator = content.makeIterator()
+		self.init { iterator.next() }
 	}
 }
