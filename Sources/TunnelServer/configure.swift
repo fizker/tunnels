@@ -24,6 +24,12 @@ public func configure(_ app: Application, port: Int) async throws {
 			let upgradeServer = UpgradeServer(port: httpPort) {
 				$0.hasSuffix(app.environment.host) ? .accepted(port: port) : .rejected
 			}
+
+			await upgradeServer.app.routes.group(".well-known") {
+				$0.get("debug-test") { req in
+					return "hello"
+				}
+			}
 			try await upgradeServer.start(topLevelApplication: app)
 		}
 	}

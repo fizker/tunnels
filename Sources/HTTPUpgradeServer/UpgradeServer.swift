@@ -7,7 +7,7 @@ public actor UpgradeServer {
 		public typealias Value = UpgradeServer
 	}
 
-	var app: Application
+	public private(set) var app: Application
 
 	public init(port: Int = 80, requestUpgrade: @escaping UpgradeRequest) {
 		var env = Environment(name: "upgrade")
