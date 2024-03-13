@@ -1,3 +1,4 @@
+import CatchAll
 import Vapor
 
 /// A HTTP server that upgrades from unencrypted HTTP to one of the supported ``SupportedProtocol``s.
@@ -19,7 +20,8 @@ public actor UpgradeServer {
 
 		app.http.server.configuration.hostname = "0.0.0.0"
 
-		app.middleware.use(UpgradeMiddleware(requestUpgrade: requestUpgrade))
+		let upgradeMiddleware = UpgradeMiddleware(requestUpgrade: requestUpgrade)
+		app.middleware.use(CatchAllMiddleware(handler: upgradeMiddleware.handle(_:)))
 	}
 
 	/// Starts the server and attaches itself to the storage of the given ``Application``.

@@ -69,6 +69,7 @@ let package = Package(
 		.target(
 			name: "HTTPUpgradeServer",
 			dependencies: [
+				"CatchAll",
 				.product(name: "Vapor", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures

@@ -46,6 +46,10 @@ struct UpgradeMiddleware: AsyncMiddleware {
 	var requestUpgrade: UpgradeRequest
 
 	func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
+		await handle(request)
+	}
+
+	func handle(_ request: Request) async -> Response {
 		var url = request.url
 		url.scheme = "https"
 
