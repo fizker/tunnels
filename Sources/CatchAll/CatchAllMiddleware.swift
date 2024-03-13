@@ -1,9 +1,9 @@
 import Vapor
 
 public struct CatchAllMiddleware: AsyncMiddleware {
-	var handler: @Sendable (Request) -> Response
+	var handler: @Sendable (Request) async throws -> Response
 
-	public init(handler: @escaping @Sendable (Request) -> Response) {
+	public init(handler: @escaping @Sendable (Request) async throws -> Response) {
 		self.handler = handler
 	}
 
@@ -16,7 +16,7 @@ public struct CatchAllMiddleware: AsyncMiddleware {
 				error.status == .notFound
 			else { throw error }
 
-			return handler(request)
+			return try await handler(request)
 		}
 	}
 }
