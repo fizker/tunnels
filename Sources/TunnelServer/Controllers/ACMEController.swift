@@ -135,11 +135,20 @@ class ACMEController {
 			awaitKeyboardInput(message: e.description + "\n")
 		}
 
-		// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
-		// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
-		let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
-		guard failed.isEmpty
-		else { throw Error.validationFailed(failed) }
+		while true {
+			// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
+			// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
+			let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
+
+			guard failed.isEmpty
+			else {
+				let e = Error.validationFailed(failed)
+				awaitKeyboardInput(message: e.description + "\n")
+				continue
+			}
+
+			break
+		}
 
 		// Let's create a private key and CSR using the rudimentary feature provided by AcmeSwift
 		// If the validation didn't throw any error, we can now send our Certificate Signing Request...
