@@ -3,6 +3,9 @@ import Vapor
 import SwiftASN1
 import NIOSSL
 
+private let _1Day: TimeInterval = 84_600
+private let _30Days = _1Day * 30
+
 class ACMEController {
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
@@ -61,7 +64,7 @@ class ACMEController {
 			self.createdAt = createdAt
 
 			let firstExpiration = min(privateKey.expirationDate, certificateChain.map(\.expirationDate).min() ?? .distantFuture)
-			self.expiresAt = firstExpiration - 84_600 * 30
+			self.expiresAt = firstExpiration
 		}
 	}
 
@@ -82,11 +85,22 @@ class ACMEController {
 	}
 
 	private func lazyLoadData() async throws -> CertificateData {
-		if let certificate = acmeData.certificate, certificate.expiresAt > .now {
-			return certificate
+		if let certificate = acmeData.certificate {
+			let untilExpiration = certificate.expiresAt.timeIntervalSince(.now)
+
+			guard untilExpiration < _1Day
+			else {
+				if untilExpiration < _30Days {
+					print("Notice: Certificate expires at \(certificate.expiresAt.formatted())")
+				}
+
+				return certificate
+			}
+
+			print("Certificate is expired. Renewal initiated")
 		}
 
-		return try await loadCertificate()
+		return try await requestNewCertificate()
 	}
 
 	func addCertificate(to app: Application) async throws {
@@ -115,7 +129,8 @@ class ACMEController {
 		}
 	}
 
-	private func loadCertificate() async throws -> CertificateData {
+	/// Requests a new certificate from Let's Encrypt
+	private func requestNewCertificate() async throws -> CertificateData {
 		// Create the client and load Let's Encrypt credentials
 		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
 		defer { try? acme.syncShutdown() }
