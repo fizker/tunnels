@@ -6,7 +6,7 @@ let upcomingFeatures: [SwiftSetting] = [
 	.enableUpcomingFeature("ConciseMagicFile"),
 	.enableUpcomingFeature("ForwardTrailingClosures"),
 	.enableUpcomingFeature("ExistentialAny"),
-	.enableUpcomingFeature("StrictConcurrency"),
+	.enableExperimentalFeature("StrictConcurrency"),
 	.enableUpcomingFeature("ImplicitOpenExistentials"),
 	.enableUpcomingFeature("BareSlashRegexLiterals"),
 ]
