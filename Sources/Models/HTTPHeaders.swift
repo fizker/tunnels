@@ -1,4 +1,4 @@
-public struct HTTPHeaders: Codable, Sequence {
+public struct HTTPHeaders: Codable, Sendable, Sequence {
 	public func makeIterator() -> IndexingIterator<[(String, [String])]> {
 		values.map { ($0.key, $0.value.values) }.makeIterator()
 	}

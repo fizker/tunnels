@@ -1,4 +1,4 @@
-public struct ClientCredentials: Codable {
+public struct ClientCredentials: Codable, Sendable {
 	public var clientID: String
 	public var clientSecret: String
 
