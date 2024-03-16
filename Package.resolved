@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-environment-variables.git",
       "state" : {
-        "revision" : "37f5b5a77780a882ea886ead09c4081793bee8fc",
-        "version" : "1.0.0"
+        "revision" : "a6652381db61942b770eb0e3bfe2f35d27c1d314",
+        "version" : "1.0.1"
       }
     },
     {

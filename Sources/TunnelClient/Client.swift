@@ -17,7 +17,7 @@ public actor Client {
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
 
-	public enum Error: Swift.Error {
+	public enum Error: Swift.Error, Sendable {
 		case failedToRegisterProxies([Proxy])
 	}
 

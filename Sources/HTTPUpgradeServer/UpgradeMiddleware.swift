@@ -1,6 +1,6 @@
 import Vapor
 
-public struct UpgradeResponse {
+public struct UpgradeResponse: Sendable {
 	/// The host to upgrade to. If this is `nil`, the host will be kept unchanged.
 	public var host: String? = nil
 
@@ -40,7 +40,7 @@ public struct UpgradeResponse {
 }
 
 /// A function that tests a host and returns an ``UpgradeResponse`` to denote if it should be upgraded or be rejected.
-public typealias UpgradeRequest = (String) async -> UpgradeResponse
+public typealias UpgradeRequest = @Sendable (String) async -> UpgradeResponse
 
 struct UpgradeMiddleware: AsyncMiddleware {
 	var requestUpgrade: UpgradeRequest

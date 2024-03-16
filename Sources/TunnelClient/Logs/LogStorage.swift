@@ -60,7 +60,7 @@ public actor LogStorage {
 		return summaries
 	}
 
-	public func listenForUpdates(onUpdate: @escaping ([LogSummary]) -> Void) throws {
+	public func listenForUpdates(onUpdate: @Sendable @escaping ([LogSummary]) -> Void) throws {
 		guard listener == nil
 		else { return }
 

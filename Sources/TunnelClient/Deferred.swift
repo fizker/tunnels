@@ -1,4 +1,4 @@
-public enum DeferredError: Error {
+public enum DeferredError: Error, Sendable {
 	case rejected
 }
 
