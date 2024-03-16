@@ -12,21 +12,21 @@
 /// iterator.next(2)
 /// // iterator will have one more bit to give
 /// ```
-public struct BitIterator: IteratorProtocol {
+public struct BitIterator: IteratorProtocol, Sendable {
 	public typealias Element = Bit
-	public typealias Number = BinaryInteger & UnsignedInteger
+	public typealias Number = BinaryInteger & UnsignedInteger & Sendable
 
 	/// The bit width of ``Number``.
 	let bitWidth: Int
-	let currentFromIndex: (Int) -> (any Number)?
-	var current: (any Number)?
+	let currentFromIndex: @Sendable (Int) -> (any Number)?
+	var current: (any Number & Sendable)?
 	var position: Int = 0
 	var currentIndex: Int
 	let startIndex: Int
 	let endIndex: Int
 
 	/// Creates a new BitIterator that enumerates all bits in the given `Sequence`.
-	public init<S: RandomAccessCollection>(_ numbers: S) where S.Element: Number, S.Index == Int {
+	public init<S: RandomAccessCollection>(_ numbers: S) where S: Sendable, S.Element: Number, S.Index == Int {
 		currentFromIndex = { $0 >= numbers.startIndex && $0 < numbers.endIndex ? numbers[$0] : nil }
 
 		current = numbers.first

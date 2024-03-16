@@ -1,5 +1,5 @@
 /// A single bit.
-public enum Bit: CustomStringConvertible {
+public enum Bit: CustomStringConvertible, Sendable {
 	case zero
 	case one
 
