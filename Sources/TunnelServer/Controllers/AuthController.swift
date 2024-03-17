@@ -23,7 +23,7 @@ class AuthController {
 
 	func oauth2Token(req: Request) async throws -> AccessTokenResponse {
 		guard let request = try? req.content.decode(GrantRequest.self)
-		else { throw ErrorResponse(code: .invalidRequest, description: try! .init("Could not parse request")) }
+		else { throw ErrorResponse(code: .invalidRequest, description: "Could not parse request") }
 
 		let user: User
 
@@ -35,13 +35,13 @@ class AuthController {
 				let username = request.clientID,
 				let secret = request.clientSecret
 			else {
-				throw ErrorResponse(code: .invalidRequest, description: try .init("ClientID and ClientSecret are required"))
+				throw ErrorResponse(code: .invalidRequest, description: "ClientID and ClientSecret are required")
 			}
 			guard
 				let u = await userStore.user(username: username),
 				u.clientSecret == secret
 			else {
-				throw ErrorResponse(code: .invalidGrant, description: try .init("Invalid credentials"))
+				throw ErrorResponse(code: .invalidGrant, description: "Invalid credentials")
 			}
 
 			user = u
@@ -50,11 +50,13 @@ class AuthController {
 				let u = await userStore.user(username: request.username),
 				u.password == request.password
 			else {
-				throw ErrorResponse(code: .invalidGrant, description: try .init("Invalid credentials"))
+				throw ErrorResponse(code: .invalidGrant, description: "Invalid credentials")
 			}
 
 			user = u
 		case .refreshToken(_):
+			throw ErrorResponse(code: .unsupportedGrantType, description: nil)
+		case .unknown(_):
 			throw ErrorResponse(code: .unsupportedGrantType, description: nil)
 		}
 

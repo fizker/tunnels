@@ -212,8 +212,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-oauth2-models.git",
       "state" : {
-        "revision" : "337ebe5521c48543976a8398303965addb5d02c5",
-        "version" : "0.3.0"
+        "revision" : "edf3e56ff84d8d087294f6687bf30ac5e1cbe203",
+        "version" : "0.4.0"
       }
     },
     {
