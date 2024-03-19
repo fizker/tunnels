@@ -110,7 +110,9 @@ public actor Client {
 				}
 			}
 
-			await group.waitForAll()
+			// This gives sendable-warning: await group.waitForAll()
+			for await _ in group {
+			}
 		}
 
 		let pendingProxies = proxies.filter { !$0.isReadyOnServer }

@@ -1,7 +1,7 @@
 import Vapor
 
 /// A HTTP server that upgrades from unencrypted HTTP to one of the supported ``SupportedProtocol``s.
-public class UpgradeServer {
+public actor UpgradeServer {
 	public struct StorageKey: Vapor.StorageKey {
 		public typealias Value = UpgradeServer
 	}

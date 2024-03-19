@@ -24,7 +24,7 @@ public func configure(_ app: Application, port: Int) async throws {
 			let upgradeServer = UpgradeServer(port: httpPort) {
 				$0.hasSuffix(app.environment.host) ? .accepted(port: port) : .rejected
 			}
-			try upgradeServer.start(topLevelApplication: app)
+			try await upgradeServer.start(topLevelApplication: app)
 		}
 	}
 

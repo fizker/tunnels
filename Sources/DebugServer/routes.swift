@@ -2,7 +2,7 @@ import Foundation
 import Vapor
 
 struct CatchAllMiddleware: AsyncMiddleware {
-	var handler: (Request) -> Response
+	var handler: @Sendable (Request) -> Response
 
 	func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
 		do {

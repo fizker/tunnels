@@ -3,7 +3,7 @@ import Models
 import Vapor
 import TunnelClient
 
-class LogController {
+actor LogController {
 	let storage: LogStorage
 	var summaryListeners: [WebSocket] = []
 
@@ -17,15 +17,21 @@ class LogController {
 			guard let self
 			else { return }
 
-			for idx in summaryListeners.indices.reversed() {
-				let listener = summaryListeners[idx]
-				guard !listener.isClosed
-				else {
-					summaryListeners.remove(at: idx)
-					continue
-				}
-				listener.send(summaries.map(map).joined())
+			Task {
+				await self.updateSummaries(summaries)
 			}
+		}
+	}
+
+	private func updateSummaries(_ newSummaries: [LogSummary]) {
+		for idx in summaryListeners.indices.reversed() {
+			let listener = summaryListeners[idx]
+			guard !listener.isClosed
+			else {
+				summaryListeners.remove(at: idx)
+				continue
+			}
+			listener.send(newSummaries.map(map).joined())
 		}
 	}
 

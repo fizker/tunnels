@@ -18,15 +18,15 @@ public actor WebSocketHandler {
 		try await webSocket.close()
 	}
 
-	public nonisolated func onServerMessage(_ callback: @escaping (WebSocket, WebSocketServerMessage) async throws -> ()) {
+	public nonisolated func onServerMessage(_ callback: @escaping @Sendable (WebSocket, WebSocketServerMessage) async throws -> ()) {
 		onMessage(callback)
 	}
 
-	public nonisolated func onClientMessage(_ callback: @escaping (WebSocket, WebSocketClientMessage) async throws -> ()) {
+	public nonisolated func onClientMessage(_ callback: @escaping @Sendable (WebSocket, WebSocketClientMessage) async throws -> ()) {
 		onMessage(callback)
 	}
 
-	private nonisolated func onMessage<T: Decodable>(_ callback: @escaping (WebSocket, T) async throws -> ()) {
+	private nonisolated func onMessage<T: Decodable & Sendable>(_ callback: @escaping @Sendable (WebSocket, T) async throws -> ()) {
 		webSocket.onBinary { [weak self] ws, value in
 			guard let self
 			else { return }

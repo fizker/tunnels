@@ -14,7 +14,7 @@ struct TunnelDTO: Codable {
 	}
 }
 
-class TunnelController {
+actor TunnelController {
 	var clientStore = ClientStore()
 
 	func all(req: Request) async throws -> [TunnelDTO] {

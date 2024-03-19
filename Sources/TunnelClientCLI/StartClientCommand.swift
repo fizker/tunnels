@@ -20,7 +20,7 @@ struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .shortAndLong)
 	var logs: String = "logs"
 
-	@Option(name: .shortAndLong, transform: ClientCredentials.init(argument:))
+	@Option(name: .shortAndLong, transform: { try ClientCredentials(argument: $0) })
 	var credentials: ClientCredentials
 
 	func run() async throws {
