@@ -6,13 +6,10 @@ package typealias HostMap = [String: ResourceRecord.Data]
 private let cloudflareAddress = try! SocketAddress(ipAddress: "1.1.1.1", port: 53)
 
 package class DNSServer {
-	var port: Int
-	var channel: (any Channel)!
-	var hostMap: HostMap
-	var dnsProxyAddress: SocketAddress
-
-	/// The key is the DNSPacket ID, and the value is the address of the original sender, that should get the response
-	var pendingProxyRequests: [UInt16: SocketAddress] = [:]
+	let port: Int
+	let channel: any Channel
+	let hostMap: HostMap
+	let dnsProxyAddress: SocketAddress
 
 	public init(
 		port: Int = 53,
@@ -27,7 +24,11 @@ package class DNSServer {
 		let bootstrap = DatagramBootstrap(group: group)
 			.channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
 			.channelInitializer {
-				$0.pipeline.addHandler(self)
+				$0.pipeline.addHandler(DNSServerChannelHandler(
+					port: port,
+					hostMap: hostMap,
+					dnsProxyAddress: dnsProxyAddress
+				))
 			}
 
 		channel = try await bootstrap.bind(host: "0.0.0.0", port: port).get()
@@ -47,9 +48,22 @@ package class DNSServer {
 	}
 }
 
-extension DNSServer: ChannelInboundHandler {
+private class DNSServerChannelHandler: ChannelInboundHandler {
 	package typealias InboundIn = AddressedEnvelope<ByteBuffer>
 	package typealias OutboundOut = AddressedEnvelope<ByteBuffer>
+
+	let port: Int
+	let hostMap: HostMap
+	let dnsProxyAddress: SocketAddress
+
+	/// The key is the DNSPacket ID, and the value is the address of the original sender, that should get the response
+	var pendingProxyRequests: [UInt16: SocketAddress] = [:]
+
+	init(port: Int, hostMap: HostMap, dnsProxyAddress: SocketAddress) {
+		self.port = port
+		self.hostMap = hostMap
+		self.dnsProxyAddress = dnsProxyAddress
+	}
 
 	package func channelRead(context: ChannelHandlerContext, data: NIOAny) {
 		let input = unwrapInboundIn(data)
@@ -61,6 +75,7 @@ extension DNSServer: ChannelInboundHandler {
 			let packet = try DNSPacket(iterator: &iterator)
 
 			if packet.header.kind == .response {
+				#warning("TODO: Check that we actually remove pendingProxyRequests again when they are resolved")
 				guard let remoteAddress = pendingProxyRequests[packet.header.id]
 				else {
 					print("Got response for unknown packet")
