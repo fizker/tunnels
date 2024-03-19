@@ -20,7 +20,7 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.resolve("foo")
+		await deferred.resolve("foo")
 
 		let actual = try await deferred.value
 		events.append("after await")
@@ -34,7 +34,7 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.resolve("foo")
+		await deferred.resolve("foo")
 
 		let firstActual = try await deferred.value
 		let secondActual = try await deferred.value
@@ -50,8 +50,8 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.resolve("foo")
-		deferred.resolve("bar")
+		await deferred.resolve("foo")
+		await deferred.resolve("bar")
 
 		let firstActual = try await deferred.value
 		let secondActual = try await deferred.value
@@ -67,7 +67,7 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.reject()
+		await deferred.reject()
 
 		do {
 			_ = try await deferred.value
@@ -85,8 +85,8 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.reject()
-		deferred.reject()
+		await deferred.reject()
+		await deferred.reject()
 
 		do {
 			_ = try await deferred.value
@@ -104,8 +104,8 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.resolve("foo")
-		deferred.reject()
+		await deferred.resolve("foo")
+		await deferred.reject()
 
 		let actual = try await deferred.value
 		events.append("after await")
@@ -119,8 +119,8 @@ final class DeferredTests: XCTestCase {
 		var events = ["start"]
 
 		events.append("resolving")
-		deferred.reject()
-		deferred.resolve("foo")
+		await deferred.reject()
+		await deferred.resolve("foo")
 
 		do {
 			_ = try await deferred.value
@@ -140,7 +140,7 @@ final class DeferredTests: XCTestCase {
 		Task {
 			try await Task.sleep(for: .milliseconds(100))
 			await events.append("resolving")
-			deferred.resolve("foo")
+			await deferred.resolve("foo")
 		}
 
 		await events.append("requesting value")
@@ -159,7 +159,7 @@ final class DeferredTests: XCTestCase {
 		Task {
 			try await Task.sleep(for: .milliseconds(100))
 			await events.append("resolving")
-			deferred.reject()
+			await deferred.reject()
 		}
 
 		await events.append("requesting value")

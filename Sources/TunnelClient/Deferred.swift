@@ -2,7 +2,7 @@ public enum DeferredError: Error, Sendable {
 	case rejected
 }
 
-public class Deferred<T> {
+public actor Deferred<T: Sendable> {
 	private enum State {
 		case resolved(T)
 		case rejected
