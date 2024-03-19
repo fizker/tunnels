@@ -6,9 +6,9 @@ import OAuth2Models
 import WebSocket
 import WebSocketKit
 
-let httpSchemeRegex = /^http/
-
 public actor Client {
+	private static let httpSchemeRegex = /^http/
+
 	let logger = Logger(label: "Client")
 	var serverURL: URL
 	var webSocketURL: URL
@@ -32,7 +32,7 @@ public actor Client {
 
 		self.credentialsStore = .init(credentials: clientCredentials, serverURL: serverURL)
 		self.serverURL = serverURL
-		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
+		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(Self.httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
 		self.logStorage = logStorage
 	}
