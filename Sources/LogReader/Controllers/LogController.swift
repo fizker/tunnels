@@ -14,12 +14,7 @@ actor LogController {
 	init(storagePath: String) async throws {
 		storage = try await LogStorage(storagePath: storagePath)
 		try await storage.listenForUpdates { [weak self] summaries in
-			guard let self
-			else { return }
-
-			Task {
-				await self.updateSummaries(summaries)
-			}
+			await self?.updateSummaries(summaries)
 		}
 	}
 

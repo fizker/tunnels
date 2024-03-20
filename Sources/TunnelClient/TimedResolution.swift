@@ -12,13 +12,13 @@ actor TimedResolution {
 
 	private(set) var isResolved = false
 	let timeout: Duration
-	let onEnd: (Result) async -> ()
+	let onEnd: @Sendable (Result) async -> ()
 
 	init(timeout: Duration, onEnd: @escaping @Sendable (Result) async -> Void) {
 		self.timeout = timeout
 		self.onEnd = onEnd
 
-		Task {
+		Task.detached {
 			try await Task.sleep(for: timeout)
 			await self.timeOut()
 		}
@@ -36,8 +36,8 @@ actor TimedResolution {
 		guard !isResolved
 		else { return }
 		isResolved = true
-		Task {
-			await onEnd(result)
+		Task.detached {
+			await self.onEnd(result)
 		}
 	}
 }

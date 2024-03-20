@@ -19,7 +19,7 @@ public struct BitIterator: IteratorProtocol, Sendable {
 	/// The bit width of ``Number``.
 	let bitWidth: Int
 	let currentFromIndex: @Sendable (Int) -> (any Number)?
-	var current: (any Number & Sendable)?
+	var current: (any Number)?
 	var position: Int = 0
 	var currentIndex: Int
 	let startIndex: Int

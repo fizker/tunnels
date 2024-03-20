@@ -16,10 +16,7 @@ actor Client {
 		self.webSocket = webSocket
 
 		webSocket.onClientMessage { [weak self] ws, data in
-			guard let self
-			else { return }
-
-			try await onWebSocketMessage(data)
+			try await self?.onWebSocketMessage(data)
 		}
 	}
 
