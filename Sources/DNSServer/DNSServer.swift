@@ -75,8 +75,7 @@ private class DNSServerChannelHandler: ChannelInboundHandler {
 			let packet = try DNSPacket(iterator: &iterator)
 
 			if packet.header.kind == .response {
-				#warning("TODO: Check that we actually remove pendingProxyRequests again when they are resolved")
-				guard let remoteAddress = pendingProxyRequests[packet.header.id]
+				guard let remoteAddress = pendingProxyRequests.removeValue(forKey: packet.header.id)
 				else {
 					print("Got response for unknown packet")
 					return
