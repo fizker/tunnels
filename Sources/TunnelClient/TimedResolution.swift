@@ -20,16 +20,20 @@ actor TimedResolution {
 
 		Task.detached {
 			try await Task.sleep(for: timeout)
-			await self.timeOut()
+			self.timeOut()
 		}
 	}
 
-	func resolve() {
-		resolve(with: .resolved)
+	nonisolated func resolve() {
+		Task {
+			await resolve(with: .resolved)
+		}
 	}
 
-	func timeOut() {
-		resolve(with: .timedOut)
+	nonisolated func timeOut() {
+		Task {
+			await resolve(with: .timedOut)
+		}
 	}
 
 	private func resolve(with result: Result) {

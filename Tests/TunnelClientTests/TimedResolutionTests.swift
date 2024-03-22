@@ -11,7 +11,7 @@ final class TimedResolutionTests: XCTestCase {
 		Task.detached {
 			do {
 				try await Task.sleep(for: .milliseconds(50))
-				await timer.resolve()
+				timer.resolve()
 			} catch {
 				continuation.yield(.error(error))
 			}
@@ -33,7 +33,7 @@ final class TimedResolutionTests: XCTestCase {
 		Task.detached {
 			do {
 				try await Task.sleep(for: .milliseconds(150))
-				await timer.resolve()
+				timer.resolve()
 			} catch {
 				continuation.yield(.error(error))
 			}

@@ -186,7 +186,7 @@ public actor Client {
 
 			guard let idx = pendingProxies.firstIndex(where: { $0.config.host == config.host })
 			else { return }
-			await pendingProxies[idx].continuation.resolve()
+			pendingProxies[idx].continuation.resolve()
 		case .tunnelRemoved(_):
 			break
 		}
