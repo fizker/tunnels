@@ -18,7 +18,13 @@ public actor Deferred<T: Sendable> {
 		self.cont = v.continuation
 	}
 
-	public func resolve(_ value: T) {
+	public nonisolated func resolve(_ value: T) {
+		Task {
+			await _resolve(value)
+		}
+	}
+
+	private func _resolve(_ value: T) {
 		guard state == nil
 		else { return }
 
@@ -27,7 +33,13 @@ public actor Deferred<T: Sendable> {
 		cont.finish()
 	}
 
-	public func reject() {
+	public nonisolated func reject() {
+		Task {
+			await _reject()
+		}
+	}
+
+	private func _reject() {
 		guard state == nil
 		else { return }
 
