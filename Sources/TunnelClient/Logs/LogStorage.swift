@@ -60,7 +60,7 @@ public actor LogStorage {
 		return summaries
 	}
 
-	public func listenForUpdates(onUpdate: @escaping ([LogSummary]) -> Void) throws {
+	public func listenForUpdates(onUpdate: @Sendable @escaping ([LogSummary]) async -> Void) throws {
 		guard listener == nil
 		else { return }
 
@@ -71,7 +71,7 @@ public actor LogStorage {
 
 			Task {
 				self.logger.info("Summary was updated")
-				onUpdate(await self.readSummaryFile())
+				await onUpdate(await self.readSummaryFile())
 			}
 		}
 	}

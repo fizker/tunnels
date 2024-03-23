@@ -1,6 +1,6 @@
 import Foundation
 
-public struct HTTPStatus: Codable {
+public struct HTTPStatus: Codable, Sendable {
 	public var code: UInt
 	public var reason: String
 
@@ -14,7 +14,7 @@ public struct HTTPStatus: Codable {
 	}
 }
 
-public struct HTTPResponse: Codable {
+public struct HTTPResponse: Codable, Sendable {
 	public var id: HTTPRequest.ID
 	public var status: HTTPStatus
 	public var headers: HTTPHeaders

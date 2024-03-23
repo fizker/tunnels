@@ -4,7 +4,7 @@ import Vapor
 import WebSocket
 
 /// An instance of TunnelClient, from the perspective of the server. It supports sending a HTTPRequest and awaiting the response.
-class Client {
+actor Client {
 	let webSocket: WebSocketHandler
 
 	var hosts: [String] = []
@@ -16,19 +16,20 @@ class Client {
 		self.webSocket = webSocket
 
 		webSocket.onClientMessage { [weak self] ws, data in
-			guard let self
-			else { return }
+			try await self?.onWebSocketMessage(data)
+		}
+	}
 
-			switch data {
-			case let .response(res):
-				try handle(res)
-			case let .addTunnel(config):
-				hosts.append(config.host)
-				try await webSocket.send(.tunnelAdded(config))
-			case let .removeTunnel(host: host):
-				hosts.removeAll { $0 == host }
-				try await webSocket.send(.tunnelRemoved(TunnelConfiguration(host: host)))
-			}
+	private func onWebSocketMessage(_ data: WebSocketClientMessage) async throws {
+		switch data {
+		case let .response(res):
+			try handle(res)
+		case let .addTunnel(config):
+			hosts.append(config.host)
+			try await webSocket.send(.tunnelAdded(config))
+		case let .removeTunnel(host: host):
+			hosts.removeAll { $0 == host }
+			try await webSocket.send(.tunnelRemoved(TunnelConfiguration(host: host)))
 		}
 	}
 

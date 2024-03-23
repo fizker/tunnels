@@ -14,11 +14,16 @@ struct TunnelDTO: Codable {
 	}
 }
 
-class TunnelController {
+actor TunnelController {
 	var clientStore = ClientStore()
 
 	func all(req: Request) async throws -> [TunnelDTO] {
-		return await clientStore.connectedClients.flatMap(\.hosts).map(TunnelDTO.init(host:))
+		var dtos: [TunnelDTO] = []
+		for client in await clientStore.connectedClients {
+			let hosts = await client.hosts
+			dtos.append(contentsOf: hosts.map(TunnelDTO.init(host:)))
+		}
+		return dtos
 	}
 
 	func connectClient(req: Request, webSocket: WebSocketHandler) async throws {

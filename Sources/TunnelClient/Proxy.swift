@@ -1,6 +1,6 @@
 import Models
 
-public struct Proxy {
+public struct Proxy: Sendable {
 	public var localPort: Int
 	public var host: String
 	public var isReadyOnServer: Bool = false

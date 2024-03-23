@@ -1,8 +1,8 @@
 /// A Sequence of UInt8 wrapping a BitIterator.
 ///
 /// This is compatible with the `Data(contentsOf:)` initializer.
-public struct ByteSequence: Sequence {
-	public struct Iterator: IteratorProtocol {
+public struct ByteSequence: Sequence, Sendable {
+	public struct Iterator: IteratorProtocol, Sendable {
 		public typealias Element = UInt8
 
 		var bitIterator: BitIterator

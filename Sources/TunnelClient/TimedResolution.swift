@@ -12,30 +12,36 @@ actor TimedResolution {
 
 	private(set) var isResolved = false
 	let timeout: Duration
-	let onEnd: (Result) -> ()
+	let onEnd: @Sendable (Result) async -> ()
 
-	init(timeout: Duration, onEnd: @escaping (Result) -> Void) {
+	init(timeout: Duration, onEnd: @escaping @Sendable (Result) async -> Void) {
 		self.timeout = timeout
 		self.onEnd = onEnd
 
-		Task {
+		Task.detached {
 			try await Task.sleep(for: timeout)
-			await self.timeOut()
+			self.timeOut()
 		}
 	}
 
-	func resolve() {
-		resolve(with: .resolved)
+	nonisolated func resolve() {
+		Task {
+			await resolve(with: .resolved)
+		}
 	}
 
-	func timeOut() {
-		resolve(with: .timedOut)
+	nonisolated func timeOut() {
+		Task {
+			await resolve(with: .timedOut)
+		}
 	}
 
 	private func resolve(with result: Result) {
 		guard !isResolved
 		else { return }
 		isResolved = true
-		onEnd(result)
+		Task.detached {
+			await self.onEnd(result)
+		}
 	}
 }

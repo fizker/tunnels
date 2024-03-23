@@ -3,10 +3,10 @@
     {
       "identity" : "acmeswift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/m-barthelemy/AcmeSwift.git",
+      "location" : "https://github.com/fizker/AcmeSwift.git",
       "state" : {
-        "revision" : "0db76f69f3341bcf6ee492bfc7597c19f227e414",
-        "version" : "1.0.0-beta3"
+        "branch" : "sendable",
+        "revision" : "dfd46fce982d84739ec009ca33f8ae219eb28dd8"
       }
     },
     {
@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/async-http-client.git",
       "state" : {
-        "revision" : "5ccda442f103792d67680aefc8d0a87392fbd66c",
-        "version" : "1.20.0"
+        "revision" : "291438696abdd48d2a83b52465c176efbd94512b",
+        "version" : "1.20.1"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/routing-kit.git",
       "state" : {
-        "revision" : "e0539da5b60a60d7381f44cdcf04036f456cee2f",
-        "version" : "4.8.0"
+        "revision" : "2a92a7eac411a82fb3a03731be5e76773ebe1b3e",
+        "version" : "4.9.0"
       }
     },
     {
@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-argument-parser",
       "state" : {
-        "revision" : "c8ed701b513cf5177118a175d85fbbbcd707ab41",
-        "version" : "1.3.0"
+        "revision" : "46989693916f56d1186bd59ac15124caef896560",
+        "version" : "1.3.1"
       }
     },
     {
@@ -131,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-environment-variables.git",
       "state" : {
-        "revision" : "37f5b5a77780a882ea886ead09c4081793bee8fc",
-        "version" : "1.0.0"
+        "revision" : "a6652381db61942b770eb0e3bfe2f35d27c1d314",
+        "version" : "1.0.1"
       }
     },
     {
@@ -158,8 +158,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "702cd7c56d5d44eeba73fdf83918339b26dc855c",
-        "version" : "2.62.0"
+        "revision" : "fc63f0cf4e55a4597407a9fc95b16a2bc44b4982",
+        "version" : "2.64.0"
       }
     },
     {
@@ -212,8 +212,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-oauth2-models.git",
       "state" : {
-        "revision" : "337ebe5521c48543976a8398303965addb5d02c5",
-        "version" : "0.3.0"
+        "revision" : "edf3e56ff84d8d087294f6687bf30ac5e1cbe203",
+        "version" : "0.4.0"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system.git",
+      "state" : {
+        "revision" : "025bcb1165deab2e20d4eaba79967ce73013f496",
+        "version" : "1.2.1"
       }
     },
     {
@@ -221,8 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/vapor.git",
       "state" : {
-        "revision" : "6db3d917b5ce5024a84eb265ef65691383305d70",
-        "version" : "4.90.0"
+        "revision" : "3a7da193a2937472b252b8db210897e7abf37b47",
+        "version" : "4.92.4"
       }
     },
     {

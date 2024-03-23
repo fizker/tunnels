@@ -1,7 +1,7 @@
 import Foundation
 import Models
 
-public struct LogSummary: Codable {
+public struct LogSummary: Codable, Sendable {
 	public var id: Log.ID
 	public var host: String
 	public var path: String

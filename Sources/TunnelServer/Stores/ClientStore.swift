@@ -3,10 +3,14 @@ import Models
 actor ClientStore {
 	var connectedClients: [Client] = []
 
-	func client(forHost host: String) -> Client? {
-		return connectedClients.first { client in
-			client.hosts.contains(host)
+	func client(forHost host: String) async -> Client? {
+		for client in connectedClients {
+			if await client.hosts.contains(host) {
+				return client
+			}
 		}
+
+		return nil
 	}
 
 	func add(_ client: Client) {

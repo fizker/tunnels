@@ -6,9 +6,9 @@ import OAuth2Models
 import WebSocket
 import WebSocketKit
 
-let httpSchemeRegex = /^http/
-
 public actor Client {
+	private static let httpSchemeRegex = /^http/
+
 	let logger = Logger(label: "Client")
 	var serverURL: URL
 	var webSocketURL: URL
@@ -17,7 +17,7 @@ public actor Client {
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
 
-	public enum Error: Swift.Error {
+	public enum Error: Swift.Error, Sendable {
 		case failedToRegisterProxies([Proxy])
 	}
 
@@ -32,7 +32,7 @@ public actor Client {
 
 		self.credentialsStore = .init(credentials: clientCredentials, serverURL: serverURL)
 		self.serverURL = serverURL
-		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(httpSchemeRegex, with: "ws"))!
+		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(Self.httpSchemeRegex, with: "ws"))!
 		self.proxies = proxies
 		self.logStorage = logStorage
 	}
@@ -81,7 +81,7 @@ public actor Client {
 
 		let config = proxy.config
 		let deferred = Deferred(becoming: TimedResolution.Result.self)
-		let timer = TimedResolution(timeout: .seconds(5), onEnd: deferred.resolve(_:))
+		let timer = TimedResolution(timeout: .seconds(5), onEnd: { await deferred.resolve($0) })
 		pendingProxies.append((timer, config))
 		defer {
 			pendingProxies.removeAll { $0.config.host == config.host }
@@ -110,7 +110,9 @@ public actor Client {
 				}
 			}
 
-			await group.waitForAll()
+			// This gives sendable-warning: await group.waitForAll()
+			for await _ in group {
+			}
 		}
 
 		let pendingProxies = proxies.filter { !$0.isReadyOnServer }
@@ -184,7 +186,7 @@ public actor Client {
 
 			guard let idx = pendingProxies.firstIndex(where: { $0.config.host == config.host })
 			else { return }
-			await pendingProxies[idx].continuation.resolve()
+			pendingProxies[idx].continuation.resolve()
 		case .tunnelRemoved(_):
 			break
 		}

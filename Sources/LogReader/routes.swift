@@ -7,6 +7,6 @@ func routes(_ app: Application) async throws {
 	app.get { await logController.summaries(req: $0) }
 	app.get(":id") { try await logController.details(req: $0, idParam: "id") }
 	app.webSocket("summaries.ws", onUpgrade: { req, ws in
-		logController.addSummaryListener(webSocket: ws)
+		await logController.addSummaryListener(webSocket: ws)
 	})
 }
