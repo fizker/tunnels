@@ -1,5 +1,5 @@
 import XCTest
-@testable import TunnelClient
+@testable import Common
 
 final class DeferredTests: XCTestCase {
 	actor Events {

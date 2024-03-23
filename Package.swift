@@ -38,6 +38,10 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.target(
+			name: "Common",
+			swiftSettings: upcomingFeatures
+		),
+		.target(
 			name: "DNSServer",
 			dependencies: [
 				"Binary",
@@ -69,6 +73,7 @@ let package = Package(
 		.target(
 			name: "TunnelClient",
 			dependencies: [
+				"Common",
 				"Models",
 				"WebSocket",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
@@ -150,6 +155,13 @@ func testTargets() -> [Target] {
 		.testTarget(
 			name: "BinaryTests",
 			dependencies: ["Binary"],
+			swiftSettings: upcomingFeatures
+		),
+		.testTarget(
+			name: "CommonTests",
+			dependencies: [
+				"Common",
+			],
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(
