@@ -165,6 +165,8 @@ class ACMEController {
 			break
 		}
 
+		print("No challenges remaining. Finalizing order.")
+
 		// Let's create a private key and CSR using the rudimentary feature provided by AcmeSwift
 		// If the validation didn't throw any error, we can now send our Certificate Signing Request...
 		let (privateKey, csr, finalized) = try await acme.orders.finalizeWithRsa(order: order, domains: domains)
