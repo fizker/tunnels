@@ -3,6 +3,9 @@ import Vapor
 import SwiftASN1
 import NIOSSL
 
+private let _1Day: TimeInterval = 84_600
+private let _30Days = _1Day * 30
+
 class ACMEController {
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
@@ -42,26 +45,39 @@ class ACMEController {
 	}
 
 	struct CertificateData: Codable {
+		enum Error: Swift.Error {
+			case certificateChainCannotBeEmpty
+		}
+
 		var certificateChain: [Certificate]
-		var privateKey: Certificate
+		var privateKeyPEM: String
 		var expiresAt: Date
 
 		var createdAt: Date
 
-		init(certificateChain: [Certificate], privateKey: Certificate, expiresAt: Date, createdAt: Date = .now) {
+		init(certificateChain: [Certificate], privateKeyPEM: String, expiresAt: Date, createdAt: Date = .now) throws {
+			guard !certificateChain.isEmpty
+			else { throw Error.certificateChainCannotBeEmpty }
+
 			self.certificateChain = certificateChain
-			self.privateKey = privateKey
+			self.privateKeyPEM = privateKeyPEM
 			self.expiresAt = expiresAt
 			self.createdAt = createdAt
 		}
 
-		init(certificateChain: [Certificate], privateKey: Certificate, createdAt: Date = .now) {
+		init(certificateChain: [Certificate], privateKey: PEMDocument, createdAt: Date = .now) throws {
+			try self.init(certificateChain: certificateChain, privateKeyPEM: privateKey.pemString, createdAt: createdAt)
+		}
+
+		init(certificateChain: [Certificate], privateKeyPEM: String, createdAt: Date = .now) throws {
 			self.certificateChain = certificateChain
-			self.privateKey = privateKey
+			self.privateKeyPEM = privateKeyPEM
 			self.createdAt = createdAt
 
-			let firstExpiration = min(privateKey.expirationDate, certificateChain.map(\.expirationDate).min() ?? .distantFuture)
-			self.expiresAt = firstExpiration - 84_600 * 30
+			guard let firstExpiration = certificateChain.map(\.expirationDate).min()
+			else { throw Error.certificateChainCannotBeEmpty }
+
+			self.expiresAt = firstExpiration
 		}
 	}
 
@@ -82,11 +98,22 @@ class ACMEController {
 	}
 
 	private func lazyLoadData() async throws -> CertificateData {
-		if let certificate = acmeData.certificate, certificate.expiresAt > .now {
-			return certificate
+		if let certificate = acmeData.certificate {
+			let untilExpiration = certificate.expiresAt.timeIntervalSince(.now)
+
+			guard untilExpiration < _1Day
+			else {
+				if untilExpiration < _30Days {
+					print("Notice: Certificate expires at \(certificate.expiresAt.formatted())")
+				}
+
+				return certificate
+			}
+
+			print("Certificate is expired. Renewal initiated")
 		}
 
-		return try await loadCertificate()
+		return try await requestNewCertificate()
 	}
 
 	func addCertificate(to app: Application) async throws {
@@ -99,7 +126,7 @@ class ACMEController {
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKey.data), format: certificate.privateKey.format.asNIO))
+			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKeyPEM.utf8), format: .pem))
 		)
 	}
 
@@ -115,7 +142,8 @@ class ACMEController {
 		}
 	}
 
-	private func loadCertificate() async throws -> CertificateData {
+	/// Requests a new certificate from Let's Encrypt
+	private func requestNewCertificate() async throws -> CertificateData {
 		// Create the client and load Let's Encrypt credentials
 		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
 		defer { try? acme.syncShutdown() }
@@ -135,11 +163,22 @@ class ACMEController {
 			awaitKeyboardInput(message: e.description + "\n")
 		}
 
-		// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
-		// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
-		let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
-		guard failed.isEmpty
-		else { throw Error.validationFailed(failed) }
+		while true {
+			// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
+			// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
+			let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
+
+			guard failed.isEmpty
+			else {
+				let e = Error.validationFailed(failed)
+				awaitKeyboardInput(message: e.description + "\n")
+				continue
+			}
+
+			break
+		}
+
+		print("No challenges remaining. Finalizing order.")
 
 		// Let's create a private key and CSR using the rudimentary feature provided by AcmeSwift
 		// If the validation didn't throw any error, we can now send our Certificate Signing Request...
@@ -148,9 +187,9 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		let data = CertificateData(
+		let data = try CertificateData(
 			certificateChain: try certs.map(Certificate.init(pemString:)),
-			privateKey: try Certificate(pemDocument: try privateKey.serializeAsPEM())
+			privateKey: try privateKey.serializeAsPEM()
 		)
 		acmeData.certificate = data
 		try save()
