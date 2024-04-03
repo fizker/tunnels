@@ -1,3 +1,4 @@
+import Common
 import Foundation
 import Logging
 import Models
@@ -81,7 +82,7 @@ public actor Client {
 
 		let config = proxy.config
 		let deferred = Deferred(becoming: TimedResolution.Result.self)
-		let timer = TimedResolution(timeout: .seconds(5), onEnd: { await deferred.resolve($0) })
+		let timer = TimedResolution(timeout: .seconds(5), onEnd: { deferred.resolve($0) })
 		pendingProxies.append((timer, config))
 		defer {
 			pendingProxies.removeAll { $0.config.host == config.host }
