@@ -45,25 +45,38 @@ class ACMEController {
 	}
 
 	struct CertificateData: Codable {
+		enum Error: Swift.Error {
+			case certificateChainCannotBeEmpty
+		}
+
 		var certificateChain: [Certificate]
-		var privateKey: Certificate
+		var privateKeyPEM: String
 		var expiresAt: Date
 
 		var createdAt: Date
 
-		init(certificateChain: [Certificate], privateKey: Certificate, expiresAt: Date, createdAt: Date = .now) {
+		init(certificateChain: [Certificate], privateKeyPEM: String, expiresAt: Date, createdAt: Date = .now) throws {
+			guard !certificateChain.isEmpty
+			else { throw Error.certificateChainCannotBeEmpty }
+
 			self.certificateChain = certificateChain
-			self.privateKey = privateKey
+			self.privateKeyPEM = privateKeyPEM
 			self.expiresAt = expiresAt
 			self.createdAt = createdAt
 		}
 
-		init(certificateChain: [Certificate], privateKey: Certificate, createdAt: Date = .now) {
+		init(certificateChain: [Certificate], privateKey: PEMDocument, createdAt: Date = .now) throws {
+			try self.init(certificateChain: certificateChain, privateKeyPEM: privateKey.pemString, createdAt: createdAt)
+		}
+
+		init(certificateChain: [Certificate], privateKeyPEM: String, createdAt: Date = .now) throws {
 			self.certificateChain = certificateChain
-			self.privateKey = privateKey
+			self.privateKeyPEM = privateKeyPEM
 			self.createdAt = createdAt
 
-			let firstExpiration = min(privateKey.expirationDate, certificateChain.map(\.expirationDate).min() ?? .distantFuture)
+			guard let firstExpiration = certificateChain.map(\.expirationDate).min()
+			else { throw Error.certificateChainCannotBeEmpty }
+
 			self.expiresAt = firstExpiration
 		}
 	}
@@ -113,7 +126,7 @@ class ACMEController {
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKey.data), format: certificate.privateKey.format.asNIO))
+			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKeyPEM.utf8), format: .pem))
 		)
 	}
 
@@ -174,9 +187,9 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		let data = CertificateData(
+		let data = try CertificateData(
 			certificateChain: try certs.map(Certificate.init(pemString:)),
-			privateKey: try Certificate(pemDocument: try privateKey.serializeAsPEM())
+			privateKey: try privateKey.serializeAsPEM()
 		)
 		acmeData.certificate = data
 		try save()
