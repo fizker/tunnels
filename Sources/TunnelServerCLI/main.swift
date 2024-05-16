@@ -13,7 +13,10 @@ if env.arguments[1] == "serve" && !env.arguments.contains("--port") {
 	env.arguments.append(port)
 }
 
-try LoggingSystem.bootstrap(from: &env)
+LoggingSystem.bootstrap { label in
+	StreamLogHandler.standardOutput(label: label)
+}
+
 let app = Application(env)
 defer { app.shutdown() }
 try await configure(app, port: Int(port)!)
