@@ -93,7 +93,7 @@ public actor WebSocketHandler {
 		do {
 			return try decoder.decode(T.self, from: data)
 		} catch {
-			throw WebSocketError.couldNotDecode(error.localizedDescription)
+			throw WebSocketError.couldNotDecode("\(error)")
 		}
 	}
 }
