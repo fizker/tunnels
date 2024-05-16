@@ -2,26 +2,24 @@ import Models
 import Vapor
 
 extension Models.HTTPResponse {
-	private var vaporBody: Response.Body {
+	private func vaporBody(stream: ResponseStream) -> Response.Body {
 		if headers.firstHeader(named: "content-length") == nil {
-			// do stream
-			let buffer: ByteBuffer? = switch self.body {
+			let buffer: ByteBuffer
+			switch self.body {
 			case let .text(value):
-				ByteBuffer(string: value)
+				buffer = ByteBuffer(string: value)
 			case let .binary(data):
-				ByteBuffer(data: data)
+				buffer = ByteBuffer(data: data)
+			case .stream:
+				return .init(stream: stream)
 			case .none:
-				nil
+				return .empty
 			}
 
 			return .init(stream: { writer in
-				if let buffer {
-					_ = writer.write(.buffer(buffer))
-					.map { _ in
-						writer.write(.end)
-					}
-				} else {
-					_ = writer.write(.end)
+				_ = writer.write(.buffer(buffer))
+				.map { _ in
+					writer.write(.end)
 				}
 			}, count: -1)
 		}
@@ -31,6 +29,8 @@ extension Models.HTTPResponse {
 			.init(string: value)
 		case let .binary(data):
 			.init(data: data)
+		case .stream:
+			.init(stream: stream)
 		case .none:
 			.empty
 		}
@@ -38,7 +38,7 @@ extension Models.HTTPResponse {
 		return body
 	}
 
-	var asVaporResponse: Response {
+	func asVaporResponse(stream: ResponseStream) -> Response {
 		var headers = self.headers
 
 		headers.removeAll(named: "connection")
@@ -47,7 +47,7 @@ extension Models.HTTPResponse {
 		return Response(
 			status: .custom(code: status.code, reasonPhrase: status.reason),
 			headers: .init(headers.flatMap { key, values in values.map { (key, $0) } }),
-			body: vaporBody
+			body: vaporBody(stream: stream)
 		)
 	}
 }

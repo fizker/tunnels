@@ -1,7 +1,16 @@
+import Common
 import Foundation
 import Models
 import Vapor
 import WebSocket
+
+typealias RequestStream = AsyncThrowingStream<UInt8, any Error>
+typealias ResponseStream = AsyncThrowingStream<UInt8, any Error>
+
+struct PendingResponse {
+	var response: HTTPResponse?
+	var stream: ResponseStream?
+}
 
 /// An instance of TunnelClient, from the perspective of the server. It supports sending a HTTPRequest and awaiting the response.
 actor Client {
@@ -9,8 +18,11 @@ actor Client {
 
 	var hosts: [String] = []
 
-	var pendingRequests: [HTTPRequest.ID: CheckedContinuation<HTTPResponse, Never>] = [:]
-	var pendingResponses: [HTTPResponse] = []
+	var pendingRequests: [HTTPRequest.ID: (
+		cont: Deferred<(HTTPResponse, ResponseStream)>,
+		body: RequestStream,
+		response: PendingResponse
+	)] = [:]
 
 	init(webSocket: WebSocketHandler) {
 		self.webSocket = webSocket
@@ -33,27 +45,53 @@ actor Client {
 		}
 	}
 
-	func send(_ req: HTTPRequest) async throws -> HTTPResponse {
+	func send(_ req: HTTPRequest, bodyStream: RequestStream) async throws -> (HTTPResponse, ResponseStream) {
+		let response = Deferred<(HTTPResponse, ResponseStream)>();
+		pendingRequests[req.id] = (response, bodyStream, PendingResponse())
+
 		try await webSocket.send(.request(req))
 
-		if let res = pendingResponses.first(where: { $0.id == req.id }) {
-			pendingResponses.removeAll(where: { $0.id == req.id })
-			return res
-		}
+		return try await response.value
+	}
 
-		return await withCheckedContinuation { continuation in
-			pendingRequests[req.id] = continuation
-		}
+	func registerResponseStream(_ stream: ResponseStream, for id: HTTPRequest.ID) {
+		pendingRequests[id]?.response.stream = stream
+		resolve(request: id)
 	}
 
 	private func handle(_ res: HTTPResponse) throws {
-		guard let cont = pendingRequests[res.id]
-		else {
-			pendingResponses.append(res)
-			return
+		pendingRequests[res.id]?.response.response = res
+		resolve(request: res.id)
+	}
+
+	private func resolve(request id: HTTPRequest.ID) {
+		guard let p = pendingRequests[id], let res = p.response.response
+		else { return }
+
+		let stream: ResponseStream?
+
+		switch res.body {
+		case .stream:
+			stream = p.response.stream
+		case nil:
+			stream = .init(content: [])
+		case let .binary(data):
+			stream = .init(content: data)
+		case let .text(data):
+			stream = .init(content: data.data(using: .utf8)!)
 		}
 
-		cont.resume(returning: res)
+		guard let stream
+		else { return }
+
+		p.cont.resolve((res, stream))
 		pendingRequests[res.id] = nil
+	}
+}
+
+extension AsyncThrowingStream {
+	init<S: Sequence>(content: S) where S.Element == Element, Failure == any Error {
+		var iterator = content.makeIterator()
+		self.init { iterator.next() }
 	}
 }

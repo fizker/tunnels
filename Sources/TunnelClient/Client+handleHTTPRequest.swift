@@ -1,10 +1,13 @@
 import AsyncHTTPClient
+import Foundation
 import Models
 
 extension Client {
-	func handle(_ req: HTTPRequest) async throws -> HTTPResponse {
+	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
+
+		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
 
 		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.path)")
 		request.method = .RAW(value: req.method)
@@ -14,20 +17,45 @@ extension Client {
 			.bytes(text.data(using: .utf8)!)
 		case let .binary(data):
 			.bytes(data)
+		case .stream:
+			try await stream(from: serverURL.appending(path: "tunnels/\(req.id)/request"), client: client)
 		case nil:
 			nil
 		}
 
-		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
 		do {
 			let response = try await client.execute(request, timeout: .seconds(30))
-			let res = try await HTTPResponse(id: req.id, response: response)
-			try await client.shutdown()
+			let res = HTTPResponse(id: req.id, response: response)
+			let uploadURL = serverURL.appending(path: "tunnels/\(req.id)/response")
 
-			return res
+			return (res, {
+				if case .stream = res.body {
+					try await self.upload(body: response, to: uploadURL, client: client)
+				}
+				try await client.shutdown()
+
+			})
 		} catch {
 			try await client.shutdown()
 			throw error
 		}
+	}
+
+	func stream(from url: URL, client: HTTPClient) async throws -> HTTPClientRequest.Body {
+		var request = HTTPClientRequest(url: url.absoluteString)
+		request.headers = try await credentialsStore.httpHeaders
+
+		let response = try await client.execute(request, timeout: .seconds(30))
+
+		return .stream(response.body, length: .unknown)
+	}
+
+	func upload(body response: HTTPClientResponse, to url: URL, client: HTTPClient) async throws {
+		var request = HTTPClientRequest(url: url.absoluteString)
+		request.headers = try await credentialsStore.httpHeaders
+		request.method = .POST
+		request.body = .stream(response.body, length: .unknown)
+
+		let response = try await client.execute(request, timeout: .seconds(30))
 	}
 }

@@ -13,6 +13,16 @@ actor ClientStore {
 		return nil
 	}
 
+	func client(awaitingRequest id: HTTPRequest.ID) async -> Client? {
+		for client in connectedClients {
+			if await client.pendingRequests[id] != nil {
+				return client
+			}
+		}
+
+		return nil
+	}
+
 	func add(_ client: Client) {
 		connectedClients.append(client)
 		Task {

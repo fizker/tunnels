@@ -137,8 +137,10 @@ actor LogController {
 		return switch body {
 		case nil: ""
 		case let .binary(value): value.description
+		case .stream: "<body was streamed and not cached>"
 		case let .text(value): value
 		}
+		#warning("TODO: The body should be streamed into the logs")
 	}
 
 	func html(_ body: String) -> Response {

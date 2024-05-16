@@ -197,7 +197,7 @@ class ACMEController {
 		return data
 	}
 
-	func awaitKeyboardInput(message: String? = nil) {
+	private func awaitKeyboardInput(message: String? = nil) {
 		if let message {
 			print(message)
 		}
