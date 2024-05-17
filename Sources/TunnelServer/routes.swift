@@ -6,9 +6,9 @@ extension TunnelDTO: Content {}
 func routes(_ app: Application) throws {
 	let tunnelController = TunnelController()
 
-	app.middleware.use(AuthMiddleware(userStore: app.userStore))
-
 	app.middleware.use(TunnelInterceptor(ownHost: app.environment.host, controller: tunnelController))
+
+	app.middleware.use(AuthMiddleware(userStore: app.userStore))
 
 	app.get { req in
 		return "It works!"
