@@ -24,7 +24,7 @@ extension Client {
 		}
 
 		do {
-			let response = try await client.execute(request, timeout: .seconds(30))
+			let response = try await askProxy(request: request, client: client)
 			let res = HTTPResponse(id: req.id, response: response)
 			let uploadURL = serverURL.appending(path: "tunnels/\(req.id)/response")
 
@@ -37,6 +37,29 @@ extension Client {
 			})
 		} catch {
 			try await client.shutdown()
+			throw error
+		}
+	}
+
+	private func askProxy(request: HTTPClientRequest, client: HTTPClient) async throws -> HTTPClientResponse {
+		do {
+			return try await client.execute(request, timeout: .seconds(30))
+		} catch {
+			if let error = error as? HTTPClient.NWPOSIXError {
+				switch error.errorCode {
+				case .ECONNREFUSED:
+					let html = """
+					<!doctype html>
+					<h1>Bad gateway</h1>
+					<p>Proxied server did not respond.</p>
+					"""
+					return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				default:
+					logger.debug("Failed to handle posix error \(error.errorCode)")
+					break
+				}
+			}
+
 			throw error
 		}
 	}
