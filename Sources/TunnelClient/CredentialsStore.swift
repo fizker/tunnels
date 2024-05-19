@@ -50,10 +50,10 @@ actor CredentialsStore {
 
 		let client = HTTPClient()
 
-		logger.info("Requesting new AccessToken")
-		let response = try await client.execute(request, timeout: .seconds(30))
-
 		do {
+			logger.info("Requesting new AccessToken")
+			let response = try await client.execute(request, timeout: .seconds(30))
+
 			logger.debug("Received response. Parsing body")
 			let result = try await parseBody(from: response)
 			try await client.shutdown()
