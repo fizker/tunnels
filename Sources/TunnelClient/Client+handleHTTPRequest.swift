@@ -1,6 +1,7 @@
 import AsyncHTTPClient
 import Foundation
 import Models
+import NIOCore
 
 extension Client {
 	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
@@ -42,8 +43,9 @@ extension Client {
 	}
 
 	private func askProxy(request: HTTPClientRequest, client: HTTPClient) async throws -> HTTPClientResponse {
+		let timeout: TimeAmount = .seconds(30)
 		do {
-			return try await client.execute(request, timeout: .seconds(30))
+			return try await client.execute(request, timeout: timeout)
 		} catch {
 			if let error = error as? HTTPClient.NWPOSIXError {
 				switch error.errorCode {
@@ -56,6 +58,19 @@ extension Client {
 					return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
 				default:
 					logger.debug("Failed to handle posix error \(error.errorCode)")
+					break
+				}
+			} else if let error = error as? HTTPClientError {
+				switch error {
+				case .deadlineExceeded:
+					let html = """
+					<!doctype html>
+					<h1>Gateway timed out</h1>
+					<p>Timeout of \(timeout) exceeded.</p>
+					"""
+					return .init(status: .gatewayTimeout, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				default:
+					logger.debug("Failed to handle HTTPClientError error \(error)")
 					break
 				}
 			}
