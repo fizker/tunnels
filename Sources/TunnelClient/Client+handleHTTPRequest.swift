@@ -69,6 +69,13 @@ extension Client {
 					<p>Timeout of \(timeout) exceeded.</p>
 					"""
 					return .init(status: .gatewayTimeout, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				case .remoteConnectionClosed:
+					let html = """
+					<!doctype html>
+					<h1>Bad gateway</h1>
+					<p>Remote connection closed the connection before responding.</p>
+					"""
+					return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
 				default:
 					logger.debug("Failed to handle HTTPClientError error \(error)")
 					break
