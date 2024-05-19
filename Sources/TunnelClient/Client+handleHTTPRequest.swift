@@ -43,7 +43,7 @@ extension Client {
 	}
 
 	private func askProxy(request: HTTPClientRequest, client: HTTPClient) async throws -> HTTPClientResponse {
-		let timeout: TimeAmount = .seconds(30)
+		let timeout: TimeAmount = .minutes(10)
 		do {
 			return try await client.execute(request, timeout: timeout)
 		} catch {
