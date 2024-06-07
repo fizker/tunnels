@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 5.10
 
 import PackageDescription
 
@@ -22,16 +22,15 @@ let package = Package(
 		.executable(name: "tunnel-logs", targets: ["LogReader"]),
 	],
 	dependencies: [
-		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.3.1"),
-		.package(url: "https://github.com/apple/swift-crypto.git", from: "3.1.0"),
-		.package(url: "https://github.com/apple/swift-nio.git", from: "2.64.0"),
+		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
+		.package(url: "https://github.com/apple/swift-crypto.git", from: "3.4.0"),
+		.package(url: "https://github.com/apple/swift-nio.git", from: "2.66.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.1"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
-//		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta3"),
-		.package(url: "https://github.com/fizker/AcmeSwift.git", branch: "sendable"),
-		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.20.1"),
-		.package(url: "https://github.com/vapor/vapor.git", from: "4.92.4"),
-		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.14.0"),
+		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta4"),
+		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.1"),
+		.package(url: "https://github.com/vapor/vapor.git", from: "4.101.2"),
+		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.15.0"),
 	],
 	targets: [
 		.target(
