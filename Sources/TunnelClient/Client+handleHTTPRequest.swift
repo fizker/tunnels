@@ -1,6 +1,7 @@
 import AsyncHTTPClient
 import Foundation
 import Models
+import NIOCore
 
 extension Client {
 	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
@@ -24,7 +25,7 @@ extension Client {
 		}
 
 		do {
-			let response = try await client.execute(request, timeout: .seconds(30))
+			let response = try await askProxy(request: request, client: client)
 			let res = HTTPResponse(id: req.id, response: response)
 			let uploadURL = serverURL.appending(path: "tunnels/\(req.id)/response")
 
@@ -38,6 +39,57 @@ extension Client {
 		} catch {
 			try await client.shutdown()
 			throw error
+		}
+	}
+
+	private func askProxy(request: HTTPClientRequest, client: HTTPClient) async throws -> HTTPClientResponse {
+		let timeout: TimeAmount = .minutes(10)
+		do {
+			return try await client.execute(request, timeout: timeout)
+		} catch {
+			if let error = error as? HTTPClient.NWPOSIXError {
+				switch error.errorCode {
+				case .ECONNREFUSED:
+					let html = """
+					<!doctype html>
+					<h1>Service Unavailable</h1>
+					<p>Proxied server did not respond.</p>
+					"""
+					return .init(status: .serviceUnavailable, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				default:
+					logger.error("Failed to handle posix error \(error.errorCode)")
+					break
+				}
+			} else if let error = error as? HTTPClientError {
+				switch error {
+				case .deadlineExceeded:
+					let html = """
+					<!doctype html>
+					<h1>Gateway timed out</h1>
+					<p>Timeout of \(timeout) exceeded.</p>
+					"""
+					return .init(status: .gatewayTimeout, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				case .remoteConnectionClosed:
+					let html = """
+					<!doctype html>
+					<h1>Service Unavailable</h1>
+					<p>Proxied server closed the connection before responding.</p>
+					"""
+					return .init(status: .serviceUnavailable, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+				default:
+					logger.error("Failed to handle HTTPClientError error \(error)")
+					break
+				}
+			} else {
+				logger.error("Unknown error: \(error)")
+			}
+
+			let html = """
+			<!doctype html>
+			<h1>Bad gateway</h1>
+			<p>Unknown error returned.</p>
+			"""
+			return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
 		}
 	}
 
