@@ -68,6 +68,11 @@ public actor Client {
 			try await self?.handle(value)
 		}
 
+		Task {
+			try? await waitUntilClose()
+			logger.info("WebSocket closed")
+		}
+
 		try await registerProxies(webSocket: webSocket)
 	}
 
