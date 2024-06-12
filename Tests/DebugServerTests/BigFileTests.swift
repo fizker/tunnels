@@ -4,14 +4,14 @@ import XCTVapor
 
 final class BigFileTests: XCTestCase {
 	func test__reasonablyBigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		let app = Application(.testing)
+		let app = try await Application.make(.testing)
 
 		try await DebugServer.configure(app)
 
 		let size = 123_456
 
 		let path = "big-file?size=\(size)"
-		try app.test(.GET, path) { res in
+		try await app.test(.GET, path) { res async throws in
 			var body = res.body
 			let data = body.readData(length: body.readableBytes)!
 			XCTAssertEqual(data.count, size)
@@ -23,14 +23,14 @@ final class BigFileTests: XCTestCase {
 	}
 
 	func test__10mb_bigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		let app = Application(.testing)
+		let app = try await Application.make(.testing)
 
 		try await DebugServer.configure(app)
 
 		let size = 10_000_000
 
 		let path = "big-file?size=\(size)"
-		try app.test(.GET, path) { res in
+		try await app.test(.GET, path) { res async throws in
 			var body = res.body
 			let data = body.readData(length: body.readableBytes)!
 			XCTAssertEqual(data.count, size)

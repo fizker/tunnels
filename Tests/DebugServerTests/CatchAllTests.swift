@@ -4,10 +4,10 @@ import XCTVapor
 
 final class CatchAllTests: XCTestCase {
 	func test__get__expectedBodyIsReturned() async throws {
-		let app = Application(.testing)
+		let app = try await Application.make(.testing)
 		try await DebugServer.configure(app)
 
-		try app.test(.GET, "foo") { res in
+		try await app.test(.GET, "foo") { res async throws in
 			XCTAssertEqual(res.status, .ok)
 			XCTAssertEqual(res.body.string, "Hello World at /foo")
 		}
