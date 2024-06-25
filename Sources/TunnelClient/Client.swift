@@ -159,6 +159,10 @@ public actor Client {
 			while true {
 				logger.info("attempting reconnect...")
 				do {
+					for index in proxies.indices {
+						proxies[index].isReadyOnServer = false
+					}
+
 					try await connect()
 					logger.info("reconnected")
 					break
