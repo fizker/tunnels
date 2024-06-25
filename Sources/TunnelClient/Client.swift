@@ -68,6 +68,10 @@ public actor Client {
 			try await self?.handle(value)
 		}
 
+		Task {
+			await reconnect()
+		}
+
 		try await registerProxies(webSocket: webSocket)
 	}
 
@@ -126,12 +130,46 @@ public actor Client {
 	}
 
 	public func waitUntilClose() async throws {
-		guard let webSocket = await webSocket?.webSocket
-		else { return }
+		while true {
+			try? await Task.sleep(for: .seconds(60))
+		}
+	}
 
-		try await withCheckedThrowingContinuation { continuation in
-			webSocket.onClose.whenComplete {
-				continuation.resume(with: $0)
+	private var reconnectRunning = false
+	private func reconnect() async {
+		guard !reconnectRunning
+		else { return }
+		reconnectRunning = true
+		defer { reconnectRunning = false }
+
+		while true {
+			guard let webSocket = await webSocket?.webSocket
+			else { return }
+
+			do {
+				try await withCheckedThrowingContinuation { continuation in
+					webSocket.onClose.whenComplete {
+						continuation.resume(with: $0)
+					}
+				}
+			} catch {
+				logger.info("connection lost: \(error)")
+			}
+
+			while true {
+				logger.info("attempting reconnect...")
+				do {
+					for index in proxies.indices {
+						proxies[index].isReadyOnServer = false
+					}
+
+					try await connect()
+					logger.info("reconnected")
+					break
+				} catch {
+					logger.info("reconnect failed: \(error)")
+					try? await Task.sleep(for: .seconds(5))
+				}
 			}
 		}
 	}

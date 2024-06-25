@@ -12,6 +12,7 @@ public actor WebSocketHandler {
 
 	public init(webSocket: WebSocket) {
 		self.webSocket = webSocket
+		webSocket.pingInterval = .seconds(5)
 	}
 
 	public func close() async throws {
