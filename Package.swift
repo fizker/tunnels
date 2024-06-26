@@ -29,6 +29,8 @@ let package = Package(
 	],
 	dependencies: [
 		.package(url: "https://github.com/apple/swift-argument-parser", from: "1.4.0"),
+		.package(url: "https://github.com/apple/swift-asn1.git", from: "1.1.0"),
+		.package(url: "https://github.com/apple/swift-certificates.git", from: "1.4.0"),
 		.package(url: "https://github.com/apple/swift-crypto.git", from: "3.4.0"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.66.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.1"),
@@ -39,6 +41,16 @@ let package = Package(
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.15.0"),
 	],
 	targets: [
+		.target(
+			name: "ACME",
+			dependencies: [
+				.product(name: "AcmeSwift", package: "acmeswift"),
+				.product(name: "SwiftASN1", package: "swift-asn1"),
+				.product(name: "Crypto", package: "swift-crypto"),
+				.product(name: "X509", package: "swift-certificates"),
+			],
+			swiftSettings: upcomingFeatures
+		),
 		.target(
 			name: "Binary",
 			swiftSettings: upcomingFeatures
@@ -102,6 +114,7 @@ let package = Package(
 		.target(
 			name: "TunnelServer",
 			dependencies: [
+				"ACME",
 				"Common",
 				"HTTPUpgradeServer",
 				"Models",
