@@ -17,7 +17,7 @@ LoggingSystem.bootstrap { label in
 	StreamLogHandler.standardOutput(label: label)
 }
 
-let app = Application(env)
+let app = try await Application.make(env)
 defer { app.shutdown() }
 try await configure(app, port: Int(port)!)
 try await app.execute()

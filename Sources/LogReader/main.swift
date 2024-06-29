@@ -13,7 +13,7 @@ if env.arguments[1] == "serve" && !env.arguments.contains("--port") {
 }
 
 try LoggingSystem.bootstrap(from: &env)
-let app = Application(env)
+let app = try await Application.make(env)
 defer { app.shutdown() }
 try await configure(app)
 try await app.execute()
