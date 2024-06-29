@@ -9,6 +9,12 @@ let upcomingFeatures: [SwiftSetting] = [
 	.enableExperimentalFeature("StrictConcurrency"),
 	.enableUpcomingFeature("ImplicitOpenExistentials"),
 	.enableUpcomingFeature("BareSlashRegexLiterals"),
+	.enableUpcomingFeature("GlobalConcurrency"),
+	.enableUpcomingFeature("IsolatedDefaultValues"),
+	.enableUpcomingFeature("DisableOutwardActorInference"),
+	.enableUpcomingFeature("DeprecateApplicationMain"),
+	.enableUpcomingFeature("InternalImportsByDefault"),
+	.enableUpcomingFeature("FullTypedThrows"),
 ]
 
 let package = Package(
