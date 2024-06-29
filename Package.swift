@@ -187,8 +187,16 @@ func executableTargets() -> [Target] {
 	]
 }
 
+// MARK: Test targets
 func testTargets() -> [Target] {
 	[
+		.testTarget(
+			name: "ACMETests",
+			dependencies: [
+				"ACME"
+			],
+			swiftSettings: upcomingFeatures
+		),
 		.testTarget(
 			name: "AppTests",
 			dependencies: [

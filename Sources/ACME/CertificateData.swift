@@ -19,4 +19,12 @@ struct CertificateData: Codable {
 		self.certificate = certificate
 		self.isSelfSigned = isSelfSigned
 	}
+
+	func covers(domains: [String]) -> Bool {
+		if self.domains.isSuperset(of: domains) {
+			return true
+		}
+
+		return false
+	}
 }
