@@ -1,4 +1,5 @@
 import AcmeSwift
+import Common
 import Vapor
 import SwiftASN1
 import NIOSSL
@@ -35,6 +36,7 @@ class ACMEController {
 	private let host: String
 	private let contactEmail: String
 	private let storagePath: String
+	private let coder = Coder()
 
 	private var acmeData: ACMEData
 
@@ -88,7 +90,7 @@ class ACMEController {
 
 		let fm = FileManager.default
 		if let data = fm.contents(atPath: storagePath) {
-			acmeData = try decode(data)
+			acmeData = try coder.decode(data)
 
 			guard acmeEndpoint == acmeData.endpoint
 			else { throw Error.differentEndpointInStoredData(acmeData.endpoint) }
@@ -206,7 +208,7 @@ class ACMEController {
 	}
 
 	private func save() throws {
-		let data = try encode(acmeData)
+		let data = try coder.encode(acmeData)
 		try data.write(to: URL(filePath: storagePath))
 	}
 }
@@ -228,26 +230,6 @@ extension AcmeAuthorization.Challenge: CustomStringConvertible {
 	public var description: String {
 		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
 	}
-}
-
-func encode(_ value: some Encodable) throws -> Data {
-	let encoder = JSONEncoder()
-	encoder.outputFormatting = [
-		.prettyPrinted,
-		.sortedKeys,
-	]
-	encoder.dateEncodingStrategy = .iso8601
-	encoder.dataEncodingStrategy = .base64
-
-	return try encoder.encode(value)
-}
-
-func decode<T: Decodable>(_ data: Data) throws -> T {
-	let decoder = JSONDecoder()
-	decoder.dateDecodingStrategy = .iso8601
-	decoder.dataDecodingStrategy = .base64
-
-	return try decoder.decode(T.self, from: data)
 }
 
 struct Certificate: Codable {

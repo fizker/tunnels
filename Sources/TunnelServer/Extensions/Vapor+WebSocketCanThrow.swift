@@ -1,6 +1,9 @@
+import Common
 import Models
 import Vapor
 import WebSocket
+
+private let coder = Coder()
 
 extension RoutesBuilder {
 	@preconcurrency
@@ -25,10 +28,9 @@ extension RoutesBuilder {
 					return
 				}
 
-				let encoder = JSONEncoder()
 				if
 					let error = error as? any Encodable,
-					let data = try? encoder.encode(error),
+					let data = try? coder.encode(error),
 					let json = String(data: data, encoding: .utf8)
 				{
 					ws.send(json)
@@ -59,10 +61,9 @@ extension RoutesBuilder {
 					return
 				}
 
-				let encoder = JSONEncoder()
 				if
 					let error = error as? any Encodable,
-					let data = try? encoder.encode(error),
+					let data = try? coder.encode(error),
 					let json = String(data: data, encoding: .utf8)
 				{
 					try? await ws.send(json)

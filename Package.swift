@@ -34,6 +34,7 @@ let package = Package(
 		.package(url: "https://github.com/apple/swift-crypto.git", from: "3.4.0"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.66.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.1"),
+		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.3.0"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
 		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta4"),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.1"),
@@ -44,6 +45,7 @@ let package = Package(
 		.target(
 			name: "ACME",
 			dependencies: [
+				"Common",
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "SwiftASN1", package: "swift-asn1"),
 				.product(name: "Crypto", package: "swift-crypto"),
@@ -66,6 +68,7 @@ let package = Package(
 			name: "Common",
 			dependencies: [
 				.product(name: "Crypto", package: "swift-crypto"),
+				.product(name: "FzkExtensions", package: "swift-extensions"),
 			],
 			swiftSettings: upcomingFeatures
 		),
@@ -94,6 +97,7 @@ let package = Package(
 			name: "WebSocket",
 			dependencies: [
 				"Binary",
+				"Common",
 				"Models",
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			],

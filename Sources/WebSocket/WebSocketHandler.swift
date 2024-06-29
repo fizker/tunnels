@@ -1,3 +1,4 @@
+import Common
 import Foundation
 import Models
 import WebSocketKit
@@ -9,6 +10,7 @@ enum WebSocketError: Error {
 public actor WebSocketHandler {
 	public let webSocket: WebSocket
 	var chunkLoaders: [UUID: ChunkLoader] = [:]
+	let coder = Coder()
 
 	public init(webSocket: WebSocket) {
 		self.webSocket = webSocket
@@ -61,8 +63,7 @@ public actor WebSocketHandler {
 	}
 
 	private func send(data: some Encodable) async throws {
-		let encoder = JSONEncoder()
-		let json = try encoder.encode(data)
+		let json = try coder.encode(data)
 
 		let chunks = ChunkWriter(data: json, maxChunkSize: 1 << 14)
 
@@ -89,10 +90,8 @@ public actor WebSocketHandler {
 			return nil
 		}
 
-		let decoder = JSONDecoder()
-
 		do {
-			return try decoder.decode(T.self, from: data)
+			return try coder.decode(T.self, from: data)
 		} catch {
 			throw WebSocketError.couldNotDecode("\(error)")
 		}

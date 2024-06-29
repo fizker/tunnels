@@ -1,4 +1,5 @@
 import AsyncHTTPClient
+import Common
 import Foundation
 import Logging
 import Models
@@ -16,6 +17,7 @@ actor CredentialsStore {
 	private var credentials: ClientCredentials
 	private var serverURL: URL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
+	private let coder = Coder()
 
 	init(credentials: ClientCredentials, serverURL: URL) {
 		self.credentials = credentials
@@ -38,10 +40,7 @@ actor CredentialsStore {
 			return accessToken.map(\.res)
 		}
 
-		let encoder = JSONEncoder()
-		encoder.outputFormatting = .withoutEscapingSlashes
-
-		let data = try encoder.encode(credentials.request)
+		let data = try coder.encode(credentials.request)
 
 		var request = HTTPClientRequest(url: serverURL.appending(path: "/auth/token").absoluteString)
 		request.body = .bytes(.init(data: data))
@@ -86,13 +85,12 @@ actor CredentialsStore {
 		var rawContent = try await response.body.collect(upTo: length)
 		let content = rawContent.readData(length: length)!
 
-		let decoder = JSONDecoder()
-		if let success = try? decoder.decode(AccessTokenResponse.self, from: content) {
+		if let success = try? coder.decode(AccessTokenResponse.self, from: content) {
 			logger.info("Response received. AccessToken was returned")
 			return .success(success)
 		} else {
 			do {
-				let error = try decoder.decode(ErrorResponse.self, from: content)
+				let error = try coder.decode(ErrorResponse.self, from: content)
 				logger.error("Response received with OAuth2 error", metadata: [
 					"error": "\(error)",
 				])
