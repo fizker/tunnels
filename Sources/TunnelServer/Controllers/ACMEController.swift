@@ -1,3 +1,4 @@
+import ACME
 import AcmeSwift
 import Common
 import Vapor
@@ -11,7 +12,6 @@ class ACMEController {
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
 		case validationFailed([AcmeAuthorization.Challenge])
-		case differentEndpointInStoredData(AcmeEndpoint)
 
 		var description: String {
 			switch self {
@@ -27,15 +27,11 @@ class ACMEController {
 
 				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
 				"""
-			case let .differentEndpointInStoredData(endpoint):
-				"The stored data was initialized with the \(endpoint) endpoint"
 			}
 		}
 	}
 
-	private let host: String
-	private let contactEmail: String
-	private let storagePath: String
+	private let setup: Setup
 	private let coder = Coder()
 
 	private var acmeData: ACMEData
@@ -83,19 +79,17 @@ class ACMEController {
 		}
 	}
 
-	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String, storagePath: String) throws {
-		self.contactEmail = contactEmail
-		self.host = host
-		self.storagePath = storagePath
+	init(setup: Setup) throws {
+		self.setup = setup
 
 		let fm = FileManager.default
-		if let data = fm.contents(atPath: storagePath) {
+		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard acmeEndpoint == acmeData.endpoint
-			else { throw Error.differentEndpointInStoredData(acmeData.endpoint) }
+			guard setup.endpoint == acmeData.endpoint
+			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: acmeEndpoint)
+			acmeData = .init(endpoint: setup.endpoint)
 		}
 	}
 
@@ -134,10 +128,10 @@ class ACMEController {
 
 	private func loadAccount(acme: AcmeSwift) async throws {
 		if let accountKey = acmeData.accountKey {
-			let credentials = try AccountCredentials(contacts: [contactEmail], pemKey: accountKey)
+			let credentials = try AccountCredentials(contacts: [setup.contactEmail], pemKey: accountKey)
 			try acme.account.use(credentials)
 		} else {
-			let account = try await acme.account.create(contacts: [contactEmail], acceptTOS: true)
+			let account = try await acme.account.create(contacts: [setup.contactEmail], acceptTOS: true)
 			try acme.account.use(account)
 			acmeData.accountKey = account.privateKeyPem!
 			try save()
@@ -152,7 +146,7 @@ class ACMEController {
 
 		try await loadAccount(acme: acme)
 
-		let domains: [String] = ["*.\(host)", host]
+		let domains: [String] = ["*.\(setup.host)", setup.host]
 
 		// Create a certificate order for *.ponies.com
 		let order = try await acme.orders.create(domains: domains)
@@ -209,7 +203,7 @@ class ACMEController {
 
 	private func save() throws {
 		let data = try coder.encode(acmeData)
-		try data.write(to: URL(filePath: storagePath))
+		try data.write(to: URL(filePath: setup.storagePath))
 	}
 }
 
