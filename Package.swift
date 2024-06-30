@@ -44,6 +44,13 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.target(
+			name: "CatchAll",
+			dependencies: [
+				.product(name: "Vapor", package: "vapor"),
+			],
+			swiftSettings: upcomingFeatures
+		),
+		.target(
 			name: "Common",
 			dependencies: [
 				.product(name: "Crypto", package: "swift-crypto"),
@@ -62,6 +69,7 @@ let package = Package(
 		.target(
 			name: "HTTPUpgradeServer",
 			dependencies: [
+				"CatchAll",
 				.product(name: "Vapor", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures
@@ -108,6 +116,7 @@ let package = Package(
 		.target(
 			name: "DebugServer",
 			dependencies: [
+				"CatchAll",
 				"Common",
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
