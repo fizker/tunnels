@@ -1,26 +1,26 @@
 import Foundation
 import X509
 
-struct CertificateData: Codable {
+package struct CertificateData: Codable {
 	/// The certificate.
-	let certificate: Certificate
+	package let certificate: Certificate
 
 	/// True if the certificate is self-signed.
-	let isSelfSigned: Bool
+	package let isSelfSigned: Bool
 
 	/// The list of domains that the certificate covers.
-	let domains: Set<String>
+	package let domains: Set<String>
 
 	/// The date that the certificate expires.
-	var expiresAt: Date { certificate.notValidAfter }
+	package var expiresAt: Date { certificate.notValidAfter }
 
-	init(domains: some Sequence<String>, certificate: Certificate, isSelfSigned: Bool) {
+	package init(domains: some Sequence<String>, certificate: Certificate, isSelfSigned: Bool) {
 		self.domains = .init(domains)
 		self.certificate = certificate
 		self.isSelfSigned = isSelfSigned
 	}
 
-	func covers(domains: [String]) -> Bool {
+	package func covers(domains: [String]) -> Bool {
 		if self.domains.isSuperset(of: domains) {
 			return true
 		}
@@ -30,7 +30,7 @@ struct CertificateData: Codable {
 }
 
 extension CertificateData {
-	init(certificate: Certificate, isSelfSigned: Bool) throws {
+	package init(certificate: Certificate, isSelfSigned: Bool) throws {
 		let domains = try certificate.extensions.subjectAlternativeNames?.compactMap { altName -> String? in
 			switch altName {
 			case .otherName(_):
@@ -60,7 +60,7 @@ extension CertificateData {
 		self.init(domains: domains, certificate: certificate, isSelfSigned: isSelfSigned)
 	}
 
-	enum CertificateParseError: Error {
+	package enum CertificateParseError: Error {
 		case noDomainsFound
 	}
 }
