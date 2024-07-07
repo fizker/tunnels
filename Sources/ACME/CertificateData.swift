@@ -64,3 +64,31 @@ extension CertificateData {
 		case noDomainsFound
 	}
 }
+
+package struct CertificateDataArray: Codable {
+	/// The certificates.
+	package let certificates: [CertificateData]
+
+	/// True if any of the certificates are self-signed.
+	package let isSelfSigned: Bool
+
+	/// The list of domains that the certificates covers.
+	package let domains: Set<String>
+
+	/// The date that the first certificate expires.
+	package let expiresAt: Date
+
+	package init(certificates: [CertificateData]) throws {
+		guard !certificates.isEmpty
+		else { throw Error.certificateChainCannotBeEmpty }
+
+		self.certificates = certificates
+		self.isSelfSigned = certificates.contains(where: \.isSelfSigned)
+		self.domains = Set(certificates.flatMap(\.domains))
+		self.expiresAt = certificates.map(\.expiresAt).min() ?? .now
+	}
+
+	package enum Error: Swift.Error {
+		case certificateChainCannotBeEmpty
+	}
+}
