@@ -60,6 +60,11 @@ extension CertificateData {
 		self.init(domains: domains, certificate: certificate, isSelfSigned: isSelfSigned)
 	}
 
+	package init(pemEncoded: String, isSelfSigned: Bool) throws {
+		let cert = try Certificate(pemEncoded: pemEncoded)
+		try self.init(certificate: cert, isSelfSigned: isSelfSigned)
+	}
+
 	package enum CertificateParseError: Error {
 		case noDomainsFound
 	}

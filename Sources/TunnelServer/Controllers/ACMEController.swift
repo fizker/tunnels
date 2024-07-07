@@ -36,49 +36,6 @@ class ACMEController {
 
 	private var acmeData: ACMEData
 
-	struct ACMEData: Codable {
-		var endpoint: AcmeEndpoint
-		var accountKey: String?
-		var certificate: CertificateData?
-	}
-
-	struct CertificateData: Codable {
-		enum Error: Swift.Error {
-			case certificateChainCannotBeEmpty
-		}
-
-		var certificateChain: [Certificate]
-		var privateKeyPEM: String
-		var expiresAt: Date
-
-		var createdAt: Date
-
-		init(certificateChain: [Certificate], privateKeyPEM: String, expiresAt: Date, createdAt: Date = .now) throws {
-			guard !certificateChain.isEmpty
-			else { throw Error.certificateChainCannotBeEmpty }
-
-			self.certificateChain = certificateChain
-			self.privateKeyPEM = privateKeyPEM
-			self.expiresAt = expiresAt
-			self.createdAt = createdAt
-		}
-
-		init(certificateChain: [Certificate], privateKey: PEMDocument, createdAt: Date = .now) throws {
-			try self.init(certificateChain: certificateChain, privateKeyPEM: privateKey.pemString, createdAt: createdAt)
-		}
-
-		init(certificateChain: [Certificate], privateKeyPEM: String, createdAt: Date = .now) throws {
-			self.certificateChain = certificateChain
-			self.privateKeyPEM = privateKeyPEM
-			self.createdAt = createdAt
-
-			guard let firstExpiration = certificateChain.map(\.expirationDate).min()
-			else { throw Error.certificateChainCannotBeEmpty }
-
-			self.expiresAt = firstExpiration
-		}
-	}
-
 	init(setup: Setup) throws {
 		self.setup = setup
 
@@ -93,17 +50,17 @@ class ACMEController {
 		}
 	}
 
-	private func lazyLoadData() async throws -> CertificateData {
-		if let certificate = acmeData.certificate {
-			let untilExpiration = certificate.expiresAt.timeIntervalSince(.now)
+	private func lazyLoadData() async throws -> ACMEData.CertWrapper {
+		if let certs = acmeData.certificates {
+			let untilExpiration = certs.expiresAt.timeIntervalSince(.now)
 
 			guard untilExpiration < _1Day
 			else {
 				if untilExpiration < _30Days {
-					print("Notice: Certificate expires at \(certificate.expiresAt.formatted())")
+					print("Notice: Certificate expires at \(certs.expiresAt.formatted())")
 				}
 
-				return certificate
+				return certs
 			}
 
 			print("Certificate is expired. Renewal initiated")
@@ -113,16 +70,15 @@ class ACMEController {
 	}
 
 	func addCertificate(to app: Application) async throws {
-		let certificate = try await lazyLoadData()
+		let certificates = try await lazyLoadData()
 
-		let certificateChain = try certificate.certificateChain.map {
-			let cert = try NIOSSLCertificate(bytes: Array($0.data), format: $0.format.asNIO)
-			return NIOSSLCertificateSource.certificate(cert)
+		let certificateChain = try certificates.nioCertificates.map {
+			return NIOSSLCertificateSource.certificate($0)
 		}
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKeyPEM.utf8), format: .pem))
+			privateKey: .privateKey(try certificates.nioPrivateKey)
 		)
 	}
 
@@ -139,7 +95,7 @@ class ACMEController {
 	}
 
 	/// Requests a new certificate from Let's Encrypt
-	private func requestNewCertificate() async throws -> CertificateData {
+	private func requestNewCertificate() async throws -> ACMEData.CertWrapper {
 		// Create the client and load Let's Encrypt credentials
 		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
 		defer { try? acme.syncShutdown() }
@@ -183,11 +139,13 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		let data = try CertificateData(
-			certificateChain: try certs.map(Certificate.init(pemString:)),
-			privateKey: try privateKey.serializeAsPEM()
+		let data = ACMEData.CertWrapper(
+			certificates: try CertificateDataArray(certificates: try certs.map {
+				return try CertificateData(pemEncoded: $0, isSelfSigned: false)
+			}),
+			privateKey: privateKey
 		)
-		acmeData.certificate = data
+		acmeData.certificates = data
 		try save()
 
 		return data
@@ -223,38 +181,5 @@ extension ChallengeDescription: CustomStringConvertible {
 extension AcmeAuthorization.Challenge: CustomStringConvertible {
 	public var description: String {
 		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
-	}
-}
-
-struct Certificate: Codable {
-	var data: Data
-	var expirationDate: Date
-	var format: Format
-
-	init(data: Data, format: Format) throws {
-		self.data = data
-		self.format = format
-
-		let cert = try NIOSSLCertificate(bytes: Array(data), format: format.asNIO)
-		expirationDate = Date(timeIntervalSince1970: TimeInterval(cert.notValidAfter))
-	}
-
-	init(pemString: String) throws {
-		try self.init(pemDocument: try PEMDocument(pemString: pemString))
-	}
-
-	init(pemDocument: PEMDocument) throws {
-		try self.init(data: Data(pemDocument.derBytes), format: .der)
-	}
-
-	enum Format: String, Codable {
-		case pem, der
-
-		var asNIO: NIOSSLSerializationFormats {
-			switch self {
-			case .pem: .pem
-			case .der: .der
-			}
-		}
 	}
 }
