@@ -63,10 +63,7 @@ extension CertificateData {
 			}
 		}
 
-		guard let domains
-		else { throw CertificateParseError.noDomainsFound }
-
-		self.init(domains: domains, certificate: certificate, isSelfSigned: isSelfSigned)
+		self.init(domains: domains ?? [], certificate: certificate, isSelfSigned: isSelfSigned)
 	}
 
 	package init(pemEncoded: String, isSelfSigned: Bool) throws {
