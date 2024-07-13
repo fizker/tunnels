@@ -55,7 +55,7 @@ final class CertificateDataTests: XCTestCase {
 		for (lhs, rhs): Test in tests {
 			let data = CertificateData(domains: lhs, certificate: testCert, isSelfSigned: true)
 			let actual = data.covers(domains: rhs)
-			XCTAssertTrue(actual)
+			XCTAssertTrue(actual, "lhs: \(lhs), rhs: \(rhs)")
 		}
 	}
 
@@ -82,7 +82,7 @@ final class CertificateDataTests: XCTestCase {
 		for (lhs, rhs): Test in tests {
 			let data = CertificateData(domains: lhs, certificate: testCert, isSelfSigned: true)
 			let actual = data.covers(domains: rhs)
-			XCTAssertFalse(actual)
+			XCTAssertFalse(actual, "lhs: \(lhs), rhs: \(rhs)")
 		}
 	}
 
@@ -96,9 +96,7 @@ final class CertificateDataTests: XCTestCase {
 					"foo.example.com",
 					"bar.example.com",
 				],
-				// This is false because we don't want to support wildcards yet
-				false
-//				true
+				true
 			),
 			(
 				[
@@ -109,9 +107,7 @@ final class CertificateDataTests: XCTestCase {
 					"foo.example.com",
 					"bar.example.com",
 				],
-				// This is false because we don't want to support wildcards yet
-				false
-//				true
+				true
 			),
 			(
 				[

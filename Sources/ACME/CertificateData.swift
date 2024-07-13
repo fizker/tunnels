@@ -21,11 +21,20 @@ package struct CertificateData: Codable {
 	}
 
 	package func covers(domains: [String]) -> Bool {
-		if self.domains.isSuperset(of: domains) {
-			return true
+		var nonCovered = Set(domains).subtracting(self.domains)
+		guard !nonCovered.isEmpty
+		else { return true }
+
+		for domain in nonCovered {
+			var components = domain.split(separator: /\./)
+			components[0] = "*"
+			let joined = components.joined(separator: ".")
+			if self.domains.contains(joined) {
+				nonCovered.remove(domain)
+			}
 		}
 
-		return false
+		return nonCovered.isEmpty
 	}
 }
 
