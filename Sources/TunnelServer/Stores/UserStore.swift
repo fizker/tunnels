@@ -1,3 +1,4 @@
+import Common
 import Foundation
 import OAuth2Models
 import Vapor
@@ -63,6 +64,7 @@ struct Login: Codable {
 }
 
 actor UserStore {
+	let coder = Coder()
 	enum Error: Swift.Error {
 		case usernameExists
 		case cannotRemoveLastSysadmin
@@ -87,7 +89,7 @@ actor UserStore {
 
 		var data: UserData? = nil
 		if let storagePath {
-			data = try Self.load(path: storagePath)
+			data = try Self.load(path: storagePath, coder: coder)
 		}
 
 		self.data = data ?? UserData(logins:
@@ -108,18 +110,18 @@ actor UserStore {
 
 	private static let fm: FileManager = .default
 
-	private static func load(path: String) throws -> UserData? {
+	private static func load(path: String, coder: Coder) throws -> UserData? {
 		guard let data = fm.contents(atPath: path)
 		else { return nil }
 
-		return try decode(data)
+		return try coder.decode(data)
 	}
 
 	private func save() throws {
 		guard let storagePath
 		else { return }
 
-		let data = try encode(data)
+		let data = try coder.encode(data)
 		guard Self.fm.createFile(atPath: storagePath, contents: data)
 		else { throw Error.failedToStoreData }
 	}

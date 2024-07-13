@@ -1,3 +1,4 @@
+import Common
 import OAuth2Models
 import Vapor
 
@@ -7,6 +8,8 @@ import Vapor
 ///
 /// This middleware needs to be before the default error middleware in order to intercept the ``ErrorResponse``.
 struct OAuthErrorMiddleware: AsyncMiddleware {
+	let coder = Coder()
+
 	func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
 		do {
 			return try await next.respond(to: request)
@@ -14,7 +17,7 @@ struct OAuthErrorMiddleware: AsyncMiddleware {
 			guard let error = error as? ErrorResponse
 			else { throw error }
 
-			let data = try JSONEncoder().encode(error)
+			let data = try coder.encode(error)
 			return .init(
 				status: status(for: error.code),
 				version: request.version,

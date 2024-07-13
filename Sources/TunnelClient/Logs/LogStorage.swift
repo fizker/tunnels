@@ -1,3 +1,4 @@
+import Common
 import Foundation
 import Logging
 
@@ -8,8 +9,7 @@ public actor LogStorage {
 	private let storagePath: URL
 	private let summaryURL: URL
 	private let summaryPath: String
-	private let encoder: JSONEncoder = .init()
-	private let decoder: JSONDecoder = .init()
+	private let coder = Coder()
 	private let fileManager: FileManager = .default
 	private var listener: FileSystemWatcher?
 
@@ -25,15 +25,6 @@ public actor LogStorage {
 		self.summaryURL = summaryURL
 		self.summaryPath = summaryPath
 
-		encoder.outputFormatting = [
-			.prettyPrinted,
-			.sortedKeys,
-			.withoutEscapingSlashes,
-		]
-		encoder.dateEncodingStrategy = .iso8601
-
-		decoder.dateDecodingStrategy = .iso8601
-
 		try fileManager.createDirectory(
 			at: storagePath,
 			withIntermediateDirectories: true
@@ -46,7 +37,7 @@ public actor LogStorage {
 	private func readSummaryFile() -> [LogSummary] {
 		if let data = fileManager.contents(atPath: summaryPath) {
 			do {
-				summaries = try decoder.decode([LogSummary].self, from: data)
+				summaries = try coder.decode(data)
 				return summaries
 			} catch {
 				summaries = []
@@ -102,7 +93,7 @@ public actor LogStorage {
 		else { return nil }
 
 		do {
-			let log = try decoder.decode(Log.self, from: data)
+			let log = try coder.decode(Log.self, from: data)
 			logs[id] = log
 			return log
 		} catch {
@@ -121,13 +112,13 @@ public actor LogStorage {
 			withIntermediateDirectories: true
 		)
 
-		let data = try encoder.encode(log)
+		let data = try coder.encode(log)
 		fileManager.createFile(
 			at: logFolder.appending(path: "log.json"),
 			contents: data
 		)
 
-		let summaryData = try encoder.encode(summaries)
+		let summaryData = try coder.encode(summaries)
 		fileManager.createFile(
 			atPath: summaryPath,
 			contents: summaryData

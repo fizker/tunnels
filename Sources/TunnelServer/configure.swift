@@ -12,12 +12,12 @@ public func configure(_ app: Application, port: Int) async throws {
 	app.environment = .init(valueGetter: Environment.get(_:))
 
 	if app.environment.useSSL {
-		let acmeController = try ACMEController(
+		let acmeController = try ACMEController(setup: .init(
 			host: app.environment.host,
-			acmeEndpoint: try app.environment.acmeEndpoint,
+			endpoint: try app.environment.acmeEndpoint,
 			contactEmail: try app.environment.acmeContactEmail,
 			storagePath: try app.environment.acmeStoragePath
-		)
+		))
 		try await acmeController.addCertificate(to: app)
 
 		if let httpPort = app.environment.httpPort {

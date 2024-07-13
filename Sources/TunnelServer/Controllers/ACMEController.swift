@@ -1,4 +1,6 @@
+import ACME
 import AcmeSwift
+import Common
 import Vapor
 import SwiftASN1
 import NIOSSL
@@ -10,7 +12,6 @@ class ACMEController {
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
 		case validationFailed([AcmeAuthorization.Challenge])
-		case differentEndpointInStoredData(AcmeEndpoint)
 
 		var description: String {
 			switch self {
@@ -26,88 +27,40 @@ class ACMEController {
 
 				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
 				"""
-			case let .differentEndpointInStoredData(endpoint):
-				"The stored data was initialized with the \(endpoint) endpoint"
 			}
 		}
 	}
 
-	private let host: String
-	private let contactEmail: String
-	private let storagePath: String
+	private let setup: Setup
+	private let coder = Coder()
 
 	private var acmeData: ACMEData
 
-	struct ACMEData: Codable {
-		var endpoint: AcmeEndpoint
-		var accountKey: String?
-		var certificate: CertificateData?
-	}
-
-	struct CertificateData: Codable {
-		enum Error: Swift.Error {
-			case certificateChainCannotBeEmpty
-		}
-
-		var certificateChain: [Certificate]
-		var privateKeyPEM: String
-		var expiresAt: Date
-
-		var createdAt: Date
-
-		init(certificateChain: [Certificate], privateKeyPEM: String, expiresAt: Date, createdAt: Date = .now) throws {
-			guard !certificateChain.isEmpty
-			else { throw Error.certificateChainCannotBeEmpty }
-
-			self.certificateChain = certificateChain
-			self.privateKeyPEM = privateKeyPEM
-			self.expiresAt = expiresAt
-			self.createdAt = createdAt
-		}
-
-		init(certificateChain: [Certificate], privateKey: PEMDocument, createdAt: Date = .now) throws {
-			try self.init(certificateChain: certificateChain, privateKeyPEM: privateKey.pemString, createdAt: createdAt)
-		}
-
-		init(certificateChain: [Certificate], privateKeyPEM: String, createdAt: Date = .now) throws {
-			self.certificateChain = certificateChain
-			self.privateKeyPEM = privateKeyPEM
-			self.createdAt = createdAt
-
-			guard let firstExpiration = certificateChain.map(\.expirationDate).min()
-			else { throw Error.certificateChainCannotBeEmpty }
-
-			self.expiresAt = firstExpiration
-		}
-	}
-
-	init(host: String, acmeEndpoint: AcmeEndpoint, contactEmail: String, storagePath: String) throws {
-		self.contactEmail = contactEmail
-		self.host = host
-		self.storagePath = storagePath
+	init(setup: Setup) throws {
+		self.setup = setup
 
 		let fm = FileManager.default
-		if let data = fm.contents(atPath: storagePath) {
-			acmeData = try decode(data)
+		if let data = fm.contents(atPath: setup.storagePath) {
+			acmeData = try coder.decode(data)
 
-			guard acmeEndpoint == acmeData.endpoint
-			else { throw Error.differentEndpointInStoredData(acmeData.endpoint) }
+			guard setup.endpoint == acmeData.endpoint
+			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: acmeEndpoint)
+			acmeData = .init(endpoint: setup.endpoint)
 		}
 	}
 
-	private func lazyLoadData() async throws -> CertificateData {
-		if let certificate = acmeData.certificate {
-			let untilExpiration = certificate.expiresAt.timeIntervalSince(.now)
+	private func lazyLoadData() async throws -> ACMEData.CertWrapper {
+		if let certs = acmeData.certificates {
+			let untilExpiration = certs.expiresAt.timeIntervalSince(.now)
 
 			guard untilExpiration < _1Day
 			else {
 				if untilExpiration < _30Days {
-					print("Notice: Certificate expires at \(certificate.expiresAt.formatted())")
+					print("Notice: Certificate expires at \(certs.expiresAt.formatted())")
 				}
 
-				return certificate
+				return certs
 			}
 
 			print("Certificate is expired. Renewal initiated")
@@ -117,25 +70,24 @@ class ACMEController {
 	}
 
 	func addCertificate(to app: Application) async throws {
-		let certificate = try await lazyLoadData()
+		let certificates = try await lazyLoadData()
 
-		let certificateChain = try certificate.certificateChain.map {
-			let cert = try NIOSSLCertificate(bytes: Array($0.data), format: $0.format.asNIO)
-			return NIOSSLCertificateSource.certificate(cert)
+		let certificateChain = try certificates.nioCertificates.map {
+			return NIOSSLCertificateSource.certificate($0)
 		}
 
 		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
 			certificateChain: certificateChain,
-			privateKey: .privateKey(try .init(bytes: Array(certificate.privateKeyPEM.utf8), format: .pem))
+			privateKey: .privateKey(try certificates.nioPrivateKey)
 		)
 	}
 
 	private func loadAccount(acme: AcmeSwift) async throws {
 		if let accountKey = acmeData.accountKey {
-			let credentials = try AccountCredentials(contacts: [contactEmail], pemKey: accountKey)
+			let credentials = try AccountCredentials(contacts: [setup.contactEmail], pemKey: accountKey)
 			try acme.account.use(credentials)
 		} else {
-			let account = try await acme.account.create(contacts: [contactEmail], acceptTOS: true)
+			let account = try await acme.account.create(contacts: [setup.contactEmail], acceptTOS: true)
 			try acme.account.use(account)
 			acmeData.accountKey = account.privateKeyPem!
 			try save()
@@ -143,14 +95,14 @@ class ACMEController {
 	}
 
 	/// Requests a new certificate from Let's Encrypt
-	private func requestNewCertificate() async throws -> CertificateData {
+	private func requestNewCertificate() async throws -> ACMEData.CertWrapper {
 		// Create the client and load Let's Encrypt credentials
 		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
 		defer { try? acme.syncShutdown() }
 
 		try await loadAccount(acme: acme)
 
-		let domains: [String] = ["*.\(host)", host]
+		let domains: [String] = ["*.\(setup.host)", setup.host]
 
 		// Create a certificate order for *.ponies.com
 		let order = try await acme.orders.create(domains: domains)
@@ -187,11 +139,13 @@ class ACMEController {
 		// ... and the certificate is ready to download!
 		let certs = try await acme.certificates.download(for: finalized)
 
-		let data = try CertificateData(
-			certificateChain: try certs.map(Certificate.init(pemString:)),
-			privateKey: try privateKey.serializeAsPEM()
+		let data = ACMEData.CertWrapper(
+			certificates: try CertificateDataArray(certificates: try certs.map {
+				return try CertificateData(pemEncoded: $0, isSelfSigned: false)
+			}),
+			privateKey: privateKey
 		)
-		acmeData.certificate = data
+		acmeData.certificates = data
 		try save()
 
 		return data
@@ -206,8 +160,8 @@ class ACMEController {
 	}
 
 	private func save() throws {
-		let data = try encode(acmeData)
-		try data.write(to: URL(filePath: storagePath))
+		let data = try coder.encode(acmeData)
+		try data.write(to: URL(filePath: setup.storagePath))
 	}
 }
 
@@ -227,58 +181,5 @@ extension ChallengeDescription: CustomStringConvertible {
 extension AcmeAuthorization.Challenge: CustomStringConvertible {
 	public var description: String {
 		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
-	}
-}
-
-func encode(_ value: some Encodable) throws -> Data {
-	let encoder = JSONEncoder()
-	encoder.outputFormatting = [
-		.prettyPrinted,
-		.sortedKeys,
-	]
-	encoder.dateEncodingStrategy = .iso8601
-	encoder.dataEncodingStrategy = .base64
-
-	return try encoder.encode(value)
-}
-
-func decode<T: Decodable>(_ data: Data) throws -> T {
-	let decoder = JSONDecoder()
-	decoder.dateDecodingStrategy = .iso8601
-	decoder.dataDecodingStrategy = .base64
-
-	return try decoder.decode(T.self, from: data)
-}
-
-struct Certificate: Codable {
-	var data: Data
-	var expirationDate: Date
-	var format: Format
-
-	init(data: Data, format: Format) throws {
-		self.data = data
-		self.format = format
-
-		let cert = try NIOSSLCertificate(bytes: Array(data), format: format.asNIO)
-		expirationDate = Date(timeIntervalSince1970: TimeInterval(cert.notValidAfter))
-	}
-
-	init(pemString: String) throws {
-		try self.init(pemDocument: try PEMDocument(pemString: pemString))
-	}
-
-	init(pemDocument: PEMDocument) throws {
-		try self.init(data: Data(pemDocument.derBytes), format: .der)
-	}
-
-	enum Format: String, Codable {
-		case pem, der
-
-		var asNIO: NIOSSLSerializationFormats {
-			switch self {
-			case .pem: .pem
-			case .der: .der
-			}
-		}
 	}
 }
