@@ -21,7 +21,7 @@ public actor UpgradeServer {
 		app.http.server.configuration.hostname = "0.0.0.0"
 
 		let upgradeMiddleware = UpgradeMiddleware(requestUpgrade: requestUpgrade)
-		app.middleware.use(CatchAllMiddleware(handler: upgradeMiddleware.handle(_:)))
+		app.middleware.use(CatchAllMiddleware { await upgradeMiddleware.handle($0) })
 	}
 
 	/// Starts the server and attaches itself to the storage of the given ``Application``.
