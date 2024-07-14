@@ -3,6 +3,9 @@ import Foundation
 import OAuth2Models
 import Vapor
 
+/// Login tokens are automatically deleted when they are more than 12 hours old
+private let loginExpirationLimit: TimeInterval = 86_400 / 2
+
 struct User: Codable, Equatable, Authenticatable {
 	enum Scope: String, Codable, CustomStringConvertible, Comparable {
 		case admin, sysadmin
@@ -120,6 +123,9 @@ actor UserStore {
 	private func save() throws {
 		guard let storagePath
 		else { return }
+
+		let expiresLimit = Date.now - loginExpirationLimit
+		data.logins = data.logins.filter({ expiresLimit < $0.value.expiresAt })
 
 		let data = try coder.encode(data)
 		guard Self.fm.createFile(atPath: storagePath, contents: data)
