@@ -90,8 +90,12 @@ actor Client {
 }
 
 extension AsyncThrowingStream {
-	init<S: Sequence>(content: S) where S.Element == Element, Failure == any Error {
-		var iterator = content.makeIterator()
-		self.init { iterator.next() }
+	init<S: Sequence>(content: S) where S.Element == Element, S.Element: Sendable, Failure == any Error {
+		self.init { continuation in
+			for element in content {
+				continuation.yield(element)
+			}
+			continuation.finish()
+		}
 	}
 }
