@@ -13,7 +13,7 @@ let upcomingFeatures: [SwiftSetting] = [
 	.enableUpcomingFeature("IsolatedDefaultValues"),
 	.enableUpcomingFeature("DisableOutwardActorInference"),
 	.enableUpcomingFeature("DeprecateApplicationMain"),
-	.enableUpcomingFeature("InternalImportsByDefault"),
+//	.enableUpcomingFeature("InternalImportsByDefault"),
 	.enableUpcomingFeature("FullTypedThrows"),
 ]
 

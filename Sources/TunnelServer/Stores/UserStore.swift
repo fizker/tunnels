@@ -166,7 +166,11 @@ actor UserStore {
 		try save()
 	}
 
-	func users(includeSysAdmin: Bool = false) -> [User] {
+	func users() -> [User] {
+		users(includeSysAdmin: false)
+	}
+
+	func users(includeSysAdmin: Bool) -> [User] {
 		if includeSysAdmin {
 			data.users
 		} else {
