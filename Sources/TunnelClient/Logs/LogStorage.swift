@@ -31,6 +31,8 @@ public actor LogStorage {
 		)
 
 		readSummaryFile()
+
+		deleteOldLogs()
 	}
 
 	@discardableResult
@@ -79,6 +81,8 @@ public actor LogStorage {
 				"logID": "\(log.id)",
 			])
 		}
+
+		deleteOldLogs()
 	}
 
 	public func log(id: Log.ID) -> Log? {
@@ -118,11 +122,34 @@ public actor LogStorage {
 			contents: data
 		)
 
+		try writeSummaryData()
+	}
+
+	private func writeSummaryData() throws {
 		let summaryData = try coder.encode(summaries)
 		fileManager.createFile(
 			atPath: summaryPath,
 			contents: summaryData
 		)
+	}
+
+	private func deleteOldLogs() {
+		do {
+			let expirationDate = Date(timeIntervalSinceNow: -84_600)
+			let toDelete = summaries.filter { $0.responseSent < expirationDate }
+			summaries = summaries.filter { expirationDate <= $0.responseSent }
+
+			for log in toDelete {
+				let logFolder = storagePath.appending(path: log.id.uuidString)
+				try fileManager.removeItem(at: logFolder)
+			}
+
+			try writeSummaryData()
+		} catch {
+			logger.error("Failed to remove old logs", metadata: [
+				"error": "\(error)",
+			])
+		}
 	}
 }
 

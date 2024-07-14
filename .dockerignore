@@ -6,3 +6,5 @@
 .swiftpm
 docker-compose.*yml
 Dockerfile-*
+
+logs/
