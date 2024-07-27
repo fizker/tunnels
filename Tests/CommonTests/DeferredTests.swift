@@ -124,6 +124,7 @@ final class DeferredTests: XCTestCase {
 
 		do {
 			_ = try await deferred.value
+			#warning("TODO: This was seen failing, probably because reject() runs in a Task {}, and thus might not resolve first in this test")
 			XCTFail()
 		} catch DeferredError.rejected {
 			events.append("error caught")

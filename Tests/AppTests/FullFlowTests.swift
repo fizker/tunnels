@@ -8,6 +8,9 @@ import XCTest
 /// # Note
 ///
 /// These tests require the different components to run externally when starting the tests
+/// - `TunnelServer` must run on `localhost:8110`.
+/// - `DebugServer` must run.
+/// - `TunnelClient` must run against `TunnelServer` with `test.fizkerinc.dk` pointing to `DebugServer`.
 final class FullFlowTests: XCTestCase {
 	let timeout: TimeAmount = .seconds(10)
 
@@ -126,6 +129,15 @@ extension Data {
 		var buffer = buffer
 		if let data = buffer.readData(length: buffer.readableBytes) {
 			append(data)
+		}
+	}
+}
+
+extension AsyncSequence where Element: Sequence {
+	public func flatten() -> AsyncFlatMapSequence<Self, AsyncStream<Self.Element.Element>> {
+		self.flatMap {
+			var iterator = $0.makeIterator()
+			return AsyncStream { iterator.next() }
 		}
 	}
 }
