@@ -8,12 +8,17 @@ import XCTest
 /// # Note
 ///
 /// These tests require the different components to run externally when starting the tests
+/// - `TunnelServer` must run on `localhost:8110`.
+/// - `DebugServer` must run.
+/// - `TunnelClient` must run against `TunnelServer` with `test.fizkerinc.dk` pointing to `DebugServer`.
 final class FullFlowTests: XCTestCase {
 	let timeout: TimeAmount = .seconds(10)
 
 	func test__DebugServer__catchAll__returnsExpectedBody() async throws {
 		let client = HTTPClient()
-		defer { try? client.syncShutdown() }
+		defer { Task {
+			try? await client.shutdown()
+		} }
 
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/foo")
 		let response = try await client.execute(request, timeout: timeout)
@@ -26,7 +31,9 @@ final class FullFlowTests: XCTestCase {
 
 	func test__DebugServer__redirect__redirectResponseIsReceivedCorrectly() async throws {
 		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
-		defer { try? client.syncShutdown() }
+		defer { Task {
+			try? await client.shutdown()
+		} }
 
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/redirect?location=example.com")
 		let response = try await client.execute(request, timeout: timeout)
@@ -40,7 +47,9 @@ final class FullFlowTests: XCTestCase {
 
 	func test__DebugServer__bigFile__returnsExpectedBody() async throws {
 		let client = HTTPClient()
-		defer { try? client.syncShutdown() }
+		defer { Task {
+			try? await client.shutdown()
+		} }
 
 		let size = 1_000_000
 
@@ -72,7 +81,9 @@ final class FullFlowTests: XCTestCase {
 		request.body = .bytes(data, length: .unknown)
 
 		let client = HTTPClient()
-		defer { try! client.syncShutdown() }
+		defer { Task {
+			try? await client.shutdown()
+		} }
 
 		let response = try await client.execute(request, timeout: timeout)
 		XCTAssertEqual(response.status, .ok)
@@ -93,7 +104,9 @@ final class FullFlowTests: XCTestCase {
 		request.body = .bytes(data, length: .unknown)
 
 		let client = HTTPClient()
-		defer { try! client.syncShutdown() }
+		defer { Task {
+			try? await client.shutdown()
+		} }
 
 		let response = try await client.execute(request, timeout: timeout)
 		XCTAssertEqual(response.status, .ok)
@@ -126,6 +139,15 @@ extension Data {
 		var buffer = buffer
 		if let data = buffer.readData(length: buffer.readableBytes) {
 			append(data)
+		}
+	}
+}
+
+extension AsyncSequence where Element: Sequence {
+	public func flatten() -> AsyncFlatMapSequence<Self, AsyncStream<Self.Element.Element>> {
+		self.flatMap {
+			var iterator = $0.makeIterator()
+			return AsyncStream { iterator.next() }
 		}
 	}
 }

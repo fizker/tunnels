@@ -1,18 +1,19 @@
 import Common
 import Foundation
+import FzkExtensions
 import Logging
 import Models
 import NIO
 import OAuth2Models
 import WebSocket
 import WebSocketKit
+import WebURL
+import WebURLFoundationExtras
 
 public actor Client {
-	private static let httpSchemeRegex = /^http/
-
 	let logger = Logger(label: "Client")
-	var serverURL: URL
-	var webSocketURL: URL
+	var serverURL: WebURL
+	var webSocketURL: WebURL
 	var proxies: [Proxy]
 	var webSocket: WebSocketHandler?
 	var logStorage: LogStorage
@@ -23,17 +24,26 @@ public actor Client {
 	}
 
 	public init?(
-		serverURL: URL,
+		serverURL: WebURL,
 		proxies: [Proxy],
 		clientCredentials: ClientCredentials,
 		logStorage: LogStorage
 	) {
-		guard serverURL.path().isEmpty || serverURL.path() == "/"
+		guard serverURL.path.isEmpty || serverURL.path == "/"
 		else { return nil }
 
 		self.credentialsStore = .init(credentials: clientCredentials, serverURL: serverURL)
 		self.serverURL = serverURL
-		self.webSocketURL = URL(string: serverURL.absoluteString.replacing(Self.httpSchemeRegex, with: "ws"))!
+		self.webSocketURL = serverURL ~ {
+			switch $0.scheme {
+			case "http":
+				$0.scheme = "ws"
+			case "https":
+				$0.scheme = "wss"
+			default:
+				break
+			}
+		}
 		self.proxies = proxies
 		self.logStorage = logStorage
 	}
@@ -43,10 +53,10 @@ public actor Client {
 
 		let webSocket = try await withCheckedThrowingContinuation { continuation in
 			logger.info("Connecting client", metadata: [
-				"serverURL": .string(webSocketURL.absoluteString),
+				"serverURL": .string(webSocketURL.serialized()),
 			])
 			WebSocket.connect(
-				to: webSocketURL.appending(path: "tunnels/client"),
+				to: URL(webSocketURL.appending(path: ["tunnels", "client"]))!,
 				headers: authHeader,
 				on: MultiThreadedEventLoopGroup.singleton
 			) { ws in

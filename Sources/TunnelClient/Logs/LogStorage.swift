@@ -1,24 +1,31 @@
 import Common
 import Foundation
 import Logging
+import System
+import WebURL
+import WebURLFoundationExtras
 
 public actor LogStorage {
 	private let logger = Logger(label: "LogStorage")
 	private(set) public var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
-	private let storagePath: URL
-	private let summaryURL: URL
+	private let storagePath: WebURL
+	private let summaryURL: WebURL
 	private let summaryPath: String
 	private let coder = Coder()
 	private let fileManager: FileManager = .default
 	private var listener: FileSystemWatcher?
 
 	public init(storagePath: String) async throws {
-		try await self.init(storage: URL(filePath: storagePath))
+		var path = FilePath(storagePath).lexicallyNormalized()
+		if path.isRelative {
+			path = FilePath(FileManager.default.currentDirectoryPath + "/" + path.string)
+		}
+		try await self.init(storage: WebURL(filePath: path.string))
 	}
 
-	public init(storage: URL) async throws {
-		let summaryURL = storage.appending(path: "summary.json")
+	public init(storage: WebURL) async throws {
+		let summaryURL = storage.appending(path: ["summary.json"])
 		let summaryPath = summaryURL.path
 
 		self.storagePath = storage
@@ -90,10 +97,8 @@ public actor LogStorage {
 			return log
 		}
 
-		let path = storagePath
-			.appending(path: id.uuidString)
-			.appending(path: "log.json")
-		guard let data = fileManager.contents(atPath: path.path())
+		let path = storagePath.appending(path: [id.uuidString, "log.json"])
+		guard let data = fileManager.contents(atPath: path.path)
 		else { return nil }
 
 		do {
@@ -110,7 +115,7 @@ public actor LogStorage {
 	}
 
 	private func write(_ log: Log) throws {
-		let logFolder = storagePath.appending(path: log.id.uuidString)
+		let logFolder = storagePath.appending(path: [log.id.uuidString])
 		try fileManager.createDirectory(
 			at: logFolder,
 			withIntermediateDirectories: true
@@ -118,7 +123,7 @@ public actor LogStorage {
 
 		let data = try coder.encode(log)
 		fileManager.createFile(
-			at: logFolder.appending(path: "log.json"),
+			at: logFolder.appending(path: ["log.json"]),
 			contents: data
 		)
 
@@ -140,7 +145,7 @@ public actor LogStorage {
 			summaries = summaries.filter { expirationDate <= $0.responseSent }
 
 			for log in toDelete {
-				let logFolder = storagePath.appending(path: log.id.uuidString)
+				let logFolder = storagePath.appending(path: [log.id.uuidString])
 				try fileManager.removeItem(at: logFolder)
 			}
 
@@ -155,7 +160,19 @@ public actor LogStorage {
 
 extension FileManager {
 	@discardableResult
-	func createFile(at url: URL, contents: Data?) -> Bool {
+	func createFile(at url: WebURL, contents: Data?) -> Bool {
 		return createFile(atPath: url.path, contents: contents)
+	}
+
+	func removeItem(at url: WebURL) throws {
+		return try removeItem(at: URL(url)!)
+	}
+
+	func createDirectory(
+		at url: WebURL,
+		withIntermediateDirectories createIntermediates: Bool,
+		attributes: [FileAttributeKey : Any]? = nil
+	) throws {
+		try createDirectory(at: URL(url)!, withIntermediateDirectories: createIntermediates, attributes: attributes)
 	}
 }

@@ -1,10 +1,12 @@
 import AsyncHTTPClient
 import Common
 import Foundation
+import FzkExtensions
 import Logging
 import Models
 import NIOHTTP1
 import OAuth2Models
+import WebURL
 
 actor CredentialsStore {
 	enum Error: Swift.Error {
@@ -15,11 +17,11 @@ actor CredentialsStore {
 
 	private let logger = Logger(label: "CredentialsStore")
 	private var credentials: ClientCredentials
-	private var serverURL: URL
+	private var serverURL: WebURL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
 	private let coder = Coder()
 
-	init(credentials: ClientCredentials, serverURL: URL) {
+	init(credentials: ClientCredentials, serverURL: WebURL) {
 		self.credentials = credentials
 		self.serverURL = serverURL
 	}
@@ -42,7 +44,7 @@ actor CredentialsStore {
 
 		let data = try coder.encode(credentials.request)
 
-		var request = HTTPClientRequest(url: serverURL.appending(path: "/auth/token").absoluteString)
+		var request = HTTPClientRequest(url: serverURL.appending(path: ["auth", "token"]).serialized())
 		request.body = .bytes(.init(data: data))
 		request.headers = ["content-type": "application/json"]
 		request.method = .POST

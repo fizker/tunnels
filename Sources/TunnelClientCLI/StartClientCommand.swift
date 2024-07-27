@@ -1,7 +1,7 @@
 import ArgumentParser
-import Foundation
 import Models
 import TunnelClient
+import WebURL
 
 @main
 struct StartClientCommand: AsyncParsableCommand {
@@ -9,13 +9,13 @@ struct StartClientCommand: AsyncParsableCommand {
 	var proxies: [Proxy]
 
 	@Option(name: .shortAndLong, transform: {
-		guard let url = URL(string: $0)
+		guard let url = WebURL($0)
 		else { throw ValidationError("Invalid URL.") }
-		guard url.path().isEmpty || url.path() == "/"
+		guard url.path.isEmpty || url.path == "/"
 		else { throw ValidationError("Server URL must be scheme, host and port only.") }
 		return url
 	})
-	var server: URL = URL(string: "http://localhost:8110")!
+	var server: WebURL = WebURL("http://localhost:8110")!
 
 	@Option(name: .shortAndLong)
 	var logs: String = "logs"

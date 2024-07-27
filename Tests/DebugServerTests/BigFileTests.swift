@@ -5,6 +5,9 @@ import XCTVapor
 final class BigFileTests: XCTestCase {
 	func test__reasonablyBigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
 		let app = try await Application.make(.testing)
+		defer { Task {
+			try await app.asyncShutdown()
+		} }
 
 		try await DebugServer.configure(app)
 
@@ -24,6 +27,9 @@ final class BigFileTests: XCTestCase {
 
 	func test__10mb_bigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
 		let app = try await Application.make(.testing)
+		defer { Task {
+			try await app.asyncShutdown()
+		} }
 
 		try await DebugServer.configure(app)
 
