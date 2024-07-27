@@ -41,7 +41,6 @@ public actor Client {
 	public func connect() async throws {
 		let authHeader = try await credentialsStore.httpHeaders
 
-		let elg = MultiThreadedEventLoopGroup(numberOfThreads: 1)
 		let webSocket = try await withCheckedThrowingContinuation { continuation in
 			logger.info("Connecting client", metadata: [
 				"serverURL": .string(webSocketURL.absoluteString),
@@ -49,7 +48,7 @@ public actor Client {
 			WebSocket.connect(
 				to: webSocketURL.appending(path: "tunnels/client"),
 				headers: authHeader,
-				on: elg
+				on: MultiThreadedEventLoopGroup.singleton
 			) { ws in
 				self.logger.info("Client connected")
 				let handler = WebSocketHandler(webSocket: ws)
