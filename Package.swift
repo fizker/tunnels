@@ -139,7 +139,6 @@ let package = Package(
 			dependencies: [
 				"CatchAll",
 				"Common",
-				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures
