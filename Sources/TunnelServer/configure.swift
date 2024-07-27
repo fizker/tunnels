@@ -1,3 +1,4 @@
+import EnvironmentVariables
 import HTTPUpgradeServer
 import Vapor
 
@@ -9,7 +10,11 @@ enum ConfigurationError: Error {
 public func configure(_ app: Application, port: Int) async throws {
 	app.http.server.configuration.hostname = "0.0.0.0"
 
-	app.environment = .init(valueGetter: Environment.get(_:))
+	app.environment = .init(loader: MultiLoader(loaders: [
+		.environment,
+		DotEnvLoader(location: .path(Environment.get("settings_file") ?? "env-tunnel-server")),
+		.default,
+	]))
 
 	if app.environment.useSSL {
 		let acmeController = try ACMEController(setup: .init(
