@@ -18,10 +18,9 @@ LoggingSystem.bootstrap { label in
 }
 
 let app = try await Application.make(env)
-do {
-	try await configure(app, port: Int(port)!)
-	try await app.execute()
+defer { Task {
 	try await app.asyncShutdown()
-} catch {
-	try await app.asyncShutdown()
-}
+} }
+
+try await configure(app, port: Int(port)!)
+try await app.execute()
