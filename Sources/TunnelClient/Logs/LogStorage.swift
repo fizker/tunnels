@@ -1,6 +1,7 @@
 import Common
 import Foundation
 import Logging
+import System
 import WebURL
 import WebURLFoundationExtras
 
@@ -16,7 +17,11 @@ public actor LogStorage {
 	private var listener: FileSystemWatcher?
 
 	public init(storagePath: String) async throws {
-		try await self.init(storage: WebURL(filePath: storagePath))
+		var path = FilePath(storagePath).lexicallyNormalized()
+		if path.isRelative {
+			path = FilePath(FileManager.default.currentDirectoryPath + "/" + path.string)
+		}
+		try await self.init(storage: WebURL(filePath: path.string))
 	}
 
 	public init(storage: WebURL) async throws {
