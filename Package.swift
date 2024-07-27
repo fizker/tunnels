@@ -37,6 +37,7 @@ let package = Package(
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.0.1"),
 		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.3.0"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
+		.package(url: "https://github.com/karwa/swift-url", .upToNextMinor(from: "0.4.2")),
 		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta4"),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.1"),
 		.package(url: "https://github.com/vapor/vapor.git", from: "4.101.2"),
@@ -112,6 +113,8 @@ let package = Package(
 				"WebSocket",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
+				.product(name: "WebURL", package: "swift-url"),
+				.product(name: "WebURLFoundationExtras", package: "swift-url"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			],
 			swiftSettings: upcomingFeatures
@@ -164,6 +167,7 @@ func executableTargets() -> [Target] {
 			dependencies: [
 				"TunnelClient",
 				.product(name: "ArgumentParser", package: "swift-argument-parser"),
+				.product(name: "WebURL", package: "swift-url"),
 			],
 			swiftSettings: upcomingFeatures
 		),

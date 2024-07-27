@@ -1,7 +1,8 @@
 import AsyncHTTPClient
-import Foundation
+import FzkExtensions
 import Models
 import NIOCore
+import WebURL
 
 extension Client {
 	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
@@ -19,7 +20,7 @@ extension Client {
 		case let .binary(data):
 			.bytes(data)
 		case .stream:
-			try await stream(from: serverURL.appending(path: "tunnels/\(req.id)/request"), client: client)
+			try await stream(from: serverURL.appending(path: ["tunnels", req.id.uuidString, "request"]), client: client)
 		case nil:
 			nil
 		}
@@ -27,7 +28,7 @@ extension Client {
 		do {
 			let response = try await askProxy(request: request, client: client)
 			let res = HTTPResponse(id: req.id, response: response)
-			let uploadURL = serverURL.appending(path: "tunnels/\(req.id)/response")
+			let uploadURL = serverURL.appending(path: ["tunnels", req.id.uuidString, "response"])
 
 			return (res, {
 				if case .stream = res.body {
@@ -93,8 +94,8 @@ extension Client {
 		}
 	}
 
-	func stream(from url: URL, client: HTTPClient) async throws -> HTTPClientRequest.Body {
-		var request = HTTPClientRequest(url: url.absoluteString)
+	func stream(from url: WebURL, client: HTTPClient) async throws -> HTTPClientRequest.Body {
+		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 
 		let response = try await client.execute(request, timeout: .seconds(30))
@@ -102,8 +103,8 @@ extension Client {
 		return .stream(response.body, length: .unknown)
 	}
 
-	func upload(body response: HTTPClientResponse, to url: URL, client: HTTPClient) async throws {
-		var request = HTTPClientRequest(url: url.absoluteString)
+	func upload(body response: HTTPClientResponse, to url: WebURL, client: HTTPClient) async throws {
+		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 		request.method = .POST
 		request.body = .stream(response.body, length: .unknown)
