@@ -17,7 +17,7 @@ Since this is a restricted port, it might be necessary to start the server with 
 
 All options can also be put into a dotenv file. The system automatically loads
 any file named `.env` or `env-tunnel-server`, or the name can be customized by
-setting `settings_file` env var.
+setting `settings_file` env var. See [env-tunnel-server-example](env-tunnel-server-example) for an example file.
 
 
 ## Tunnel Client

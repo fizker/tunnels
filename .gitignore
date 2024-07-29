@@ -11,3 +11,7 @@ DerivedData/
 
 # docker related
 docker-compose.override.yml
+
+# settings files
+env-tunnel-server
+env-tunnel-logs
