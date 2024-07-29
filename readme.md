@@ -15,6 +15,10 @@ can be changed by setting the `PORT` environment variable before starting the se
 If it is to receive normal HTTP requests, it will need to bind to port 80.
 Since this is a restricted port, it might be necessary to start the server with `sudo`.
 
+All options can also be put into a dotenv file. The system automatically loads
+any file named `.env` or `env-tunnel-server`, or the name can be customized by
+setting `settings_file` env var.
+
 
 ## Tunnel Client
 
