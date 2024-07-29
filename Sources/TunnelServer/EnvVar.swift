@@ -3,6 +3,7 @@ import EnvironmentVariables
 import Vapor
 
 enum EnvVar: String, CaseIterable {
+	case port = "PORT"
 	case host
 	case httpPort
 	case useSSL
@@ -13,6 +14,12 @@ enum EnvVar: String, CaseIterable {
 }
 
 extension EnvironmentVariables where Key == EnvVar {
+	var port: Int {
+		get {
+			get(.port, map: Int.init, default: 8110)
+		}
+	}
+
 	var host: String {
 		get {
 			get(.host, default: "localhost")

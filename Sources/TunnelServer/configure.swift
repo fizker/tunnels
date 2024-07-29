@@ -1,3 +1,4 @@
+import EnvironmentVariables
 import HTTPUpgradeServer
 import Vapor
 
@@ -6,10 +7,10 @@ enum ConfigurationError: Error {
 }
 
 // configures your application
-public func configure(_ app: Application, port: Int) async throws {
+func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async throws {
 	app.http.server.configuration.hostname = "0.0.0.0"
 
-	app.environment = .init(valueGetter: Environment.get(_:))
+	app.environment = env
 
 	if app.environment.useSSL {
 		let acmeController = try ACMEController(setup: .init(
@@ -22,7 +23,7 @@ public func configure(_ app: Application, port: Int) async throws {
 
 		if let httpPort = app.environment.httpPort {
 			let upgradeServer = UpgradeServer(port: httpPort) {
-				$0.hasSuffix(app.environment.host) ? .accepted(port: port) : .rejected
+				$0.hasSuffix(app.environment.host) ? .accepted(port: env.port) : .rejected
 			}
 
 			await upgradeServer.app.routes.group(".well-known") {

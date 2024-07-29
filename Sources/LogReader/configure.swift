@@ -1,9 +1,9 @@
+import EnvironmentVariables
 import Vapor
 
 // configures your application
-public func configure(_ app: Application) async throws {
-	app.environment = .init(valueGetter: Environment.get(_:))
-	try app.environment.assertKeys()
+func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async throws {
+	app.environment = env
 
 	app.middleware.use(CORSMiddleware())
 

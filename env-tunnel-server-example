@@ -1,0 +1,15 @@
+userStoragePath=users.json
+
+## Optional
+
+# PORT=8110
+
+## The following are for using SSL. If `useSSL` is set to `true`, the rest
+## becomes required. If it is not set or set to `false`, the rest are ignored.
+
+# useSSL=true
+# host
+# httpPort
+# acmeEndpoint
+# acmeContactEmail
+# acmeStoragePath
