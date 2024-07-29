@@ -2,12 +2,12 @@ import EnvironmentVariables
 import Vapor
 
 func runServer() async throws {
-	var envVars = EnvironmentVariables<EnvVar>(loader: MultiLoader(loaders: [
+	let envVars = EnvironmentVariables<EnvVar>(loader: MultiLoader(loaders: [
 		.environment,
 		DotEnvLoader(location: .path(Environment.get("settings_file") ?? "env-tunnel-logs")),
 		.default,
 	]))
-	try envVars.assertKeys()
+	try envVars.assertKeys(EnvVar.allCases.filter { $0 != .port })
 
 	var env = try Environment.detect()
 	if env.arguments.count == 1 {
@@ -24,6 +24,6 @@ func runServer() async throws {
 		try await app.asyncShutdown()
 	} }
 
-	try await configure(app)
+	try await configure(app, env: envVars)
 	try await app.execute()
 }
