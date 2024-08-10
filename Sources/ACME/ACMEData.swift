@@ -29,6 +29,10 @@ package struct ACMEData: Codable {
 			self.privateKey = privateKey
 		}
 
+		package func covers(domains: [String]) -> Bool {
+			certificates.covers(domains: domains)
+		}
+
 		/// The date that the first certificate expires.
 		package var expiresAt: Date { certificates.expiresAt }
 	}
