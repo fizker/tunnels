@@ -35,6 +35,27 @@ struct User: Codable, Equatable, Authenticatable {
 	var scopes: Set<Scope> = []
 
 	var clientSecret: String? = nil
+	var knownHosts: Set<KnownHost> = []
+
+	struct KnownHost: Codable, Hashable {
+		var value: String
+		var lastSeen: Date
+
+		func hash(into hasher: inout Hasher) {
+			value.hash(into: &hasher)
+		}
+	}
+}
+
+extension User {
+	init(from decoder: any Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		self.username = try container.decode(String.self, forKey: .username)
+		self.password = try container.decode(String.self, forKey: .password)
+		self.scopes = try container.decodeIfPresent(Set<User.Scope>.self, forKey: .scopes) ?? []
+		self.clientSecret = try container.decodeIfPresent(String.self, forKey: .clientSecret)
+		self.knownHosts = try container.decodeIfPresent(Set<User.KnownHost>.self, forKey: .knownHosts) ?? []
+	}
 }
 
 struct Login: Codable {
@@ -197,6 +218,17 @@ actor UserStore {
 		else { return nil }
 
 		return (login, user)
+	}
+
+	func update(hosts: [String], for userID: User.ID) throws {
+		guard var user = user(id: userID)
+		else { return }
+
+		for host in hosts {
+			user.knownHosts.update(with: .init(value: host, lastSeen: .now))
+		}
+
+		try upsert(user: user, oldUsername: user.username)
 	}
 }
 

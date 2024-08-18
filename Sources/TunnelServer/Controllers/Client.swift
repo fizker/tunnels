@@ -14,9 +14,16 @@ struct PendingResponse {
 
 /// An instance of TunnelClient, from the perspective of the server. It supports sending a HTTPRequest and awaiting the response.
 actor Client {
-	let webSocket: WebSocketHandler
+	typealias HostsChangedHandler = ([String]) -> Void
 
-	var hosts: [String] = []
+	let webSocket: WebSocketHandler
+	let onHostsChanged: HostsChangedHandler
+
+	var hosts: [String] = [] {
+		didSet {
+			onHostsChanged(hosts)
+		}
+	}
 
 	var pendingRequests: [HTTPRequest.ID: (
 		cont: Deferred<(HTTPResponse, ResponseStream)>,
@@ -24,8 +31,9 @@ actor Client {
 		response: PendingResponse
 	)] = [:]
 
-	init(webSocket: WebSocketHandler) {
+	init(webSocket: WebSocketHandler, onHostsChanged: @escaping HostsChangedHandler) {
 		self.webSocket = webSocket
+		self.onHostsChanged = onHostsChanged
 
 		webSocket.onClientMessage { [weak self] ws, data in
 			try await self?.onWebSocketMessage(data)
