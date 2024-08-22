@@ -13,6 +13,8 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 	app.environment = env
 
+	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
+
 	if app.environment.useSSL {
 		let setup = ACMESetup(
 			host: app.environment.host,
@@ -21,6 +23,8 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 			storagePath: try app.environment.acmeStoragePath
 		)
 		app.acmeHandler = try .init(setup: setup)
+		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
+
 		let acmeController = try ACMEController(setup: setup)
 		try await acmeController.addCertificate(to: app)
 
@@ -37,8 +41,6 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 			try await upgradeServer.start(topLevelApplication: app)
 		}
 	}
-
-	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
 
 	app.middleware.use(CORSMiddleware())
 	app.middleware.use(OAuthErrorMiddleware())
