@@ -9,6 +9,8 @@ private let _1Day: TimeInterval = 84_600
 private let _30Days = _1Day * 30
 
 class ACMEController {
+	typealias Setup = ACMEHandler.Setup
+
 	enum Error: Swift.Error, CustomStringConvertible {
 		case pendingChallenges([ChallengeDescription])
 		case validationFailed([AcmeAuthorization.Challenge])
