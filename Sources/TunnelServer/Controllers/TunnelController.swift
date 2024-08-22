@@ -30,11 +30,16 @@ actor TunnelController {
 	func connectClient(req: Request, webSocket: WebSocketHandler) async throws {
 		let userID = try req.auth.require(User.self).id
 		let userStore = req.application.userStore
-		let client = Client(webSocket: webSocket) { [weak userStore] hosts in
+		let acme = req.application.acmeHandler
+		let client = Client(webSocket: webSocket) { [weak userStore, weak acme] hosts in
 			guard let userStore, !hosts.isEmpty
 			else { return }
 
-			#warning("TODO: Register hosts with ACME")
+			if let acme {
+				Task {
+					await acme.register(endpoints: hosts)
+				}
+			}
 
 			Task {
 				do {

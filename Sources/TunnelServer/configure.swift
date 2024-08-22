@@ -1,3 +1,4 @@
+import ACME
 import EnvironmentVariables
 import HTTPUpgradeServer
 import Vapor
@@ -13,12 +14,14 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 	app.environment = env
 
 	if app.environment.useSSL {
-		let acmeController = try ACMEController(setup: .init(
+		let setup = ACMESetup(
 			host: app.environment.host,
 			endpoint: try app.environment.acmeEndpoint,
 			contactEmail: try app.environment.acmeContactEmail,
 			storagePath: try app.environment.acmeStoragePath
-		))
+		)
+		app.acmeHandler = try .init(setup: setup)
+		let acmeController = try ACMEController(setup: setup)
 		try await acmeController.addCertificate(to: app)
 
 		if let httpPort = app.environment.httpPort {
