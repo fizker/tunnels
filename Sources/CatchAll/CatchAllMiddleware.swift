@@ -11,9 +11,8 @@ public struct CatchAllMiddleware: AsyncMiddleware {
 		do {
 			return try await next.respond(to: request)
 		} catch {
-			guard
-				let error = error as? any AbortError,
-				error.status == .notFound
+			// This requires Vapor to change and make RouteNotFound public
+			guard error is RouteNotFound
 			else { throw error }
 
 			return try await handler(request)

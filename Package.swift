@@ -40,7 +40,8 @@ let package = Package(
 		.package(url: "https://github.com/karwa/swift-url", .upToNextMinor(from: "0.4.2")),
 		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta4"),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.21.1"),
-		.package(url: "https://github.com/vapor/vapor.git", from: "4.101.2"),
+//		.package(url: "https://github.com/vapor/vapor.git", from: "4.105.0"),
+		.package(url: "https://github.com/fizker/vapor.git", branch: "export-RouteNotFound"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.15.0"),
 	],
 	targets: [

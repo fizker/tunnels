@@ -1,5 +1,5 @@
 {
-  "originHash" : "346cfacb69d0ff287be343afcb3cf18315f019395c7ce3be0d704325fbb4e12e",
+  "originHash" : "03409608c0b7ae24cc406a89c0029fe98f8ca4fcbf0ec6e339d4677bdf365310",
   "pins" : [
     {
       "identity" : "acmeswift",
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/async-kit.git",
       "state" : {
-        "revision" : "7ece208cd401687641c88367a00e3ea2b04311f1",
-        "version" : "1.19.0"
+        "revision" : "e048c8ee94967e8d8a1c2ec0e1156d6f7fa34d31",
+        "version" : "1.20.0"
       }
     },
     {
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/console-kit.git",
       "state" : {
-        "revision" : "9f7932f22ab6f64aafadc14491e694179b7d0f6f",
-        "version" : "4.14.3"
+        "revision" : "78c0dd739df8cb9ee14a8bbbf770facc4fc3402a",
+        "version" : "4.15.0"
       }
     },
     {
@@ -186,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-extras.git",
       "state" : {
-        "revision" : "a3b640d7dc567225db7c94386a6e71aded1bfa63",
-        "version" : "1.22.0"
+        "revision" : "d1ead62745cc3269e482f1c51f27608057174379",
+        "version" : "1.24.0"
       }
     },
     {
@@ -256,10 +256,10 @@
     {
       "identity" : "vapor",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/vapor.git",
+      "location" : "https://github.com/fizker/vapor.git",
       "state" : {
-        "revision" : "ebbe71c89aa1b76a0920277760b12be7a2ec7c70",
-        "version" : "4.102.0"
+        "branch" : "export-RouteNotFound",
+        "revision" : "97af125ef93543b1927e702650a87ea3cf4d6981"
       }
     },
     {
