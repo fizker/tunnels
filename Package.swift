@@ -35,7 +35,7 @@ let package = Package(
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.66.0"),
 		.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.27.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.1.0"),
-		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.3.0"),
+		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.3.1"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
 		.package(url: "https://github.com/karwa/swift-url", .upToNextMinor(from: "0.4.2")),
 		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta4"),
@@ -129,7 +129,9 @@ let package = Package(
 				"WebSocket",
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
+				.product(name: "FzkExtensions", package: "swift-extensions"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
+				.product(name: "WebURL", package: "swift-url"),
 				.product(name: "Vapor", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures

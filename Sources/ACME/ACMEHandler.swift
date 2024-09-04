@@ -1,6 +1,11 @@
 import Common
 import Foundation
 
+package protocol EndpointChallengeHandler {
+	func register(challenge: PendingChallenge) async throws -> Void
+	func remove(challenge: PendingChallenge) async
+}
+
 package actor ACMEHandler {
 	package typealias Setup = ACMESetup
 
@@ -8,9 +13,11 @@ package actor ACMEHandler {
 	var acmeData: ACMEData
 	let coder = Coder()
 	let setup: Setup
+	let challengeHandler: any EndpointChallengeHandler
 
-	package init(setup: Setup) throws {
+	package init(setup: Setup, challengeHandler: some EndpointChallengeHandler) throws {
 		self.setup = setup
+		self.challengeHandler = challengeHandler
 
 		let fm = FileManager.default
 		if let data = fm.contents(atPath: setup.storagePath) {

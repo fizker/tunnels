@@ -1,7 +1,9 @@
 import ACME
+import Common
 import EnvironmentVariables
 import HTTPUpgradeServer
 import Vapor
+import WebURL
 
 enum ConfigurationError: Error {
 	case invalidDatabaseURL(String)
@@ -22,7 +24,9 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 			contactEmail: try app.environment.acmeContactEmail,
 			storagePath: try app.environment.acmeStoragePath
 		)
-		app.acmeHandler = try .init(setup: setup)
+
+		let challengeHandler = ChallengeHandler(host: setup.host)
+		app.acmeHandler = try .init(setup: setup, challengeHandler: challengeHandler)
 		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
 
 		let acmeController = try ACMEController(setup: setup)
@@ -33,12 +37,16 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 				$0.hasSuffix(app.environment.host) ? .accepted(port: env.port) : .rejected
 			}
 
+			await challengeHandler.addTokenChallengeRoute(upgradeServer.app.routes)
+
 			await upgradeServer.app.routes.group(".well-known") {
 				$0.get("debug-test") { req in
 					return "hello"
 				}
 			}
 			try await upgradeServer.start(topLevelApplication: app)
+
+			await challengeHandler.enable()
 		}
 	}
 
