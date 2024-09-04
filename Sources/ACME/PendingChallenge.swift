@@ -1,4 +1,4 @@
-package struct PendingChallenge {
+package struct PendingChallenge: Codable {
 	/// The full URL where the challenge must be published. **Must** be simple HTTP over port 80.
 	public let endpoint: String
 
@@ -8,7 +8,7 @@ package struct PendingChallenge {
 	/// The status of the challenge.
 	public var status: Status = .pending
 
-	public enum Status {
+	public enum Status: String, Codable {
 		/// The challenge is pending a request.
 		case pending
 		/// The challenge has been requested by LetsEncrypt.

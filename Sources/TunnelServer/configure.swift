@@ -39,9 +39,13 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 			await challengeHandler.addTokenChallengeRoute(upgradeServer.app.routes)
 
+			#warning("TODO: These endpoints should only be enabled in debug mode")
 			await upgradeServer.app.routes.group(".well-known") {
-				$0.get("debug-test") { req in
-					return "hello"
+				$0.post("register-challenge") { req in
+					let challenge = try req.content.decode(PendingChallenge.self)
+					try await challengeHandler.register(challenge: challenge)
+					await challengeHandler.remove(challenge: challenge)
+					return "was received"
 				}
 			}
 			try await upgradeServer.start(topLevelApplication: app)

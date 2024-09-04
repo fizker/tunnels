@@ -52,9 +52,9 @@ actor ChallengeHandler: EndpointChallengeHandler {
 		else { throw InvalidChallengeEndpointError.invalidDomain }
 
 		let components = url.pathComponents
-		var wellKnownIndex = components.startIndex
-		var challengeIndex = components.index(after: wellKnownIndex)
-		var tokenIndex = components.index(after: challengeIndex)
+		let wellKnownIndex = components.startIndex
+		let challengeIndex = components.index(after: wellKnownIndex)
+		let tokenIndex = components.index(after: challengeIndex)
 		guard
 			components[safe: wellKnownIndex] == ".well-known",
 			components[safe: challengeIndex] == "acme-challenge",
