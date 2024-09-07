@@ -8,6 +8,17 @@ import NIOSSL
 private let _1Day: TimeInterval = 84_600
 private let _30Days = _1Day * 30
 
+func add(certificates: ACMEData.CertWrapper, to app: Application) throws {
+	let certificateChain = try certificates.nioCertificates.map {
+		return NIOSSLCertificateSource.certificate($0)
+	}
+
+	app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
+		certificateChain: certificateChain,
+		privateKey: .privateKey(try certificates.nioPrivateKey)
+	)
+}
+
 class ACMEController {
 	typealias Setup = ACMEHandler.Setup
 
@@ -74,14 +85,7 @@ class ACMEController {
 	func addCertificate(to app: Application) async throws {
 		let certificates = try await lazyLoadData()
 
-		let certificateChain = try certificates.nioCertificates.map {
-			return NIOSSLCertificateSource.certificate($0)
-		}
-
-		app.http.server.configuration.tlsConfiguration = .makeServerConfiguration(
-			certificateChain: certificateChain,
-			privateKey: .privateKey(try certificates.nioPrivateKey)
-		)
+		try add(certificates: certificates, to: app)
 	}
 
 	private func loadAccount(acme: AcmeSwift) async throws {

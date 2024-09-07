@@ -26,7 +26,13 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 		)
 
 		let challengeHandler = ChallengeHandler(host: setup.host)
-		app.acmeHandler = try .init(setup: setup, challengeHandler: challengeHandler)
+		app.acmeHandler = try .init(setup: setup, challengeHandler: challengeHandler) {
+			do {
+				try add(certificates: $0, to: app)
+			} catch {
+				print("Failed to add certificates to Vapor App: \(error)")
+			}
+		}
 		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
 
 		let acmeController = try ACMEController(setup: setup)

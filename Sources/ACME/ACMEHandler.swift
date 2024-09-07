@@ -10,16 +10,19 @@ package protocol EndpointChallengeHandler: Sendable {
 
 package actor ACMEHandler {
 	package typealias Setup = ACMESetup
+	package typealias OnCertificatesUpdated = (ACMEData.CertWrapper) -> Void
 
 	var registeredEndpoints: Set<String> = []
 	var acmeData: ACMEData
 	let coder = Coder()
 	let setup: Setup
 	let challengeHandler: any EndpointChallengeHandler
+	let onCertificatesUpdated: OnCertificatesUpdated
 
-	package init(setup: Setup, challengeHandler: some EndpointChallengeHandler) throws {
+	package init(setup: Setup, challengeHandler: some EndpointChallengeHandler, onCertificatesUpdated: @escaping OnCertificatesUpdated) throws {
 		self.setup = setup
 		self.challengeHandler = challengeHandler
+		self.onCertificatesUpdated = onCertificatesUpdated
 
 		let fm = FileManager.default
 		if let data = fm.contents(atPath: setup.storagePath) {
@@ -48,7 +51,8 @@ package actor ACMEHandler {
 
 			Task {
 				do {
-					try await requestCerts(domains: uncoveredEndpoints)
+					let certs = try await requestCerts(domains: uncoveredEndpoints)
+					onCertificatesUpdated(certs)
 				} catch {
 					print("Failed to create certificates: \(error)")
 				}
@@ -64,7 +68,7 @@ package actor ACMEHandler {
 
 	private var currentChallenges: [ChallengeBundle] = []
 
-	private func requestCerts(domains: Set<String>) async throws {
+	private func requestCerts(domains: Set<String>) async throws -> ACMEData.CertWrapper {
 		let accountKey: String
 		if let ak = acmeData.accountKey {
 			accountKey = ak
@@ -100,12 +104,16 @@ package actor ACMEHandler {
 		let privateKey = try acmeData.certificates?.privateKey ?? .makeRSA()
 
 		let newCerts = try await generator.finalize(privateKey: privateKey, primaryDomain: setup.host)
+		let allCerts: ACMEData.CertWrapper
 		if var certs = acmeData.certificates {
 			certs.certificates = try .init(certificates: certs.certificates.certificates + newCerts.certificates)
 			acmeData.certificates = certs
+			allCerts = certs
 		} else {
-			acmeData.certificates = .init(certificates: newCerts, privateKey: privateKey)
+			allCerts = .init(certificates: newCerts, privateKey: privateKey)
+			acmeData.certificates = allCerts
 		}
+		return allCerts
 	}
 
 	private func generateAccountKey() async throws -> String {
