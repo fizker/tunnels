@@ -37,25 +37,33 @@ package actor ACMEHandler {
 		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")
 	}
 
+	/// Registers the given endpoint for certificate generation. This will eventually result in calling the
+	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
 	package func register(endpoint: String) {
 		register(endpoints: [endpoint])
 	}
 
+	/// Registers the given endpoints for certificate generation. This will eventually result in calling the
+	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
 	package func register(endpoints: [String]) {
 		registeredEndpoints.formUnion(endpoints)
 
-		if let certs = acmeData.certificates, !certs.covers(domains: endpoints) {
-			let uncoveredEndpoints = endpoints.filter { !certs.covers(domains: [$0]) }
-				|> Set.init
-			print("Updating certificates for \(uncoveredEndpoints)")
+		if let certs = acmeData.certificates {
+			if !certs.covers(domains: endpoints) {
+				let uncoveredEndpoints = endpoints.filter { !certs.covers(domains: [$0]) }
+					|> Set.init
+				print("Updating certificates for \(uncoveredEndpoints)")
 
-			Task {
-				do {
-					let certs = try await requestCerts(domains: uncoveredEndpoints)
-					onCertificatesUpdated(certs)
-				} catch {
-					print("Failed to create certificates: \(error)")
+				Task {
+					do {
+						let certs = try await requestCerts(domains: uncoveredEndpoints)
+						onCertificatesUpdated(certs)
+					} catch {
+						print("Failed to create certificates: \(error)")
+					}
 				}
+			} else {
+				onCertificatesUpdated(certs)
 			}
 		}
 	}
