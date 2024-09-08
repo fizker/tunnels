@@ -1,10 +1,13 @@
 # tunnels
 
-Create tunnels between local servers and a remote server, so that requests
-against the remote server are passed on to the local servers.
+Tunnel any requests to a remote server through to a local server.
 
 Both the Tunnel server and a CLI client is included. A DNS server is also included,
 so that the Tunnel setup can function without internet access.
+
+> [!WARNING]
+> This is pre-release software. While it is mostly functioning, it is not feature
+> complete, and there are known issues.
 
 
 ## Tunnel Server
