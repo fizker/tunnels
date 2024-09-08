@@ -43,6 +43,8 @@ package actor ACMEHandler {
 		register(endpoints: [endpoint])
 	}
 
+	private var registerTimeToken: Date?
+
 	/// Registers the given endpoints for certificate generation. This will eventually result in calling the
 	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
 	package func register(endpoints: [String]) {
@@ -54,8 +56,15 @@ package actor ACMEHandler {
 					|> Set.init
 				print("Updating certificates for \(uncoveredEndpoints)")
 
+				let token = Date.now
+				registerTimeToken = token
+
 				Task {
 					do {
+						try await Task.sleep(for: .seconds(1))
+						guard token == registerTimeToken
+						else { return }
+
 						let certs = try await requestCerts(domains: uncoveredEndpoints)
 						onCertificatesUpdated(certs)
 					} catch {
