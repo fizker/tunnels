@@ -50,30 +50,39 @@ package actor ACMEHandler {
 	package func register(endpoints: [String]) {
 		registeredEndpoints.formUnion(endpoints)
 
+		let uncoveredEndpoints: Set<String>
 		if let certs = acmeData.certificates {
 			if !certs.covers(domains: endpoints) {
-				let uncoveredEndpoints = endpoints.filter { !certs.covers(domains: [$0]) }
+				uncoveredEndpoints = endpoints.filter { !certs.covers(domains: [$0]) }
 					|> Set.init
-				print("Updating certificates for \(uncoveredEndpoints)")
-
-				let token = Date.now
-				registerTimeToken = token
-
-				Task {
-					do {
-						try await Task.sleep(for: .seconds(1))
-						guard token == registerTimeToken
-						else { return }
-
-						let certs = try await requestCerts(domains: uncoveredEndpoints)
-						onCertificatesUpdated(certs)
-					} catch {
-						print("Failed to create certificates: \(error)")
-					}
-				}
 			} else {
-				onCertificatesUpdated(certs)
+				uncoveredEndpoints = []
 			}
+		} else {
+			uncoveredEndpoints = Set(endpoints)
+			print("no certificates")
+		}
+
+		if !uncoveredEndpoints.isEmpty {
+			print("Updating certificates for \(uncoveredEndpoints)")
+
+			let token = Date.now
+			registerTimeToken = token
+
+			Task {
+				do {
+					try await Task.sleep(for: .seconds(1))
+					guard token == registerTimeToken
+					else { return }
+
+					let certs = try await requestCerts(domains: uncoveredEndpoints)
+					onCertificatesUpdated(certs)
+				} catch {
+					print("Failed to create certificates: \(error)")
+				}
+			}
+		} else if let certs = acmeData.certificates {
+			onCertificatesUpdated(certs)
 		}
 	}
 
