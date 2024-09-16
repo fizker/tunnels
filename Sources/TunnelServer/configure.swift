@@ -58,6 +58,8 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 			await challengeHandler.enable()
 		}
+
+		await app.acmeHandler?.register(endpoint: setup.host)
 	}
 
 	app.middleware.use(CORSMiddleware())
