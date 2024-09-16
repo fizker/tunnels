@@ -56,7 +56,8 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 			}
 			try await upgradeServer.start(topLevelApplication: app)
 
-			await challengeHandler.enable()
+#warning("TODO: Enable this line when ready to enable the new ACME setup. Remember to remove the old ACMEController as well")
+//			await challengeHandler.enable()
 		}
 
 		await app.acmeHandler?.register(endpoint: setup.host)
