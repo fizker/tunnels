@@ -21,20 +21,7 @@ package struct CertificateData: Codable {
 	}
 
 	package func covers(domains: [String]) -> Bool {
-		var nonCovered = Set(domains).subtracting(self.domains)
-		guard !nonCovered.isEmpty
-		else { return true }
-
-		for domain in nonCovered {
-			var components = domain.split(separator: /\./)
-			components[0] = "*"
-			let joined = components.joined(separator: ".")
-			if self.domains.contains(joined) {
-				nonCovered.remove(domain)
-			}
-		}
-
-		return nonCovered.isEmpty
+		check(certificateDomains: self.domains, covers: domains)
 	}
 }
 
@@ -99,7 +86,28 @@ package struct CertificateDataArray: Codable {
 		self.expiresAt = certificates.map(\.expiresAt).min() ?? .now
 	}
 
+	package func covers(domains: [String]) -> Bool {
+		check(certificateDomains: self.domains, covers: domains)
+	}
+
 	package enum Error: Swift.Error {
 		case certificateChainCannotBeEmpty
 	}
+}
+
+func check(certificateDomains: Set<String>, covers domains: [String]) -> Bool {
+	var nonCovered = Set(domains).subtracting(certificateDomains)
+	guard !nonCovered.isEmpty
+	else { return true }
+
+	for domain in nonCovered {
+		var components = domain.split(separator: /\./)
+		components[0] = "*"
+		let joined = components.joined(separator: ".")
+		if certificateDomains.contains(joined) {
+			nonCovered.remove(domain)
+		}
+	}
+
+	return nonCovered.isEmpty
 }

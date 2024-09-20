@@ -1,6 +1,6 @@
 import AcmeSwift
 
-package struct Setup: Codable {
+package struct ACMESetup: Codable {
 	package var host: String
 	package var endpoint: AcmeEndpoint
 	package var contactEmail: String

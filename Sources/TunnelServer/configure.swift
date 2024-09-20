@@ -1,6 +1,9 @@
+import ACME
+import Common
 import EnvironmentVariables
 import HTTPUpgradeServer
 import Vapor
+import WebURL
 
 enum ConfigurationError: Error {
 	case invalidDatabaseURL(String)
@@ -12,13 +15,27 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 	app.environment = env
 
+	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
+
 	if app.environment.useSSL {
-		let acmeController = try ACMEController(setup: .init(
+		let setup = ACMESetup(
 			host: app.environment.host,
 			endpoint: try app.environment.acmeEndpoint,
 			contactEmail: try app.environment.acmeContactEmail,
 			storagePath: try app.environment.acmeStoragePath
-		))
+		)
+
+		let challengeHandler = ChallengeHandler(host: setup.host)
+		app.acmeHandler = try .init(setup: setup, challengeHandler: challengeHandler) {
+			do {
+				try add(certificates: $0, to: app)
+			} catch {
+				print("Failed to add certificates to Vapor App: \(error)")
+			}
+		}
+		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
+
+		let acmeController = try ACMEController(setup: setup)
 		try await acmeController.addCertificate(to: app)
 
 		if let httpPort = app.environment.httpPort {
@@ -26,16 +43,25 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 				$0.hasSuffix(app.environment.host) ? .accepted(port: env.port) : .rejected
 			}
 
+			await challengeHandler.addTokenChallengeRoute(upgradeServer.app.routes)
+
+			#warning("TODO: These endpoints should only be enabled in debug mode")
 			await upgradeServer.app.routes.group(".well-known") {
-				$0.get("debug-test") { req in
-					return "hello"
+				$0.post("register-challenge") { req in
+					let challenge = try req.content.decode(PendingChallenge.self)
+					try await challengeHandler.register(challenge: challenge)
+					await challengeHandler.remove(challenge: challenge)
+					return "was received"
 				}
 			}
 			try await upgradeServer.start(topLevelApplication: app)
-		}
-	}
 
-	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
+#warning("TODO: Enable this line when ready to enable the new ACME setup. Remember to remove the old ACMEController as well")
+//			await challengeHandler.enable()
+		}
+
+		await app.acmeHandler?.register(endpoint: setup.host)
+	}
 
 	app.middleware.use(CORSMiddleware())
 	app.middleware.use(OAuthErrorMiddleware())

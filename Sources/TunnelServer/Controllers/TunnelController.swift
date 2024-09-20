@@ -28,7 +28,27 @@ actor TunnelController {
 	}
 
 	func connectClient(req: Request, webSocket: WebSocketHandler) async throws {
-		let client = Client(webSocket: webSocket)
+		let userID = try req.auth.require(User.self).id
+		let userStore = req.application.userStore
+		let acme = req.application.acmeHandler
+		let client = Client(webSocket: webSocket) { [weak userStore, weak acme] hosts in
+			guard let userStore, !hosts.isEmpty
+			else { return }
+
+			if let acme {
+				Task {
+					await acme.register(endpoints: hosts)
+				}
+			}
+
+			Task {
+				do {
+					try await userStore.update(hosts: hosts, for: userID)
+				} catch {
+					#warning("TODO: Log error")
+				}
+			}
+		}
 		await clientStore.add(client)
 	}
 
