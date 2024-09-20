@@ -171,7 +171,7 @@ class ACMEController {
 	}
 }
 
-extension ChallengeDescription: CustomStringConvertible {
+extension ChallengeDescription: @retroactive CustomStringConvertible {
 	public var description: String {
 		switch type {
 		case .http:
@@ -184,7 +184,7 @@ extension ChallengeDescription: CustomStringConvertible {
 	}
 }
 
-extension AcmeAuthorization.Challenge: CustomStringConvertible {
+extension AcmeAuthorization.Challenge: @retroactive CustomStringConvertible {
 	public var description: String {
 		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
 	}

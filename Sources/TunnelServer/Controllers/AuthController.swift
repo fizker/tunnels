@@ -101,5 +101,9 @@ extension Request {
 	}
 }
 
-extension AccessTokenResponse: Content {
+extension AccessTokenResponse: @retroactive AsyncResponseEncodable {}
+extension AccessTokenResponse: @retroactive AsyncRequestDecodable {}
+extension AccessTokenResponse: @retroactive ResponseEncodable {}
+extension AccessTokenResponse: @retroactive RequestDecodable {}
+extension AccessTokenResponse: @retroactive Content {
 }
