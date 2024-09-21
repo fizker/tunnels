@@ -1,8 +1,8 @@
-import AcmeSwift
+@preconcurrency import AcmeSwift
 import X509
 
 /// Generates certificates via LetsEncrypt using HTTP validations.
-class LetsEncryptGenerator {
+actor LetsEncryptGenerator {
 	let domains: Set<String>
 	let acme: AcmeSwift
 	private var order: AcmeOrderInfo?
