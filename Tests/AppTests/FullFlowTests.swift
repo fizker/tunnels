@@ -72,8 +72,7 @@ final class FullFlowTests: XCTestCase {
 
 	func test__DebugServer__upload_smallFile__returnsExpectedBody() async throws {
 		let data = await AsyncStream(generateDataStreamOfSize: 10)
-			.flatten()
-			.collectAll(as: Data.self)
+			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
 
 		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
@@ -95,8 +94,7 @@ final class FullFlowTests: XCTestCase {
 
 	func test__DebugServer__upload_bigFile__returnsExpectedBody() async throws {
 		let data = await AsyncStream(generateDataStreamOfSize: 1_000_000)
-			.flatten()
-			.collectAll(as: Data.self)
+			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
 
 		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
@@ -139,15 +137,6 @@ extension Data {
 		var buffer = buffer
 		if let data = buffer.readData(length: buffer.readableBytes) {
 			append(data)
-		}
-	}
-}
-
-extension AsyncSequence where Element: Sequence {
-	public func flatten() -> AsyncFlatMapSequence<Self, AsyncStream<Self.Element.Element>> {
-		self.flatMap {
-			var iterator = $0.makeIterator()
-			return AsyncStream { iterator.next() }
 		}
 	}
 }
