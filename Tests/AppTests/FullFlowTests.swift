@@ -13,8 +13,11 @@ import XCTest
 /// - `TunnelClient` must run against `TunnelServer` with `test.fizkerinc.dk` pointing to `DebugServer`.
 final class FullFlowTests: XCTestCase {
 	let timeout: TimeAmount = .seconds(10)
+	let enabled = false
 
 	func test__DebugServer__catchAll__returnsExpectedBody() async throws {
+		try XCTSkipIf(!enabled)
+
 		let client = HTTPClient()
 		defer { Task {
 			try? await client.shutdown()
@@ -30,6 +33,8 @@ final class FullFlowTests: XCTestCase {
 	}
 
 	func test__DebugServer__redirect__redirectResponseIsReceivedCorrectly() async throws {
+		try XCTSkipIf(!enabled)
+
 		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
 		defer { Task {
 			try? await client.shutdown()
@@ -46,6 +51,8 @@ final class FullFlowTests: XCTestCase {
 	}
 
 	func test__DebugServer__bigFile__returnsExpectedBody() async throws {
+		try XCTSkipIf(!enabled)
+
 		let client = HTTPClient()
 		defer { Task {
 			try? await client.shutdown()
@@ -71,6 +78,8 @@ final class FullFlowTests: XCTestCase {
 	}
 
 	func test__DebugServer__upload_smallFile__returnsExpectedBody() async throws {
+		try XCTSkipIf(!enabled)
+
 		let data = await AsyncStream(generateDataStreamOfSize: 10)
 			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
@@ -93,6 +102,8 @@ final class FullFlowTests: XCTestCase {
 	}
 
 	func test__DebugServer__upload_bigFile__returnsExpectedBody() async throws {
+		try XCTSkipIf(!enabled)
+
 		let data = await AsyncStream(generateDataStreamOfSize: 1_000_000)
 			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
