@@ -1,11 +1,13 @@
-import XCTest
+import Testing
 @testable import TunnelServer
 import Common
+import Foundation
 
-final class UserTests: XCTestCase {
+struct UserTests {
 	let coder = Coder()
 
-	func test__initFromDecoder__jsonDoesNotIncludeHosts__decodesCorrectly() async throws {
+	@Test
+	func initFromDecoder__jsonDoesNotIncludeHosts__decodesCorrectly() async throws {
 		let json = """
 		{
 			"username": "foo",
@@ -17,6 +19,6 @@ final class UserTests: XCTestCase {
 
 		let expected = User(username: "foo", password: "bar")
 
-		XCTAssertEqual(actual, expected)
+		#expect(actual == expected)
 	}
 }

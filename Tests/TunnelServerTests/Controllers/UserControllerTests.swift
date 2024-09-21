@@ -1,13 +1,16 @@
-import XCTest
+import Testing
 @testable import TunnelServer
 import Vapor
 
-final class UserControllerTests: XCTestCase {
+// This hangs if it is not serialized
+@Suite(.serialized)
+struct UserControllerTests {
 	let usernameParam = "username"
 	static let adminUser = User(username: "admin", password: "1234", scopes: [.admin])
 	static let sysadminUser = User(username: "sys", password: "1234", scopes: [.sysadmin])
 
-	func test__upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
+	@Test
+	func upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
@@ -16,13 +19,14 @@ final class UserControllerTests: XCTestCase {
 		let controller = try UserController(request: request, userStore: userStore)
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(result, User(username: "foo", password: "bar", scopes: []))
+		#expect(result == User(username: "foo", password: "bar", scopes: []))
 		users.append(result)
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(updatedUsers, users)
+		#expect(updatedUsers == users)
 	}
 
-	func test__upsertUser__insertingNewUser_passwordIsMissing_scopeMissing_usernameIsNotColliding__errorThrown_userIsNotInserted() async throws {
+	@Test
+	func upsertUser__insertingNewUser_passwordIsMissing_scopeMissing_usernameIsNotColliding__errorThrown_userIsNotInserted() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users()
 
@@ -30,22 +34,23 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
-			_ = try await controller.upsertUser(usernameParam: usernameParam)
-			XCTFail("Expected a throw")
-		} catch {
+		await #expect {
+			try await controller.upsertUser(usernameParam: usernameParam)
+		} throws: { error in
 			guard let error = error as? any AbortError
 			else { throw error }
 
-			XCTAssertEqual(error.status, .badRequest)
-			XCTAssertEqual(error.reason, "New users must have a password")
+			#expect(error.status == .badRequest)
+			#expect(error.reason == "New users must have a password")
+			return true
 		}
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(updatedUsers, users)
+		#expect(updatedUsers == users)
 	}
 
-	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotInserted() async throws {
+	@Test
+	func upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotInserted() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		let users = await userStore.users()
@@ -54,21 +59,22 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
-			_ = try await controller.upsertUser(usernameParam: usernameParam)
-			XCTFail("Expected a throw")
-		} catch {
+		await #expect {
+			try await controller.upsertUser(usernameParam: usernameParam)
+		} throws: { error in
 			guard let error = error as? any AbortError
 			else { throw error }
 
-			XCTAssertEqual(error.status, .forbidden)
+			#expect(error.status == .forbidden)
+			return true
 		}
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsSysadmin__userIsInserted() async throws {
+	@Test
+	func upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsSysadmin__userIsInserted() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		var users = await userStore.users(includeSysAdmin: true)
@@ -79,14 +85,15 @@ final class UserControllerTests: XCTestCase {
 
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(result, User(username: "foo", password: "bar", scopes: [.sysadmin]))
+		#expect(result == User(username: "foo", password: "bar", scopes: [.sysadmin]))
 
 		users.append(result)
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__userIsUnchanged() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__userIsUnchanged() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
@@ -99,13 +106,14 @@ final class UserControllerTests: XCTestCase {
 
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(user, result)
+		#expect(user == result)
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_passwordIsDifferent_scopeIsDifferent_usernameIsNotChanged__userIsUpdated() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_passwordIsDifferent_scopeIsDifferent_usernameIsNotChanged__userIsUpdated() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
@@ -118,14 +126,15 @@ final class UserControllerTests: XCTestCase {
 
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(User(username: "foo", password: "baz"), result)
+		#expect(User(username: "foo", password: "baz") == result)
 		users.append(result)
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsNotColliding__userIsUpdated() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsNotColliding__userIsUpdated() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users()
 
@@ -138,14 +147,15 @@ final class UserControllerTests: XCTestCase {
 
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(User(username: "foo2", password: "bar", scopes: [.admin]), result)
+		#expect(User(username: "foo2", password: "bar", scopes: [.admin]) == result)
 
 		users.append(result)
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsColliding__errorThrown_userIsNotUpdated() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsColliding__errorThrown_userIsNotUpdated() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
@@ -158,17 +168,16 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
-			_ = try await controller.upsertUser(usernameParam: usernameParam)
-			XCTFail("Expected a throw")
-		} catch UserStore.Error.usernameExists {
+		await #expect(throws: UserStore.Error.usernameExists) {
+			try await controller.upsertUser(usernameParam: usernameParam)
 		}
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotUpdated() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotUpdated() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		let user = User(username: "foo", password: "bar", scopes: [.admin])
@@ -180,21 +189,20 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
-			_ = try await controller.upsertUser(usernameParam: usernameParam)
-			XCTFail("Expected a throw")
-		} catch {
+		await #expect { try await controller.upsertUser(usernameParam: usernameParam) } throws: { error in
 			guard let error = error as? any AbortError
 			else { throw error }
 
-			XCTAssertEqual(error.status, .forbidden)
+			#expect(error.status == .forbidden)
+			return true
 		}
 
 		let updatedUsers = await userStore.users()
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsSysadmin__userIsUpdated() async throws {
+	@Test
+	func upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsSysadmin__userIsUpdated() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		var users = await userStore.users(includeSysAdmin: true)
@@ -208,14 +216,15 @@ final class UserControllerTests: XCTestCase {
 
 		let result = try await controller.upsertUser(usernameParam: usernameParam)
 
-		XCTAssertEqual(result, User(username: "foo", password: "bar", scopes: [.sysadmin]))
+		#expect(result == User(username: "foo", password: "bar", scopes: [.sysadmin]))
 
 		users.append(result)
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__nonExistingUser__doesNotThrow_usersAreUnchanged() async throws {
+	@Test
+	func removeUser__nonExistingUser__doesNotThrow_usersAreUnchanged() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
@@ -226,10 +235,11 @@ final class UserControllerTests: XCTestCase {
 		try await controller.removeUser(usernameParam: usernameParam)
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasNoScope__userIsRemoved() async throws {
+	@Test
+	func removeUser__userExists_userHasNoScope__userIsRemoved() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
@@ -242,10 +252,11 @@ final class UserControllerTests: XCTestCase {
 		try await controller.removeUser(usernameParam: usernameParam)
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope__userIsRemoved() async throws {
+	@Test
+	func removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope__userIsRemoved() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
@@ -258,14 +269,15 @@ final class UserControllerTests: XCTestCase {
 		try await controller.removeUser(usernameParam: usernameParam)
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsAdmin__throws_usersAreUnchanged() async throws {
+	@Test
+	func removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsAdmin__throws_usersAreUnchanged() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
-		XCTAssertEqual(users.filter { $0.scopes.contains(.admin) }.count, 1)
+		#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
 		guard let adminUser = users.first(where: { $0.scopes.contains(.admin) })
 		else { return }
 
@@ -273,21 +285,20 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
+		await #expect(throws: UserStore.Error.cannotRemoveLastAdmin) {
 			try await controller.removeUser(usernameParam: usernameParam)
-			XCTFail("Expected to throw")
-		} catch UserStore.Error.cannotRemoveLastAdmin {
 		}
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
+	@Test
+	func removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		var users = await userStore.users(includeSysAdmin: true)
 
-		XCTAssertEqual(users.filter { $0.scopes.contains(.admin) }.count, 1)
+		#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
 		guard let adminUser = users.first(where: { $0.scopes.contains(.admin) })
 		else { return }
 
@@ -299,10 +310,11 @@ final class UserControllerTests: XCTestCase {
 
 		users.removeAll { $0.scopes.contains(.admin) }
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsAdmin__throwsError_usersAreUnchanged() async throws {
+	@Test
+	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsAdmin__throwsError_usersAreUnchanged() async throws {
 		let userStore = try UserStore(storagePath: nil)
 
 		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
@@ -312,17 +324,16 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
+		await #expect(throws: UserStore.Error.adminsCannotRemoveSysadmin) {
 			try await controller.removeUser(usernameParam: usernameParam)
-			XCTFail("Expected to throw")
-		} catch UserStore.Error.adminsCannotRemoveSysadmin {
 		}
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
+	@Test
+	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
@@ -335,14 +346,15 @@ final class UserControllerTests: XCTestCase {
 		try await controller.removeUser(usernameParam: usernameParam)
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
-	func test__removeUser__userExists_userHasSysadminScope_lastUserWithSysadminScope__throws_usersAreUnchanged() async throws {
+	@Test
+	func removeUser__userExists_userHasSysadminScope_lastUserWithSysadminScope__throws_usersAreUnchanged() async throws {
 		let userStore = try UserStore(storagePath: nil)
 		let users = await userStore.users(includeSysAdmin: true)
 
-		XCTAssertEqual(users.filter { $0.scopes.contains(.sysadmin) }.count, 1)
+		#expect(users.filter { $0.scopes.contains(.sysadmin) }.count == 1)
 		guard let adminUser = users.first(where: { $0.scopes.contains(.sysadmin) })
 		else { return }
 
@@ -350,14 +362,12 @@ final class UserControllerTests: XCTestCase {
 
 		let controller = try UserController(request: request, userStore: userStore)
 
-		do {
+		await #expect(throws: UserStore.Error.cannotRemoveLastSysadmin) {
 			try await controller.removeUser(usernameParam: usernameParam)
-			XCTFail("Expected to throw")
-		} catch UserStore.Error.cannotRemoveLastSysadmin {
 		}
 
 		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		XCTAssertEqual(users, updatedUsers)
+		#expect(users == updatedUsers)
 	}
 
 	func removeRequest(username: String, loggedInUser: User = adminUser) throws -> Request {

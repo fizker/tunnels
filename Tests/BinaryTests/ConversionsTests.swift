@@ -1,18 +1,24 @@
-import XCTest
+import Testing
 import Binary
 
-final class ConversionsTests: XCTestCase {
-	func test__variousNumbers__returnsExpected() throws {
-		let tests: [(input: any BinaryInteger&UnsignedInteger, expected: [UInt8])] = [
-			(0xde as UInt8, [0xde]),
-			(0xdead as UInt16, [0xde, 0xad]),
-			(0xdeadbeef as UInt32, [0xde, 0xad, 0xbe, 0xef]),
-			(0xdeadbeef_8badf00d as UInt64, [0xde, 0xad, 0xbe, 0xef, 0x8b, 0xad, 0xf0, 0x0d]),
-		]
+struct ConversionsTests {
+	@Test
+	func asUInt8__inputIsUInt8__returnsExpected() {
+		#expect((0xde as UInt8).asUInt8 == [0xde])
+	}
 
-		for test in tests {
-			let actual = test.input.asUInt8
-			XCTAssertEqual(test.expected, actual)
-		}
+	@Test
+	func asUInt16__inputIsUInt8__returnsExpected() {
+		#expect((0xdead as UInt16).asUInt8 == [0xde, 0xad])
+	}
+
+	@Test
+	func asUInt32__inputIsUInt8__returnsExpected() {
+		#expect((0xdeadbeef as UInt32).asUInt8 == [0xde, 0xad, 0xbe, 0xef])
+	}
+
+	@Test
+	func asUInt64__inputIsUInt8__returnsExpected() {
+		#expect((0xdeadbeef_8badf00d as UInt64).asUInt8 == [0xde, 0xad, 0xbe, 0xef, 0x8b, 0xad, 0xf0, 0x0d])
 	}
 }
