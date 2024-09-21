@@ -1,18 +1,9 @@
-// swift-tools-version: 5.10
-
+// swift-tools-version: 6.0
 import PackageDescription
 
 let upcomingFeatures: [SwiftSetting] = [
-	.enableUpcomingFeature("ConciseMagicFile"),
-	.enableUpcomingFeature("ForwardTrailingClosures"),
 	.enableUpcomingFeature("ExistentialAny"),
 	.enableExperimentalFeature("StrictConcurrency"),
-	.enableUpcomingFeature("ImplicitOpenExistentials"),
-	.enableUpcomingFeature("BareSlashRegexLiterals"),
-	.enableUpcomingFeature("GlobalConcurrency"),
-	.enableUpcomingFeature("IsolatedDefaultValues"),
-	.enableUpcomingFeature("DisableOutwardActorInference"),
-	.enableUpcomingFeature("DeprecateApplicationMain"),
 //	.enableUpcomingFeature("InternalImportsByDefault"),
 	.enableUpcomingFeature("FullTypedThrows"),
 ]
@@ -146,7 +137,8 @@ let package = Package(
 			],
 			swiftSettings: upcomingFeatures
 		)
-	] + executableTargets() + testTargets()
+	] + executableTargets() + testTargets(),
+	swiftLanguageModes: [.v6]
 )
 
 // MARK: Executable targets
