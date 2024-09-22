@@ -60,8 +60,10 @@ package actor ACMEHandler {
 			}
 		} else {
 			uncoveredEndpoints = Set(endpoints)
-			print("no certificates")
 		}
+
+#warning("TODO: The ACME is disabled here for now")
+		return;
 
 		if !uncoveredEndpoints.isEmpty {
 			print("Updating certificates for \(uncoveredEndpoints)")
