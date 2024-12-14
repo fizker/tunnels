@@ -71,7 +71,6 @@ let package = Package(
 			name: "DNSServer",
 			dependencies: [
 				"Binary",
-				.product(name: "ArgumentParser", package: "swift-argument-parser"),
 				.product(name: "NIO", package: "swift-nio"),
 			],
 			swiftSettings: upcomingFeatures
@@ -177,6 +176,7 @@ func executableTargets() -> [Target] {
 			name: "DNSServerCLI",
 			dependencies: [
 				"DNSServer",
+				.product(name: "ArgumentParser", package: "swift-argument-parser"),
 			],
 			swiftSettings: upcomingFeatures
 		),
