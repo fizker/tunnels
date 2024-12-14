@@ -1,5 +1,5 @@
 import Binary
-import NIO
+package import NIO
 
 package typealias HostMap = [String: ResourceRecord.Data]
 

@@ -1,6 +1,6 @@
-import AsyncHTTPClient
-import Foundation
-import Models
+public import AsyncHTTPClient
+public import Foundation
+public import Models
 import NIOCore
 import NIOHTTP1
 

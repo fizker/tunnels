@@ -1,6 +1,6 @@
-import ArgumentParser
+public import ArgumentParser
 import Models
-import TunnelClient
+public import TunnelClient
 import WebURL
 
 @main

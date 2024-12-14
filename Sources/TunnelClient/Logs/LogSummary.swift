@@ -1,5 +1,5 @@
-import Foundation
-import Models
+public import Foundation
+public import Models
 
 public struct LogSummary: Codable, Sendable {
 	public var id: Log.ID

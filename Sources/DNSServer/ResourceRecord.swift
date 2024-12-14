@@ -1,5 +1,5 @@
 import Binary
-import Foundation
+package import Foundation
 
 package struct ResourceRecord: Equatable {
 	var name: DomainName

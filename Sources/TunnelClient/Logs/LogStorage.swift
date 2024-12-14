@@ -1,8 +1,8 @@
 import Common
-import Foundation
+public import Foundation
 import Logging
 import System
-import WebURL
+public import WebURL
 import WebURLFoundationExtras
 
 public actor LogStorage {

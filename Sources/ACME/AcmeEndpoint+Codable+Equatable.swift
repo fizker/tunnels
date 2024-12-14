@@ -1,4 +1,4 @@
-import AcmeSwift
+public import AcmeSwift
 import Foundation
 
 extension AcmeEndpoint: @retroactive Equatable, Codable {

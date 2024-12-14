@@ -1,5 +1,5 @@
 import CatchAll
-import Vapor
+public import Vapor
 
 /// A HTTP server that upgrades from unencrypted HTTP to one of the supported ``SupportedProtocol``s.
 public actor UpgradeServer {

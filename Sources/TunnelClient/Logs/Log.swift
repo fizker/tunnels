@@ -1,5 +1,5 @@
-import Foundation
-import Models
+public import Foundation
+public import Models
 
 public enum BodyStorage: String, Codable, Sendable {
 	/// The body, if present, is stored inside the HTTPRequest.

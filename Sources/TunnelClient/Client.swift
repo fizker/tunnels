@@ -2,12 +2,12 @@ import Common
 import Foundation
 import FzkExtensions
 import Logging
-import Models
+public import Models
 import NIO
 import OAuth2Models
 import WebSocket
 import WebSocketKit
-import WebURL
+public import WebURL
 import WebURLFoundationExtras
 
 public actor Client {

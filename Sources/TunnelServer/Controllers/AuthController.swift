@@ -1,6 +1,6 @@
 import Models
 import OAuth2Models
-import Vapor
+public import Vapor
 
 class AuthController {
 	let req: Request

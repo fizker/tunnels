@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 extension AsyncStream where Element == Data {
 	public init(generateDataStreamOfSize size: Int, chunkSize: Int = 1024) {

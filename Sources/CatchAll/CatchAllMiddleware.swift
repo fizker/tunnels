@@ -1,4 +1,4 @@
-import Vapor
+public import Vapor
 
 public struct CatchAllMiddleware: AsyncMiddleware {
 	var handler: @Sendable (Request) async throws -> Response

@@ -1,5 +1,5 @@
-import Foundation
-import X509
+package import Foundation
+package import X509
 
 package struct CertificateData: Codable {
 	/// The certificate.

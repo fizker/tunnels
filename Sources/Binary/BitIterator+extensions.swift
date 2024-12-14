@@ -1,4 +1,4 @@
-import Foundation
+public import Foundation
 
 extension IteratorProtocol where Element == Bit {
 	/// Advances to the next `count` ``Bit``s and returns an `UInt` with the read value, or `nil` if there are not `count` next element exists.

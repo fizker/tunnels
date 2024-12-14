@@ -1,4 +1,4 @@
-import Foundation
+package import Foundation
 import FzkExtensions
 
 package struct Coder {

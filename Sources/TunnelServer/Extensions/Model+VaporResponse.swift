@@ -1,5 +1,5 @@
-import Models
-import Vapor
+public import Models
+public import Vapor
 
 extension Models.HTTPResponse {
 	private func vaporBody(stream: ResponseStream) -> Response.Body {

@@ -1,5 +1,5 @@
-import NIOSSL
-import X509
+package import NIOSSL
+package import X509
 
 extension NIOSSLCertificate {
 	package convenience init(certificate: X509.Certificate) throws {

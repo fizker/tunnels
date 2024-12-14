@@ -1,5 +1,5 @@
-import Crypto
-import Foundation
+public import Crypto
+public import Foundation
 
 extension HashFunction {
 	public static func digest<D: AsyncSequence>(stream: D) async rethrows -> Digest

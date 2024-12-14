@@ -1,7 +1,7 @@
-import AcmeSwift
-import Foundation
-import NIOSSL
-import X509
+package import AcmeSwift
+package import Foundation
+package import NIOSSL
+package import X509
 
 /// Top-level container for the data produced by communication to the LetsEncrypt ACME service.
 ///

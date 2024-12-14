@@ -1,4 +1,4 @@
-import Vapor
+package import Vapor
 
 package func configure(_ app: Application) async throws {
 	app.http.server.configuration.hostname = "0.0.0.0"

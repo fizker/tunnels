@@ -4,7 +4,8 @@ import PackageDescription
 let upcomingFeatures: [SwiftSetting] = [
 	.enableUpcomingFeature("ExistentialAny"),
 	.enableExperimentalFeature("StrictConcurrency"),
-//	.enableUpcomingFeature("InternalImportsByDefault"),
+	.enableExperimentalFeature("AccessLevelOnImport"),
+	.enableUpcomingFeature("InternalImportsByDefault"),
 	.enableUpcomingFeature("FullTypedThrows"),
 ]
 

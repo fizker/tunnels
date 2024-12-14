@@ -1,4 +1,4 @@
-import Vapor
+public import Vapor
 
 extension Optional: @retroactive AsyncResponseEncodable where Wrapped: AsyncResponseEncodable {
 	public func encodeResponse(for request: Request) async throws -> Response {

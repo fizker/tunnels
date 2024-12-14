@@ -1,7 +1,7 @@
 import Common
 import Foundation
-import Models
-import WebSocketKit
+public import Models
+public import WebSocketKit
 
 enum WebSocketError: Error {
 	case couldNotDecode(String)

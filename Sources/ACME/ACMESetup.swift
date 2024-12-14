@@ -1,4 +1,4 @@
-import AcmeSwift
+package import AcmeSwift
 
 package struct ACMESetup: Codable {
 	package var host: String

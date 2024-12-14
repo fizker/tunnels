@@ -1,4 +1,4 @@
-import X509
+public import X509
 
 extension Certificate: Codable {
 	public init(from decoder: any Decoder) throws {
