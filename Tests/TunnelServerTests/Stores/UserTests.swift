@@ -123,6 +123,21 @@ struct UserTests {
 
 		#expect(actual.asUTF8 == json)
 	}
+
+	@Test
+	func knownHosts__sameHost__onlyLatestHostIsAdded() async throws {
+		var user = User(username: "foo", password: "bar")
+
+		user.add(.init(value: "foo", lastSeen: .init(timeIntervalSinceNow: -20_000)))
+
+		for i in stride(from: -20_000 as TimeInterval, to: 0, by: 200) {
+			let date = Date(timeIntervalSinceNow: i)
+			let new = User.KnownHost(value: "foo", lastSeen: date)
+			user.add(new)
+			#expect(Array(user.knownHosts) == [new])
+			#expect(user.knownHosts.first?.lastSeen == date)
+		}
+	}
 }
 
 extension Data {
