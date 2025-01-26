@@ -6,58 +6,6 @@ import Vapor
 /// Login tokens are automatically deleted when they are more than 12 hours old
 private let loginExpirationLimit: TimeInterval = 86_400 / 2
 
-struct User: Codable, Equatable, Authenticatable {
-	enum Scope: String, Codable, CustomStringConvertible, Comparable {
-		case admin, sysadmin
-
-		var description: String {
-			rawValue
-		}
-
-		static func <(lhs: Scope, rhs: Scope) -> Bool {
-			switch (lhs, rhs) {
-			case (.admin, .admin), (.sysadmin, .sysadmin):
-				false
-			case (.admin, .sysadmin):
-				false
-			case (.sysadmin, .admin):
-				true
-			}
-		}
-	}
-
-	typealias ID = String
-
-	var id: ID { username }
-
-	var username: String
-	var password: String
-	var scopes: Set<Scope> = []
-
-	var clientSecret: String? = nil
-	var knownHosts: Set<KnownHost> = []
-
-	struct KnownHost: Codable, Hashable {
-		var value: String
-		var lastSeen: Date
-
-		func hash(into hasher: inout Hasher) {
-			value.hash(into: &hasher)
-		}
-	}
-}
-
-extension User {
-	init(from decoder: any Decoder) throws {
-		let container = try decoder.container(keyedBy: CodingKeys.self)
-		self.username = try container.decode(String.self, forKey: .username)
-		self.password = try container.decode(String.self, forKey: .password)
-		self.scopes = try container.decodeIfPresent(Set<User.Scope>.self, forKey: .scopes) ?? []
-		self.clientSecret = try container.decodeIfPresent(String.self, forKey: .clientSecret)
-		self.knownHosts = try container.decodeIfPresent(Set<User.KnownHost>.self, forKey: .knownHosts) ?? []
-	}
-}
-
 struct Login: Codable {
 	typealias ID = UUID
 
@@ -145,12 +93,16 @@ actor UserStore {
 		guard let storagePath
 		else { return }
 
-		let expiresLimit = Date.now - loginExpirationLimit
-		data.logins = data.logins.filter({ expiresLimit < $0.value.expiresAt })
+		removeExpiredLogins()
 
 		let data = try coder.encode(data)
 		guard Self.fm.createFile(atPath: storagePath, contents: data)
 		else { throw Error.failedToStoreData }
+	}
+
+	func removeExpiredLogins() {
+		let expiresLimit = Date.now - loginExpirationLimit
+		data.logins = data.logins.filter({ expiresLimit < $0.value.expiresAt })
 	}
 
 	func user(id: User.ID) -> User? {
@@ -205,6 +157,16 @@ actor UserStore {
 		}
 	}
 
+	func add(_ user: User) throws {
+		guard !data.users.contains(where: {
+			$0.id == user.id
+		})
+		else { throw Error.usernameExists }
+		data.users.append(user)
+
+		try save()
+	}
+
 	func add(_ login: Login) throws {
 		data.logins[login.id] = login
 		try save()
@@ -225,7 +187,7 @@ actor UserStore {
 		else { return }
 
 		for host in hosts {
-			user.knownHosts.update(with: .init(value: host, lastSeen: .now))
+			user.add(.init(value: host, lastSeen: .now))
 		}
 
 		try upsert(user: user, oldUsername: user.username)
