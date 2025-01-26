@@ -93,12 +93,16 @@ actor UserStore {
 		guard let storagePath
 		else { return }
 
-		let expiresLimit = Date.now - loginExpirationLimit
-		data.logins = data.logins.filter({ expiresLimit < $0.value.expiresAt })
+		removeExpiredLogins()
 
 		let data = try coder.encode(data)
 		guard Self.fm.createFile(atPath: storagePath, contents: data)
 		else { throw Error.failedToStoreData }
+	}
+
+	func removeExpiredLogins() {
+		let expiresLimit = Date.now - loginExpirationLimit
+		data.logins = data.logins.filter({ expiresLimit < $0.value.expiresAt })
 	}
 
 	func user(id: User.ID) -> User? {
@@ -151,6 +155,16 @@ actor UserStore {
 		} else {
 			data.users.filter { !$0.scopes.contains(.sysadmin) }
 		}
+	}
+
+	func add(_ user: User) throws {
+		guard !data.users.contains(where: {
+			$0.id == user.id
+		})
+		else { throw Error.usernameExists }
+		data.users.append(user)
+
+		try save()
 	}
 
 	func add(_ login: Login) throws {
