@@ -101,8 +101,8 @@ struct UserTests {
 		  ],
 		  "password" : "bar",
 		  "scopes" : [
-		    "admin",
-		    "sysadmin"
+		    "sysadmin",
+		    "admin"
 		  ],
 		  "username" : "foo"
 		}

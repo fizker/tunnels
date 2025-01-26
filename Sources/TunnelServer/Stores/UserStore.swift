@@ -173,7 +173,7 @@ actor UserStore {
 		else { return }
 
 		for host in hosts {
-			user.knownHosts.update(with: .init(value: host, lastSeen: .now))
+			user.add(.init(value: host, lastSeen: .now))
 		}
 
 		try upsert(user: user, oldUsername: user.username)
