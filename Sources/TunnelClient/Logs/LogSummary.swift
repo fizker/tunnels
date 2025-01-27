@@ -1,5 +1,5 @@
 public import Foundation
-public import Models
+public import TunnelModels
 
 public struct LogSummary: Codable, Sendable {
 	public var id: Log.ID

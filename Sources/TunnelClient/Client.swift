@@ -2,9 +2,9 @@ import Common
 import Foundation
 import FzkExtensions
 import Logging
-public import Models
 import NIO
 import OAuth2Models
+public import TunnelModels
 import WebSocket
 import WebSocketKit
 public import WebURL

@@ -1,5 +1,5 @@
 {
-  "originHash" : "d41d755b2cba5711baac57719b8d18f8029ba2d1f99f6482559c903e76c5489c",
+  "originHash" : "e887c83fcf9afe3bbe16b6b64716f0fefb4c4ac90d011c6c2dce978b2069167e",
   "pins" : [
     {
       "identity" : "acmeswift",
@@ -220,7 +220,7 @@
     {
       "identity" : "swift-numerics",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-numerics",
+      "location" : "https://github.com/apple/swift-numerics.git",
       "state" : {
         "revision" : "0a5bc04095a675662cf24757cc0640aa2204253b",
         "version" : "1.0.2"
@@ -251,6 +251,15 @@
       "state" : {
         "revision" : "9306a962396a50d7d88e924afcd7ec67226763db",
         "version" : "0.4.2"
+      }
+    },
+    {
+      "identity" : "tunnels-models",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fizker/tunnels-models.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "9ddd3fedfe02e6d6781f624a03aa63424c88f15b"
       }
     },
     {

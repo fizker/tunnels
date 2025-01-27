@@ -1,4 +1,4 @@
-import Models
+import TunnelModels
 
 actor ClientStore {
 	var connectedClients: [Client] = []

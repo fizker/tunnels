@@ -1,5 +1,5 @@
 import Common
-import Models
+import TunnelModels
 import Vapor
 import WebSocket
 

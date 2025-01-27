@@ -1,7 +1,7 @@
 import AsyncHTTPClient
 import FzkExtensions
-import Models
 import NIOCore
+import TunnelModels
 import WebURL
 
 extension Client {

@@ -1,6 +1,6 @@
 import Common
 import Foundation
-import Models
+import TunnelModels
 import Vapor
 import WebSocket
 
