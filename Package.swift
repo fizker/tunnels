@@ -20,6 +20,7 @@ let package = Package(
 		.executable(name: "tunnel-logs", targets: ["LogReader"]),
 	],
 	dependencies: [
+		.package(url: "https://github.com/fizker/tunnels-models.git", branch: "main"),
 		.package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0"),
 		.package(url: "https://github.com/apple/swift-asn1.git", from: "1.3.0"),
 		.package(url: "https://github.com/apple/swift-certificates.git", from: "1.6.1"),
@@ -84,15 +85,11 @@ let package = Package(
 			swiftSettings: upcomingFeatures
 		),
 		.target(
-			name: "Models",
-			swiftSettings: upcomingFeatures
-		),
-		.target(
 			name: "WebSocket",
 			dependencies: [
 				"Binary",
 				"Common",
-				"Models",
+				.product(name: "TunnelModels", package: "tunnels-models"),
 				.product(name: "WebSocketKit", package: "websocket-kit"),
 			],
 			swiftSettings: upcomingFeatures
@@ -101,8 +98,8 @@ let package = Package(
 			name: "TunnelClient",
 			dependencies: [
 				"Common",
-				"Models",
 				"WebSocket",
+				.product(name: "TunnelModels", package: "tunnels-models"),
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
 				.product(name: "WebURL", package: "swift-url"),
@@ -117,8 +114,8 @@ let package = Package(
 				"ACME",
 				"Common",
 				"HTTPUpgradeServer",
-				"Models",
 				"WebSocket",
+				.product(name: "TunnelModels", package: "tunnels-models"),
 				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "FzkExtensions", package: "swift-extensions"),
@@ -190,8 +187,8 @@ func executableTargets() -> [Target] {
 		.executableTarget(
 			name: "LogReader",
 			dependencies: [
-				"Models",
 				"TunnelClient",
+				.product(name: "TunnelModels", package: "tunnels-models"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "Vapor", package: "vapor"),
 			],
@@ -243,11 +240,6 @@ func testTargets() -> [Target] {
 		.testTarget(
 			name: "DNSServerTests",
 			dependencies: ["DNSServer"],
-			swiftSettings: upcomingFeatures
-		),
-		.testTarget(
-			name: "ModelsTests",
-			dependencies: ["Models"],
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(
