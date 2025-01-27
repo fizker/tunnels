@@ -4,7 +4,7 @@ import Vapor
 protocol SimpleMiddleware: AsyncMiddleware {
 	/// Handles the request.
 	/// - parameter requeset: The requeset to handle.
-	/// - returns: A  `Response` if this middleware is the end-of-line, or `nil` if the next respondr should be evaluated.
+	/// - returns: A  `Response` if this middleware is the end-of-line, or `nil` if the next responder should be evaluated.
 	func next(_ request: Request) async throws -> Response?
 }
 

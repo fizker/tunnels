@@ -3,7 +3,7 @@ import Vapor
 /// A middleware that checks for a login token and attempts to find a matching user.
 ///
 /// It does not enforce that the user exists or adheres to any specific role. It just loads the data so that
-/// Vapor´s Request.auth is set correctly.
+/// Vapor´s Request.auth is set correctly. To require that a user is logged in or has a specific role, see ``RequireUserMiddleware``.
 struct AuthMiddleware: SimpleMiddleware {
 	var userStore: UserStore
 
