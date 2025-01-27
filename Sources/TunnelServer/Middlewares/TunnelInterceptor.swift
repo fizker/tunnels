@@ -1,4 +1,4 @@
-import Models
+import TunnelModels
 import Vapor
 
 struct TunnelInterceptor: AsyncMiddleware {
@@ -30,7 +30,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 			)
 		}
 
-		let headers = request.headers.reduce(Models.HTTPHeaders(), {
+		let headers = request.headers.reduce(TunnelModels.HTTPHeaders(), {
 			var headers = $0
 			headers.add(value: $1.value, for: $1.name)
 			return headers

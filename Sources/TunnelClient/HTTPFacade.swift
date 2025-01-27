@@ -1,8 +1,8 @@
 public import AsyncHTTPClient
 public import Foundation
-public import Models
 import NIOCore
 import NIOHTTP1
+public import TunnelModels
 
 extension HTTPResponse {
 	public init(id: UUID, response: HTTPClientResponse) {
@@ -43,9 +43,9 @@ extension HTTPBody {
 	}
 }
 
-extension Models.HTTPHeaders {
+extension TunnelModels.HTTPHeaders {
 	init(from response: HTTPClientResponse) {
-		self = response.headers.reduce(Models.HTTPHeaders()) {
+		self = response.headers.reduce(TunnelModels.HTTPHeaders()) {
 			var headers = $0
 			headers.add(value: $1.value, for: $1.name)
 			return headers

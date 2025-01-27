@@ -1,6 +1,6 @@
 import Common
 import Foundation
-public import Models
+public import TunnelModels
 public import WebSocketKit
 
 enum WebSocketError: Error {

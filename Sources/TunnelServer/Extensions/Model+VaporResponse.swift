@@ -1,7 +1,7 @@
-public import Models
+public import TunnelModels
 public import Vapor
 
-extension Models.HTTPResponse {
+extension TunnelModels.HTTPResponse {
 	private func vaporBody(stream: ResponseStream) -> Response.Body {
 		if headers.firstHeader(named: "content-length") == nil {
 			let buffer: ByteBuffer
@@ -52,7 +52,7 @@ extension Models.HTTPResponse {
 	}
 }
 
-extension TunnelError: AbortError {
+extension TunnelError: @retroactive AbortError {
 	public var status: HTTPResponseStatus {
 		switch self {
 		case .alreadyBound:

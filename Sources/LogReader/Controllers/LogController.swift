@@ -1,7 +1,7 @@
 import Foundation
-import Models
-import Vapor
+import TunnelModels
 import TunnelClient
+import Vapor
 
 actor LogController {
 	let storage: LogStorage
@@ -120,7 +120,7 @@ actor LogController {
 		</script>
 		"""
 
-	func map(_ headers: Models.HTTPHeaders) -> String {
+	func map(_ headers: TunnelModels.HTTPHeaders) -> String {
 		return """
 		<table class="vlist">
 			\(headers.map{($0, $1)}.sorted{$0.0<$1.0}.map { """
@@ -133,7 +133,7 @@ actor LogController {
 		"""
 	}
 
-	func map(_ body: Models.HTTPBody?, contentHeader: String?) -> String {
+	func map(_ body: TunnelModels.HTTPBody?, contentHeader: String?) -> String {
 		return switch body {
 		case nil: ""
 		case let .binary(value): value.description

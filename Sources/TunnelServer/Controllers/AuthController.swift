@@ -1,5 +1,5 @@
-import Models
 import OAuth2Models
+import TunnelModels
 public import Vapor
 
 class AuthController {

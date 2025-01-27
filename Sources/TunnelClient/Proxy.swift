@@ -1,4 +1,4 @@
-import Models
+import TunnelModels
 
 public struct Proxy: Sendable {
 	public var localPort: Int
