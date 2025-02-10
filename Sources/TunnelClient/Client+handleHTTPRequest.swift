@@ -5,6 +5,7 @@ import TunnelModels
 import WebURL
 
 extension Client {
+	/// Repeats the HTTPRequest towards the local server.
 	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
@@ -43,6 +44,9 @@ extension Client {
 		}
 	}
 
+	/// Sends the given request to the responsible proxy port.
+	///
+	/// It handles any errors like timeouts and proxy-not-responding and sends either the response or the canned error response back.
 	private func askProxy(request: HTTPClientRequest, client: HTTPClient) async throws -> HTTPClientResponse {
 		let timeout: TimeAmount = .minutes(10)
 		do {

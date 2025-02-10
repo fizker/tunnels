@@ -183,6 +183,9 @@ public actor Client {
 		}
 	}
 
+	/// Handles a message from the WebSocket connection to the server.
+	///
+	/// This includes both sending the request to the proxy and handling the response, while adding a log locally.
 	func handle(_ message: WebSocketServerMessage) async throws {
 		switch message {
 		case let .request(req):
