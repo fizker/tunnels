@@ -1,13 +1,13 @@
 {
-  "originHash" : "e887c83fcf9afe3bbe16b6b64716f0fefb4c4ac90d011c6c2dce978b2069167e",
+  "originHash" : "0deef08409734b3555d0e6ae5f59ebba01c0e1ade270f2df925981925d85ff82",
   "pins" : [
     {
       "identity" : "acmeswift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/m-barthelemy/AcmeSwift.git",
       "state" : {
-        "revision" : "4151363cf969ee98f1c9ac1f80847db70dcc63bd",
-        "version" : "1.0.0-beta5"
+        "revision" : "aca3a34f9b86d936ce5df4edd816af3460b8c74f",
+        "version" : "1.0.0-beta6"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/jwt-kit.git",
       "state" : {
-        "revision" : "6f745e91e2422608fe14c9a66ee3826cb661e2a6",
-        "version" : "5.1.1"
+        "revision" : "03f5013f0b547ce43abe45e7e90711303a3e5495",
+        "version" : "5.1.2"
       }
     },
     {
@@ -220,7 +220,7 @@
     {
       "identity" : "swift-numerics",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-numerics.git",
+      "location" : "https://github.com/apple/swift-numerics",
       "state" : {
         "revision" : "0a5bc04095a675662cf24757cc0640aa2204253b",
         "version" : "1.0.2"
