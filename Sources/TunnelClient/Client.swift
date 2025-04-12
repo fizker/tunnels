@@ -202,7 +202,7 @@ public actor Client {
 				"status": "\(res.status)",
 			])
 			#warning("we should catch errors and log the error")
-			await logStorage.add(Log(
+			let logDetails = await logStorage.add(Log(
 				requestReceived: start,
 				responseSent: .now,
 				responseTime: start.timeIntervalSinceNow * -1000,
@@ -210,7 +210,10 @@ public actor Client {
 				response: res
 			))
 			try await webSocket?.send(.response(res))
-			try await bodyUploader()
+			try await bodyUploader(logDetails?.tempStorage)
+			if let logDetails {
+				try await logStorage.update(logDetails)
+			}
 		case let .error(error):
 			switch error {
 			case let .alreadyBound(host):

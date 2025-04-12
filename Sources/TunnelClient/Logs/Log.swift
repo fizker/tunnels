@@ -19,5 +19,7 @@ public struct Log: Codable, Sendable {
 
 	public var request: HTTPRequest
 	public var requestBody: BodyStorage = .included
+
 	public var response: HTTPResponse
+	public var responseBody: BodyStorage = .included
 }

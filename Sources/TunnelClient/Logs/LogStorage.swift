@@ -107,28 +107,31 @@ public actor LogStorage {
 	/// Otherwise, a reference to where the data is stored will be put in the log instead.
 	///
 	/// - parameters tempLog: The log to update.
-	func update(_ tempLog: TemporaryLog) {
+	func update(_ tempLog: TemporaryLog) throws {
 		guard
 			var log = logs[tempLog.logID],
 			let size = size(of: tempLog.tempStorage.path)
 		else { return }
 
 		if size <= maxInlinedFileSize {
-			log.requestBody = .included
-			let data = try! Data(contentsOf: tempLog.tempStorage)
-			let contentType = log.request.headers.firstHeader(named: "content-type")
+			log.responseBody = .included
+			let data = try Data(contentsOf: tempLog.tempStorage)
+			let contentType = log.response.headers.firstHeader(named: "content-type")
 			if
 				contentType?.hasPrefix("text/plain") ?? false,
 				let value = String(data: data, encoding: .utf8)
 			{
-				log.request.body = .text(value)
+				log.response.body = .text(value)
 			} else {
-				log.request.body = .binary(data)
+				log.response.body = .binary(data)
 			}
+			try fileManager.removeItem(at: tempLog.tempStorage)
 		} else {
 			// Maybe rename the file to have reasonable extension based on content-type?
-			log.requestBody = .separate(filename: tempLog.tempStorage.pathComponents.last!)
+			log.responseBody = .separate(filename: tempLog.tempStorage.pathComponents.last!)
 		}
+
+		_ = try write(log)
 	}
 
 	private func size(of file: String) -> UInt64? {

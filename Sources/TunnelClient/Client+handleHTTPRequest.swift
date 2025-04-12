@@ -1,12 +1,14 @@
 import AsyncHTTPClient
+import Foundation
 import FzkExtensions
 import NIOCore
 import TunnelModels
 import WebURL
+import WebURLFoundationExtras
 
 extension Client {
 	/// Repeats the HTTPRequest towards the local server.
-	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: () async throws -> Void) {
+	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: (WebURL?) async throws -> Void) {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
 
@@ -31,12 +33,11 @@ extension Client {
 			let res = HTTPResponse(id: req.id, response: response)
 			let uploadURL = serverURL.appending(path: ["tunnels", req.id.uuidString, "response"])
 
-			return (res, {
+			return (res, { pathToLocalCopy in
 				if case .stream = res.body {
-					try await self.upload(body: response, to: uploadURL, client: client)
+					try await self.upload(body: response, to: uploadURL, client: client, localCopy: pathToLocalCopy)
 				}
 				try await client.shutdown()
-
 			})
 		} catch {
 			try await client.shutdown()
@@ -107,11 +108,35 @@ extension Client {
 		return .stream(response.body, length: .unknown)
 	}
 
-	func upload(body response: HTTPClientResponse, to url: WebURL, client: HTTPClient) async throws {
+	func upload(body response: HTTPClientResponse, to url: WebURL, client: HTTPClient, localCopy: WebURL?) async throws {
 		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 		request.method = .POST
-		request.body = .stream(response.body, length: .unknown)
+		request.body = .stream(AsyncStream<ByteBuffer> { cont in
+			Task {
+				let handle: FileHandle?
+				if let localCopy {
+					let fm = FileManager.default
+					if !fm.fileExists(atPath: localCopy.path) {
+						fm.createFile(atPath: localCopy.path, contents: nil)
+					}
+					handle = FileHandle(forWritingAtPath: localCopy.path)
+				} else {
+					handle = nil
+				}
+				defer { try? handle?.close() }
+				try handle?.seekToEnd()
+				do {
+					for try await data in response.body {
+						cont.yield(data)
+						try handle?.write(contentsOf: data.readableBytesView)
+					}
+				} catch {
+#warning("Handle errors while reading body stream")
+				}
+				cont.finish()
+			}
+		}, length: .unknown)
 
 		let response = try await client.execute(request, timeout: .seconds(30))
 	}
