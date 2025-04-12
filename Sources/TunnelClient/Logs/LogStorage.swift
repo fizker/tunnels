@@ -6,6 +6,9 @@ public import WebURL
 import WebURLFoundationExtras
 
 public actor LogStorage {
+	/// The max filesize that we want to put directly into the log.json file.
+	private let maxInlinedFileSize: UInt64 = 1024 * 1024
+
 	private let logger = Logger(label: "LogStorage")
 	private(set) public var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
@@ -96,6 +99,44 @@ public actor LogStorage {
 			])
 			return nil
 		}
+	}
+
+	/// Updates the log after the body has finished streaming.
+	///
+	/// If the data is small enough (small enough JSON response?), it will be stored directly in the log file.
+	/// Otherwise, a reference to where the data is stored will be put in the log instead.
+	///
+	/// - parameters tempLog: The log to update.
+	func update(_ tempLog: TemporaryLog) {
+		guard
+			var log = logs[tempLog.logID],
+			let size = size(of: tempLog.tempStorage.path)
+		else { return }
+
+		if size <= maxInlinedFileSize {
+			log.requestBody = .included
+			let data = try! Data(contentsOf: tempLog.tempStorage)
+			let contentType = log.request.headers.firstHeader(named: "content-type")
+			if
+				contentType?.hasPrefix("text/plain") ?? false,
+				let value = String(data: data, encoding: .utf8)
+			{
+				log.request.body = .text(value)
+			} else {
+				log.request.body = .binary(data)
+			}
+		} else {
+			// Maybe rename the file to have reasonable extension based on content-type?
+			log.requestBody = .separate(filename: tempLog.tempStorage.pathComponents.last!)
+		}
+	}
+
+	private func size(of file: String) -> UInt64? {
+		guard let handle = FileHandle(forReadingAtPath: file)
+		else { return nil }
+		defer { try! handle.close() }
+
+		return try! handle.seekToEnd()
 	}
 
 	public func log(id: Log.ID) -> Log? {

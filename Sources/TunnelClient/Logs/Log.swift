@@ -1,11 +1,11 @@
 public import Foundation
 public import TunnelModels
 
-public enum BodyStorage: String, Codable, Sendable {
+public enum BodyStorage: Codable, Sendable {
 	/// The body, if present, is stored inside the HTTPRequest.
 	case included
 	/// The body is stored next to the JSON file.
-	case separate
+	case separate(filename: String)
 }
 
 public struct Log: Codable, Sendable {
