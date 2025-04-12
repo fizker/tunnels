@@ -76,20 +76,26 @@ public actor LogStorage {
 		}
 	}
 
-	func add(_ log: Log) {
+	typealias TemporaryLog = (tempStorage: WebURL, logID: Log.ID)
+
+	/// Adds the given log to disk and updates the summary data.
+	///
+	/// - returns: A URL for the position in the log folder where temporary streaming-data can be stored.
+	func add(_ log: Log) -> TemporaryLog? {
 		summaries.append(.init(log: log))
 		logs[log.id] = log
 
+		defer { deleteOldLogs() }
+
 		do {
-			try write(log)
+			return (try write(log).appending(path: ["streamed-data"]), log.id)
 		} catch {
 			logger.error("Failed to write log", metadata: [
 				"error": "\(error)",
 				"logID": "\(log.id)",
 			])
+			return nil
 		}
-
-		deleteOldLogs()
 	}
 
 	public func log(id: Log.ID) -> Log? {
@@ -114,7 +120,11 @@ public actor LogStorage {
 		}
 	}
 
-	private func write(_ log: Log) throws {
+	/// Writes the log to disk. It also updates the summary file with the new log.
+	///
+	/// - parameter log: The log to write.
+	/// - returns: The folder that contains the log data.
+	private func write(_ log: Log) throws -> WebURL {
 		let logFolder = storagePath.appending(path: [log.id.uuidString])
 		try fileManager.createDirectory(
 			at: logFolder,
@@ -128,6 +138,8 @@ public actor LogStorage {
 		)
 
 		try writeSummaryData()
+
+		return logFolder
 	}
 
 	private func writeSummaryData() throws {
