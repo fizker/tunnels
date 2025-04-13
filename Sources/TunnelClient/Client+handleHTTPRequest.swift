@@ -8,7 +8,7 @@ import WebURLFoundationExtras
 
 extension Client {
 	/// Repeats the HTTPRequest towards the local server.
-	func handle(_ req: HTTPRequest) async throws -> (response: HTTPResponse, bodyUploader: (WebURL?) async throws -> Void) {
+	func handle(_ req: HTTPRequest, localCopy: WebURL?) async throws -> (response: HTTPResponse, bodyUploader: (WebURL?) async throws -> Void) {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
 
@@ -23,7 +23,7 @@ extension Client {
 		case let .binary(data):
 			.bytes(data)
 		case .stream:
-			try await stream(from: serverURL.appending(path: ["tunnels", req.id.uuidString, "request"]), client: client)
+			try await stream(from: serverURL.appending(path: ["tunnels", req.id.uuidString, "request"]), client: client, localCopy: localCopy)
 		case nil:
 			nil
 		}
@@ -99,31 +99,41 @@ extension Client {
 		}
 	}
 
-	func stream(from url: WebURL, client: HTTPClient) async throws -> HTTPClientRequest.Body {
+	func stream(from url: WebURL, client: HTTPClient, localCopy: WebURL?) async throws -> HTTPClientRequest.Body {
 		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 
 		let response = try await client.execute(request, timeout: .seconds(30))
-
-		return .stream(response.body, length: .unknown)
+		return requestBody(response: response, localCopy: localCopy)
 	}
 
 	func upload(body response: HTTPClientResponse, to url: WebURL, client: HTTPClient, localCopy: WebURL?) async throws {
 		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 		request.method = .POST
-		request.body = .stream(AsyncStream<ByteBuffer> { cont in
+		request.body = requestBody(response: response, localCopy: localCopy)
+
+		let response = try await client.execute(request, timeout: .seconds(30))
+	}
+
+	private func requestBody(response: HTTPClientResponse, localCopy: WebURL?) -> HTTPClientRequest.Body {
+		if let localCopy {
+			.stream(requestBody(response: response, localCopy: localCopy), length: .unknown)
+		} else {
+			.stream(response.body, length: .unknown)
+		}
+	}
+
+	private func requestBody(response: HTTPClientResponse, localCopy: WebURL) -> AsyncStream<ByteBuffer> {
+		AsyncStream<ByteBuffer> { cont in
 			Task {
 				let handle: FileHandle?
-				if let localCopy {
-					let fm = FileManager.default
-					if !fm.fileExists(atPath: localCopy.path) {
-						fm.createFile(atPath: localCopy.path, contents: nil)
-					}
-					handle = FileHandle(forWritingAtPath: localCopy.path)
-				} else {
-					handle = nil
+				let fm = FileManager.default
+				if !fm.fileExists(atPath: localCopy.path) {
+					fm.createFile(atPath: localCopy.path, contents: nil)
 				}
+				handle = FileHandle(forWritingAtPath: localCopy.path)
+
 				defer { try? handle?.close() }
 				try handle?.seekToEnd()
 				do {
@@ -136,8 +146,6 @@ extension Client {
 				}
 				cont.finish()
 			}
-		}, length: .unknown)
-
-		let response = try await client.execute(request, timeout: .seconds(30))
+		}
 	}
 }

@@ -198,7 +198,7 @@ public actor Client {
 			var log = Log(request: req)
 			let logDetails = await logStorage.add(log)
 
-			let (res, bodyUploader) = try await handle(req)
+			let (res, bodyUploader) = try await handle(req, localCopy: logDetails?.requestStream)
 			logger.info("Got response", metadata: [
 				"id": "\(req.id)",
 				"status": "\(res.status)",
