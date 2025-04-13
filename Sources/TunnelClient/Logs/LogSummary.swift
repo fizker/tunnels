@@ -7,10 +7,10 @@ public struct LogSummary: Codable, Sendable {
 	public var path: String
 	public var requestReceived: Date
 	public var requestMethod: HTTPMethod
-	public var responseSent: Date
-	public var responseStatus: HTTPStatus
+	public var responseSent: Date?
+	public var responseStatus: HTTPStatus?
 	/// The response time in milliseconds
-	public var responseTime: Double
+	public var responseTime: Double?
 }
 extension LogSummary {
 	init(log: Log) {
@@ -20,7 +20,7 @@ extension LogSummary {
 		requestReceived = log.requestReceived
 		requestMethod = log.request.method
 		responseSent = log.responseSent
-		responseStatus = log.response.status
+		responseStatus = log.response?.status
 		responseTime = log.responseTime
 	}
 }

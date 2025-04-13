@@ -2,10 +2,14 @@ import Common
 public import Foundation
 import Logging
 import System
+import TunnelModels
 public import WebURL
 import WebURLFoundationExtras
 
 public actor LogStorage {
+	/// The max filesize that we want to put directly into the log.json file.
+	private let maxInlinedFileSize: UInt64 = 100_000
+
 	private let logger = Logger(label: "LogStorage")
 	private(set) public var summaries: [LogSummary] = []
 	private var logs: [Log.ID: Log] = [:]
@@ -76,20 +80,105 @@ public actor LogStorage {
 		}
 	}
 
-	func add(_ log: Log) {
+	struct TemporaryLog {
+		var logID: Log.ID
+		var requestStream: WebURL
+		var responseStream: WebURL
+	}
+
+	/// Adds the given log to disk and updates the summary data.
+	///
+	/// - returns: A URL for the position in the log folder where temporary streaming-data can be stored.
+	func add(_ log: Log) -> TemporaryLog? {
 		summaries.append(.init(log: log))
 		logs[log.id] = log
 
+		defer { deleteOldLogs() }
+
 		do {
-			try write(log)
+			let logFolder = try write(log)
+			return .init(
+				logID: log.id,
+				requestStream: logFolder.appending(path: ["request-stream"]),
+				responseStream: logFolder.appending(path: ["response-stream"])
+			)
 		} catch {
 			logger.error("Failed to write log", metadata: [
 				"error": "\(error)",
 				"logID": "\(log.id)",
 			])
+			return nil
+		}
+	}
+
+	/// Updates the current log
+	func update(_ log: Log) {
+		summaries.removeAll { $0.id == log.id }
+		_ = add(log)
+	}
+
+	/// Updates the log after the body has finished streaming.
+	///
+	/// If the data is small enough and text-based, it will be stored directly in the log file.
+	/// Otherwise, a reference to where the data is stored will be put in the log instead.
+	///
+	/// - parameters tempLog: The log to update.
+	func update(_ tempLog: TemporaryLog) throws {
+		guard var log = logs[tempLog.logID]
+		else { return }
+
+		var hadUpdate = false
+		if let size = size(of: tempLog.requestStream) {
+			hadUpdate = true
+			if size <= maxInlinedFileSize {
+				log.requestBody = .included
+				let contentType = log.request.headers.firstHeader(named: "content-type")
+				log.request.body = try consumeTemporaryFile(at: tempLog.requestStream, contentType: contentType)
+			} else {
+				// Maybe rename the file to have reasonable extension based on content-type?
+				log.requestBody = .separate(filename: tempLog.requestStream.pathComponents.last!)
+			}
+		}
+		if let size = size(of: tempLog.responseStream) {
+			hadUpdate = true
+			if size <= maxInlinedFileSize {
+				log.responseBody = .included
+				let contentType = log.response?.headers.firstHeader(named: "content-type")
+				log.response?.body = try consumeTemporaryFile(at: tempLog.responseStream, contentType: contentType)
+			} else {
+				// Maybe rename the file to have reasonable extension based on content-type?
+				log.responseBody = .separate(filename: tempLog.responseStream.pathComponents.last!)
+			}
 		}
 
-		deleteOldLogs()
+		if hadUpdate {
+			_ = try write(log)
+		}
+	}
+
+	private func consumeTemporaryFile(at streamFile: WebURL, contentType: String?) throws -> HTTPBody {
+		let data = try Data(contentsOf: streamFile)
+		let foo: HTTPBody
+		if
+			let contentType,
+			contentType.hasPrefix("text") || contentType.hasPrefix("application/json"),
+			let value = String(data: data, encoding: .utf8)
+		{
+			foo = .text(value)
+		} else {
+			foo = .binary(data)
+		}
+		try fileManager.removeItem(at: streamFile)
+
+		return foo
+	}
+
+	private func size(of file: WebURL) -> UInt64? {
+		guard let handle = FileHandle(forReadingAtPath: file.path)
+		else { return nil }
+		defer { try! handle.close() }
+
+		return try! handle.seekToEnd()
 	}
 
 	public func log(id: Log.ID) -> Log? {
@@ -114,7 +203,11 @@ public actor LogStorage {
 		}
 	}
 
-	private func write(_ log: Log) throws {
+	/// Writes the log to disk. It also updates the summary file with the new log.
+	///
+	/// - parameter log: The log to write.
+	/// - returns: The folder that contains the log data.
+	private func write(_ log: Log) throws -> WebURL {
 		let logFolder = storagePath.appending(path: [log.id.uuidString])
 		try fileManager.createDirectory(
 			at: logFolder,
@@ -128,6 +221,8 @@ public actor LogStorage {
 		)
 
 		try writeSummaryData()
+
+		return logFolder
 	}
 
 	private func writeSummaryData() throws {
@@ -141,8 +236,8 @@ public actor LogStorage {
 	private func deleteOldLogs() {
 		do {
 			let expirationDate = Date(timeIntervalSinceNow: -84_600)
-			let toDelete = summaries.filter { $0.responseSent < expirationDate }
-			summaries = summaries.filter { expirationDate <= $0.responseSent }
+			let toDelete = summaries.filter { $0.responseSent ?? $0.requestReceived < expirationDate }
+			summaries = summaries.filter { expirationDate <= $0.responseSent ?? $0.requestReceived }
 
 			for log in toDelete {
 				let logFolder = storagePath.appending(path: [log.id.uuidString])

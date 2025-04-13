@@ -54,7 +54,7 @@ actor LogController {
 					</tr>
 				</thead>
 				<tbody class="summary-list">
-					\(summaries.sorted { $0.responseSent > $1.responseSent }.map(map).joined())
+					\(summaries.sorted { $0.requestReceived > $1.requestReceived }.map(map).joined())
 				</tbody>
 			</table>
 			""")
@@ -74,11 +74,11 @@ actor LogController {
 		<table class="vlist">
 			<tr>
 				<th>Status:</th>
-				<td>\(log.response.status)</td>
+				<td>\(log.response.map { "\($0.status)" } ?? "No response received")</td>
 			</tr>
 			<tr>
 				<th>Response time:</th>
-				<td>\(log.responseTime.formatted(responseTimeFormat)) ms</td>
+				<td>\(log.responseTime.map { $0.formatted(responseTimeFormat) + " ms" } ?? "")</td>
 			</tr>
 		</table>
 
@@ -90,11 +90,15 @@ actor LogController {
 		\(map(log.request.body, contentHeader: log.request.headers.firstHeader(named: "content-type")))
 
 		<h2>Response</h2>
-		<h3>Headers</h3>
-		\(map(log.response.headers))
+		\(log.response.map { response in
+			"""
+			<h3>Headers</h3>
+			\(map(response.headers))
 
-		<h3>Body</h3>
-		\(map(log.response.body, contentHeader: log.response.headers.firstHeader(named: "content-type")))
+			<h3>Body</h3>
+			\(map(response.body, contentHeader: response.headers.firstHeader(named: "content-type")))
+			"""
+		} ?? "<p>No response</p>")
 		""")
 	}
 
@@ -103,8 +107,8 @@ actor LogController {
 			<tr>
 				<td>\(summary.requestMethod)</td>
 				<td>\(summary.path)</td>
-				<td>\(summary.responseStatus)</td>
-				<td style="text-align: right">\(summary.responseTime.formatted(responseTimeFormat)) ms</td>
+				<td>\(summary.responseStatus.map {"\($0)"} ?? "No response")</td>
+				<td style="text-align: right">\(summary.responseTime.map { $0.formatted(responseTimeFormat) + " ms" } ?? "")</td>
 				<td>\(summary.host)</td>
 				<td><a href="/\(summary.id)">Details</a></td>
 			</tr>
