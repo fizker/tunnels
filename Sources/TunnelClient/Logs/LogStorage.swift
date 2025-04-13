@@ -8,7 +8,7 @@ import WebURLFoundationExtras
 
 public actor LogStorage {
 	/// The max filesize that we want to put directly into the log.json file.
-	private let maxInlinedFileSize: UInt64 = 1024 * 1024
+	private let maxInlinedFileSize: UInt64 = 100_000
 
 	private let logger = Logger(label: "LogStorage")
 	private(set) public var summaries: [LogSummary] = []
@@ -119,7 +119,7 @@ public actor LogStorage {
 
 	/// Updates the log after the body has finished streaming.
 	///
-	/// If the data is small enough (small enough JSON response?), it will be stored directly in the log file.
+	/// If the data is small enough and text-based, it will be stored directly in the log file.
 	/// Otherwise, a reference to where the data is stored will be put in the log instead.
 	///
 	/// - parameters tempLog: The log to update.
@@ -160,7 +160,8 @@ public actor LogStorage {
 		let data = try Data(contentsOf: streamFile)
 		let foo: HTTPBody
 		if
-			contentType?.hasPrefix("text/plain") ?? false,
+			let contentType,
+			contentType.hasPrefix("text") || contentType.hasPrefix("application/json"),
 			let value = String(data: data, encoding: .utf8)
 		{
 			foo = .text(value)
