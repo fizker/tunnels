@@ -142,18 +142,6 @@ let package = Package(
 func executableTargets() -> [Target] {
 	[
 		.executableTarget(
-			name: "ACMEDataConverter",
-			dependencies: [
-				"ACME",
-				"Common",
-				.product(name: "AcmeSwift", package: "acmeswift"),
-				.product(name: "SwiftASN1", package: "swift-asn1"),
-				.product(name: "X509", package: "swift-certificates"),
-				.product(name: "NIOSSL", package: "swift-nio-ssl"),
-			],
-			swiftSettings: upcomingFeatures
-		),
-		.executableTarget(
 			name: "TunnelClientCLI",
 			dependencies: [
 				"TunnelClient",
