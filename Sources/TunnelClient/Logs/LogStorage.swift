@@ -2,6 +2,7 @@ import Common
 public import Foundation
 import Logging
 import System
+import TunnelModels
 public import WebURL
 import WebURLFoundationExtras
 
@@ -79,7 +80,11 @@ public actor LogStorage {
 		}
 	}
 
-	typealias TemporaryLog = (tempStorage: WebURL, logID: Log.ID)
+	struct TemporaryLog {
+		var logID: Log.ID
+		var requestStream: WebURL
+		var responseStream: WebURL
+	}
 
 	/// Adds the given log to disk and updates the summary data.
 	///
@@ -91,7 +96,12 @@ public actor LogStorage {
 		defer { deleteOldLogs() }
 
 		do {
-			return (try write(log).appending(path: ["streamed-data"]), log.id)
+			let logFolder = try write(log)
+			return .init(
+				logID: log.id,
+				requestStream: logFolder.appending(path: ["request-stream"]),
+				responseStream: logFolder.appending(path: ["response-stream"])
+			)
 		} catch {
 			logger.error("Failed to write log", metadata: [
 				"error": "\(error)",
@@ -101,6 +111,12 @@ public actor LogStorage {
 		}
 	}
 
+	/// Updates the current log
+	func update(_ log: Log) {
+		summaries.removeAll { $0.id == log.id }
+		_ = add(log)
+	}
+
 	/// Updates the log after the body has finished streaming.
 	///
 	/// If the data is small enough (small enough JSON response?), it will be stored directly in the log file.
@@ -108,34 +124,56 @@ public actor LogStorage {
 	///
 	/// - parameters tempLog: The log to update.
 	func update(_ tempLog: TemporaryLog) throws {
-		guard
-			var log = logs[tempLog.logID],
-			let size = size(of: tempLog.tempStorage.path)
+		guard var log = logs[tempLog.logID]
 		else { return }
 
-		if size <= maxInlinedFileSize {
-			log.responseBody = .included
-			let data = try Data(contentsOf: tempLog.tempStorage)
-			let contentType = log.response.headers.firstHeader(named: "content-type")
-			if
-				contentType?.hasPrefix("text/plain") ?? false,
-				let value = String(data: data, encoding: .utf8)
-			{
-				log.response.body = .text(value)
+		var hadUpdate = false
+		if let size = size(of: tempLog.requestStream) {
+			hadUpdate = true
+			if size <= maxInlinedFileSize {
+				log.requestBody = .included
+				let contentType = log.request.headers.firstHeader(named: "content-type")
+				log.request.body = try consumeTemporaryFile(at: tempLog.requestStream, contentType: contentType)
 			} else {
-				log.response.body = .binary(data)
+				// Maybe rename the file to have reasonable extension based on content-type?
+				log.requestBody = .separate(filename: tempLog.requestStream.pathComponents.last!)
 			}
-			try fileManager.removeItem(at: tempLog.tempStorage)
-		} else {
-			// Maybe rename the file to have reasonable extension based on content-type?
-			log.responseBody = .separate(filename: tempLog.tempStorage.pathComponents.last!)
+		}
+		if let size = size(of: tempLog.responseStream) {
+			hadUpdate = true
+			if size <= maxInlinedFileSize {
+				log.responseBody = .included
+				let contentType = log.response?.headers.firstHeader(named: "content-type")
+				log.response?.body = try consumeTemporaryFile(at: tempLog.responseStream, contentType: contentType)
+			} else {
+				// Maybe rename the file to have reasonable extension based on content-type?
+				log.responseBody = .separate(filename: tempLog.responseStream.pathComponents.last!)
+			}
 		}
 
-		_ = try write(log)
+		if hadUpdate {
+			_ = try write(log)
+		}
 	}
 
-	private func size(of file: String) -> UInt64? {
-		guard let handle = FileHandle(forReadingAtPath: file)
+	private func consumeTemporaryFile(at streamFile: WebURL, contentType: String?) throws -> HTTPBody {
+		let data = try Data(contentsOf: streamFile)
+		let foo: HTTPBody
+		if
+			contentType?.hasPrefix("text/plain") ?? false,
+			let value = String(data: data, encoding: .utf8)
+		{
+			foo = .text(value)
+		} else {
+			foo = .binary(data)
+		}
+		try fileManager.removeItem(at: streamFile)
+
+		return foo
+	}
+
+	private func size(of file: WebURL) -> UInt64? {
+		guard let handle = FileHandle(forReadingAtPath: file.path)
 		else { return nil }
 		defer { try! handle.close() }
 
@@ -197,8 +235,8 @@ public actor LogStorage {
 	private func deleteOldLogs() {
 		do {
 			let expirationDate = Date(timeIntervalSinceNow: -84_600)
-			let toDelete = summaries.filter { $0.responseSent < expirationDate }
-			summaries = summaries.filter { expirationDate <= $0.responseSent }
+			let toDelete = summaries.filter { $0.responseSent ?? $0.requestReceived < expirationDate }
+			summaries = summaries.filter { expirationDate <= $0.responseSent ?? $0.requestReceived }
 
 			for log in toDelete {
 				let logFolder = storagePath.appending(path: [log.id.uuidString])

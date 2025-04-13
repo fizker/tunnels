@@ -195,22 +195,19 @@ public actor Client {
 				"method": "\(req.method)",
 				"host": "\(req.host)",
 			])
-			let start = Date.now
+			var log = Log(request: req)
+			let logDetails = await logStorage.add(log)
+
 			let (res, bodyUploader) = try await handle(req)
 			logger.info("Got response", metadata: [
 				"id": "\(req.id)",
 				"status": "\(res.status)",
 			])
 			#warning("we should catch errors and log the error")
-			let logDetails = await logStorage.add(Log(
-				requestReceived: start,
-				responseSent: .now,
-				responseTime: start.timeIntervalSinceNow * -1000,
-				request: req,
-				response: res
-			))
+			log.set(response: res)
+			await logStorage.update(log)
 			try await webSocket?.send(.response(res))
-			try await bodyUploader(logDetails?.tempStorage)
+			try await bodyUploader(logDetails?.responseStream)
 			if let logDetails {
 				try await logStorage.update(logDetails)
 			}

@@ -11,15 +11,26 @@ public enum BodyStorage: Codable, Sendable {
 public struct Log: Codable, Sendable {
 	public typealias ID = HTTPRequest.ID
 
-	public var requestReceived: Date
-	public var responseSent: Date
-	/// The response time in milliseconds
-	public var responseTime: Double
 	public var id: ID { request.id }
 
+	public var requestReceived: Date
 	public var request: HTTPRequest
 	public var requestBody: BodyStorage = .included
 
-	public var response: HTTPResponse
+	public var responseSent: Date?
+	/// The response time in milliseconds
+	public var responseTime: Double?
+	public var response: HTTPResponse?
 	public var responseBody: BodyStorage = .included
+
+	init(request: HTTPRequest, requestReceived: Date = .now) {
+		self.request = request
+		self.requestReceived = requestReceived
+	}
+
+	mutating func set(response: HTTPResponse) {
+		self.responseSent = .now
+		self.responseTime = requestReceived.timeIntervalSinceNow * -1000
+		self.response = response
+	}
 }
