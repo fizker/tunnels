@@ -1,6 +1,7 @@
 import Foundation
-import TunnelModels
 import TunnelClient
+import TunnelLogModels
+import TunnelModels
 import Vapor
 
 actor LogController {
@@ -74,11 +75,11 @@ actor LogController {
 		<table class="vlist">
 			<tr>
 				<th>Status:</th>
-				<td>\(log.response.map { "\($0.status)" } ?? "No response received")</td>
+				<td>\(log.response.map { "\($0.httpResponse.status)" } ?? "No response received")</td>
 			</tr>
 			<tr>
 				<th>Response time:</th>
-				<td>\(log.responseTime.map { $0.formatted(responseTimeFormat) + " ms" } ?? "")</td>
+				<td>\(log.response.map { $0.time.formatted(responseTimeFormat) + " ms" } ?? "")</td>
 			</tr>
 		</table>
 
@@ -93,10 +94,10 @@ actor LogController {
 		\(log.response.map { response in
 			"""
 			<h3>Headers</h3>
-			\(map(response.headers))
+			\(map(response.httpResponse.headers))
 
 			<h3>Body</h3>
-			\(map(response.body, contentHeader: response.headers.firstHeader(named: "content-type")))
+			\(map(response.httpResponse.body, contentHeader: response.httpResponse.headers.firstHeader(named: "content-type")))
 			"""
 		} ?? "<p>No response</p>")
 		""")
@@ -107,8 +108,8 @@ actor LogController {
 			<tr>
 				<td>\(summary.requestMethod)</td>
 				<td>\(summary.path)</td>
-				<td>\(summary.responseStatus.map {"\($0)"} ?? "No response")</td>
-				<td style="text-align: right">\(summary.responseTime.map { $0.formatted(responseTimeFormat) + " ms" } ?? "")</td>
+				<td>\(summary.response.map {"\($0.status)"} ?? "No response")</td>
+				<td style="text-align: right">\(summary.response.map { $0.time.formatted(responseTimeFormat) + " ms" } ?? "")</td>
 				<td>\(summary.host)</td>
 				<td><a href="/\(summary.id)">Details</a></td>
 			</tr>

@@ -4,6 +4,7 @@ import FzkExtensions
 import Logging
 import NIO
 import OAuth2Models
+import TunnelLogModels
 public import TunnelModels
 import WebSocket
 import WebSocketKit

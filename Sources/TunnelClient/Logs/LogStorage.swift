@@ -2,6 +2,7 @@ import Common
 public import Foundation
 import Logging
 import System
+public import TunnelLogModels
 import TunnelModels
 public import WebURL
 import WebURLFoundationExtras
@@ -139,15 +140,17 @@ public actor LogStorage {
 				log.requestBody = .separate(filename: tempLog.requestStream.pathComponents.last!)
 			}
 		}
-		if let size = size(of: tempLog.responseStream) {
+		if let size = size(of: tempLog.responseStream), var response = log.response {
+			defer { log.response = response }
+
 			hadUpdate = true
 			if size <= maxInlinedFileSize {
-				log.responseBody = .included
-				let contentType = log.response?.headers.firstHeader(named: "content-type")
-				log.response?.body = try consumeTemporaryFile(at: tempLog.responseStream, contentType: contentType)
+				response.body = .included
+				let contentType = response.httpResponse.headers.firstHeader(named: "content-type")
+				response.httpResponse.body = try consumeTemporaryFile(at: tempLog.responseStream, contentType: contentType)
 			} else {
 				// Maybe rename the file to have reasonable extension based on content-type?
-				log.responseBody = .separate(filename: tempLog.responseStream.pathComponents.last!)
+				response.body = .separate(filename: tempLog.responseStream.pathComponents.last!)
 			}
 		}
 
@@ -236,8 +239,8 @@ public actor LogStorage {
 	private func deleteOldLogs() {
 		do {
 			let expirationDate = Date(timeIntervalSinceNow: -84_600)
-			let toDelete = summaries.filter { $0.responseSent ?? $0.requestReceived < expirationDate }
-			summaries = summaries.filter { expirationDate <= $0.responseSent ?? $0.requestReceived }
+			let toDelete = summaries.filter { $0.response?.sent ?? $0.requestReceived < expirationDate }
+			summaries = summaries.filter { expirationDate <= $0.response?.sent ?? $0.requestReceived }
 
 			for log in toDelete {
 				let logFolder = storagePath.appending(path: [log.id.uuidString])
