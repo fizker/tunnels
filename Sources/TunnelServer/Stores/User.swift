@@ -1,7 +1,7 @@
 import Foundation
 import Vapor
 
-struct User: Codable, Equatable, Authenticatable {
+struct User: Codable, Equatable, Sendable, Authenticatable {
 	typealias ID = String
 
 	var id: ID { username }

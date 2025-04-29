@@ -3,7 +3,7 @@ import TunnelModels
 import Vapor
 import WebSocket
 
-struct TunnelDTO: Codable {
+struct TunnelDTO: Codable, Sendable {
 	var host: String
 
 	init(host: String) {
