@@ -52,6 +52,7 @@ actor UserStore {
 
 	private let storagePath: String?
 	private var data: UserData
+	private let fm: FileManager = .default
 
 	/// Creates a new UserData instance.
 	///
@@ -61,7 +62,7 @@ actor UserStore {
 
 		var data: UserData? = nil
 		if let storagePath {
-			data = try Self.load(path: storagePath, coder: coder)
+			data = try Self.load(fileManager: fm, path: storagePath, coder: coder)
 		}
 
 		self.data = data ?? UserData(logins:
@@ -80,9 +81,7 @@ actor UserStore {
 		}
 	}
 
-	private static let fm: FileManager = .default
-
-	private static func load(path: String, coder: Coder) throws -> UserData? {
+	private static func load(fileManager fm: FileManager, path: String, coder: Coder) throws -> UserData? {
 		guard let data = fm.contents(atPath: path)
 		else { return nil }
 
@@ -96,7 +95,7 @@ actor UserStore {
 		removeExpiredLogins()
 
 		let data = try coder.encode(data)
-		guard Self.fm.createFile(atPath: storagePath, contents: data)
+		guard fm.createFile(atPath: storagePath, contents: data)
 		else { throw Error.failedToStoreData }
 	}
 
