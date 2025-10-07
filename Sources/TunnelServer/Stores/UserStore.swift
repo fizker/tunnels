@@ -193,6 +193,21 @@ actor UserStore {
 	}
 }
 
+extension UserStore.Error: AbortError {
+	var status: HTTPResponseStatus {
+		switch self {
+		case .usernameExists, .cannotRemoveLastSysadmin, .cannotRemoveLastAdmin, .adminsCannotRemoveSysadmin:
+			.badRequest
+		case .failedToStoreData:
+			.internalServerError
+		}
+	}
+
+	var reason: String {
+		self.rawValue
+	}
+}
+
 private struct UserStoreStorageKey: StorageKey {
 	typealias Value = UserStore
 }
