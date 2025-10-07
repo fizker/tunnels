@@ -39,7 +39,7 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 		try await acmeController.addCertificate(to: app)
 
 		if let httpPort = app.environment.httpPort {
-			let upgradeServer = UpgradeServer(port: httpPort) {
+			let upgradeServer = try await UpgradeServer(port: httpPort) {
 				$0.hasSuffix(app.environment.host) ? .accepted(port: env.port) : .rejected
 			}
 
