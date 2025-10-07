@@ -38,7 +38,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 		let clientRequest = HTTPRequest(
 			host: host,
 			path: request.url.description,
-			method: request.method.string,
+			method: request.method.rawValue,
 			headers: headers,
 			body: .stream
 		)
