@@ -32,9 +32,9 @@ extension EnvironmentVariables where Key == EnvVar {
 		}
 	}
 
-	var userStoragePath: String {
-		get throws {
-			try get(.userStoragePath)
+	var userStoragePath: String? {
+		get {
+			try? get(.userStoragePath)
 		}
 	}
 

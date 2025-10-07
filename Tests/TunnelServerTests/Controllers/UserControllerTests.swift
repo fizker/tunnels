@@ -1,6 +1,7 @@
 import Testing
 @testable import TunnelServer
 import Vapor
+import VaporTesting
 
 // This hangs if it is not serialized
 @Suite(.serialized)
@@ -351,23 +352,35 @@ struct UserControllerTests {
 
 	@Test
 	func removeUser__userExists_userHasSysadminScope_lastUserWithSysadminScope__throws_usersAreUnchanged() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+		try await withApp { app in
+			try await configure(app, env: .empty)
 
-		#expect(users.filter { $0.scopes.contains(.sysadmin) }.count == 1)
-		guard let adminUser = users.first(where: { $0.scopes.contains(.sysadmin) })
-		else { return }
+			let users = await app.userStore.users(includeSysAdmin: true)
 
-		let request = try removeRequest(username: adminUser.username, loggedInUser: Self.sysadminUser)
+			let adminUser = try #require(users.first(where: { $0.scopes.contains(.sysadmin) }))
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
+				#expect(res.status == .badRequest)
+				#expect(error.reason == .cannotRemoveLastSysadmin)
+			}
 
-		await #expect(throws: UserStore.Error.cannotRemoveLastSysadmin) {
-			try await controller.removeUser(usernameParam: usernameParam)
+			let updatedUsers = await app.userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
 		}
+	}
 
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+	func authHeader(for user: User, in app: Application, headers: HTTPHeaders = [:]) async throws -> HTTPHeaders {
+		let login = Login(user: user)
+		try await app.userStore.add(login)
+
+		let response = login.accessTokenResponse(type: .bearer)
+
+		var headers = headers
+		headers.add(name: "authorization", value: "\(response.type) \(response.accessToken)")
+
+		return headers
 	}
 
 	func removeRequest(username: String, loggedInUser: User = adminUser) throws -> Request {

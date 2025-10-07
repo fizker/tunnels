@@ -37,7 +37,7 @@ struct Login: Codable {
 
 actor UserStore {
 	let coder = Coder()
-	enum Error: Swift.Error {
+	enum Error: String, Swift.Error, Codable {
 		case usernameExists
 		case cannotRemoveLastSysadmin
 		case cannotRemoveLastAdmin
