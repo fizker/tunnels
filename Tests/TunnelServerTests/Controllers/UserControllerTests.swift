@@ -6,8 +6,8 @@ import VaporTesting
 // This hangs if it is not serialized
 @Suite(.serialized)
 struct UserControllerTests {
-	static let adminUser = User(username: "admin", password: "1234", scopes: [.admin])
-	static let sysadminUser = User(username: "sys", password: "1234", scopes: [.sysadmin])
+	let adminUsername = "admin"
+	let sysadminUsername = "sys"
 
 	@Test
 	func upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
@@ -16,7 +16,7 @@ struct UserControllerTests {
 			let userStore = app.userStore
 			var users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let adminUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: adminUser, in: app)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [])
@@ -41,7 +41,7 @@ struct UserControllerTests {
 			let userStore = app.userStore
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let adminUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: adminUser, in: app)
 
 			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
@@ -65,7 +65,7 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let currentUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let currentUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: currentUser, in: app)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
@@ -89,7 +89,7 @@ struct UserControllerTests {
 
 			var users = await userStore.users(includeSysAdmin: true)
 
-			let sysadminUser = try #require(users.first { $0.username == Self.sysadminUser.username })
+			let sysadminUser = try #require(users.first { $0.username == sysadminUsername })
 			let headers = try await authHeader(for: sysadminUser, in: app)
 
 			let expectedUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
@@ -119,7 +119,7 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let adminUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: adminUser, in: app)
 
 			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
@@ -203,7 +203,7 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let adminUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: adminUser, in: app)
 
 			let request = UpsertUserRequest(username: "foo2", scopes: nil, password: nil)
@@ -416,7 +416,7 @@ struct UserControllerTests {
 			try await userStore.upsert(user: newUser, oldUsername: "foo")
 			let users = await userStore.users(includeSysAdmin: true)
 
-			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let adminUser = try #require(users.first { $0.username == adminUsername })
 			let headers = try await authHeader(for: adminUser, in: app)
 
 			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
