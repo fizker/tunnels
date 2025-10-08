@@ -234,7 +234,9 @@ struct UserControllerTests {
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
 			let headers = try await authHeader(for: adminUser, in: app)
 
-			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+			let nonExistingUser = User(username: "foo", password: "")
+
+			try await app.testing().test(.DELETE, nonExistingUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -253,9 +255,10 @@ struct UserControllerTests {
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
 			let headers = try await authHeader(for: adminUser, in: app)
 
-			try await userStore.upsert(user: User(username: "foo", password: "bar"), oldUsername: "foo")
+			let newUser = User(username: "foo", password: "bar")
+			try await userStore.upsert(user: newUser, oldUsername: "foo")
 
-			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -274,9 +277,10 @@ struct UserControllerTests {
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
 			let headers = try await authHeader(for: adminUser, in: app)
 
-			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
+			let newUser = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: newUser, oldUsername: "foo")
 
-			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -298,7 +302,7 @@ struct UserControllerTests {
 			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
 			var usersWithNewAdmin = await userStore.users(includeSysAdmin: true)
 
-			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+			try await app.testing().test(.DELETE, adminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -320,7 +324,7 @@ struct UserControllerTests {
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
 			let headers = try await authHeader(for: adminUser, in: app)
 
-			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+			try await app.testing().test(.DELETE, adminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .badRequest)
 				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
 				#expect(error.reason == .cannotRemoveLastAdmin)
@@ -344,7 +348,7 @@ struct UserControllerTests {
 			let sysadminUser = try #require(users.first { $0.scopes.contains(.sysadmin) })
 			let headers = try await authHeader(for: sysadminUser, in: app)
 
-			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+			try await app.testing().test(.DELETE, adminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -360,13 +364,14 @@ struct UserControllerTests {
 			try await configure(app, env: .empty)
 			let userStore = app.userStore
 
-			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
+			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
+			try await userStore.upsert(user: newUser, oldUsername: "foo")
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
 			let headers = try await authHeader(for: adminUser, in: app)
 
-			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
 				#expect(res.status == .init(statusCode: 403))
 				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
 				#expect(error.reason == .adminsCannotRemoveSysadmin)
@@ -394,7 +399,7 @@ struct UserControllerTests {
 			var usersWithNewSysadmin = await userStore.users(includeSysAdmin: true)
 			#expect(users != usersWithNewSysadmin)
 
-			try await app.testing().test(.DELETE, "/users/\(sysadmin.username)", headers: headers) { res in
+			try await app.testing().test(.DELETE, sysadmin.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -416,12 +421,13 @@ struct UserControllerTests {
 			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
 			let headers = try await authHeader(for: sysadmin, in: app)
 
-			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
+			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
+			try await userStore.upsert(user: newUser, oldUsername: "foo")
 
 			let usersWithNewSysadmin = await userStore.users(includeSysAdmin: true)
 			#expect(users != usersWithNewSysadmin)
 
-			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
 			}
 
@@ -441,7 +447,7 @@ struct UserControllerTests {
 			let sysadminUser = try #require(users.first(where: { $0.scopes.contains(.sysadmin) }))
 			let headers = try await authHeader(for: sysadminUser, in: app)
 
-			try await app.testing().test(.DELETE, "/users/\(sysadminUser.username)", headers: headers) { res in
+			try await app.testing().test(.DELETE, sysadminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .badRequest)
 				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
 				#expect(error.reason == .cannotRemoveLastSysadmin)
@@ -498,4 +504,8 @@ struct UserControllerTests {
 		let data = try JSONEncoder().encode(value)
 		return ByteBuffer(data: data)
 	}
+}
+
+extension User {
+	var apiPath: String { "users/\(username)" }
 }
