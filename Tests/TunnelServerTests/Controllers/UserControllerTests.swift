@@ -226,128 +226,208 @@ struct UserControllerTests {
 
 	@Test
 	func removeUser__nonExistingUser__doesNotThrow_usersAreUnchanged() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			let users = await userStore.users(includeSysAdmin: true)
 
-		let request = try removeRequest(username: "foo")
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
 
-		try await controller.removeUser(usernameParam: usernameParam)
-
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
 	}
 
 	@Test
 	func removeUser__userExists_userHasNoScope__userIsRemoved() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			let users = await userStore.users(includeSysAdmin: true)
 
-		try await userStore.upsert(user: User(username: "foo", password: "bar"), oldUsername: "foo")
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let request = try removeRequest(username: "foo")
+			try await userStore.upsert(user: User(username: "foo", password: "bar"), oldUsername: "foo")
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
 
-		try await controller.removeUser(usernameParam: usernameParam)
-
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
 	}
 
 	@Test
-	func removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope__userIsRemoved() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+	func removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope_otherAdminIsTarget__userIsRemoved() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			let users = await userStore.users(includeSysAdmin: true)
 
-		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let request = try removeRequest(username: "foo")
+			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
 
-		try await controller.removeUser(usernameParam: usernameParam)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
+	}
 
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+	@Test
+	func removeUser__userExists_userHasAdminScope_multipleUsersWithAdminScope_selfIsTarget__userIsRemoved() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			let users = await userStore.users(includeSysAdmin: true)
+
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
+
+			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
+			var usersWithNewAdmin = await userStore.users(includeSysAdmin: true)
+
+			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
+
+			usersWithNewAdmin.removeAll { $0.username == adminUser.username }
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(usersWithNewAdmin == updatedUsers)
+		}
 	}
 
 	@Test
 	func removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsAdmin__throws_usersAreUnchanged() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+		try await withApp { app in
+			try await configure(app, env: .empty)
 
-		#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
-		guard let adminUser = users.first(where: { $0.scopes.contains(.admin) })
-		else { return }
+			let userStore = app.userStore
+			let users = await userStore.users(includeSysAdmin: true)
 
-		let request = try removeRequest(username: adminUser.username)
+			#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+				#expect(res.status == .badRequest)
+				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
+				#expect(error.reason == .cannotRemoveLastAdmin)
+			}
 
-		await #expect(throws: UserStore.Error.cannotRemoveLastAdmin) {
-			try await controller.removeUser(usernameParam: usernameParam)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
 		}
-
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
 	}
 
 	@Test
 	func removeUser__userExists_userHasAdminScope_lastUserWithAdminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		var users = await userStore.users(includeSysAdmin: true)
+		try await withApp { app in
+			try await configure(app, env: .empty)
 
-		#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
-		guard let adminUser = users.first(where: { $0.scopes.contains(.admin) })
-		else { return }
+			let userStore = app.userStore
+			var users = await userStore.users(includeSysAdmin: true)
 
-		let request = try removeRequest(username: adminUser.username, loggedInUser: Self.sysadminUser)
+			#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let sysadminUser = try #require(users.first { $0.scopes.contains(.sysadmin) })
+			let headers = try await authHeader(for: sysadminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
 
-		try await controller.removeUser(usernameParam: usernameParam)
-
-		users.removeAll { $0.scopes.contains(.admin) }
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+			users.removeAll { $0.scopes.contains(.admin) }
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
 	}
 
 	@Test
 	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsAdmin__throwsError_usersAreUnchanged() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
-		let users = await userStore.users(includeSysAdmin: true)
+			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
+			let users = await userStore.users(includeSysAdmin: true)
 
-		let request = try removeRequest(username: "foo", loggedInUser: Self.adminUser)
+			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+				#expect(res.status == .init(statusCode: 403))
+				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
+				#expect(error.reason == .adminsCannotRemoveSysadmin)
+			}
 
-		await #expect(throws: UserStore.Error.adminsCannotRemoveSysadmin) {
-			try await controller.removeUser(usernameParam: usernameParam)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
 		}
-
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
 	}
 
 	@Test
-	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin__userIsRemoved() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users(includeSysAdmin: true)
+	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin_currentUserIsTarget__userIsRemoved() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
 
-		try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
+			let userStore = app.userStore
 
-		let request = try removeRequest(username: "foo", loggedInUser: Self.sysadminUser)
+			let users = await userStore.users(includeSysAdmin: true)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
+			let headers = try await authHeader(for: sysadmin, in: app)
 
-		try await controller.removeUser(usernameParam: usernameParam)
+			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
 
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+			var usersWithNewSysadmin = await userStore.users(includeSysAdmin: true)
+			#expect(users != usersWithNewSysadmin)
+
+			try await app.testing().test(.DELETE, "/users/\(sysadmin.username)", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
+
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			usersWithNewSysadmin.removeAll { $0.username == sysadmin.username }
+			#expect(usersWithNewSysadmin == updatedUsers)
+		}
+	}
+
+	@Test
+	func removeUser__userExists_userHasSysadminScope_multipleUsersWithSysadminScope_loggedInUserIsSysadmin_otherSysadminIsTarget__userIsRemoved() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+
+			let userStore = app.userStore
+
+			let users = await userStore.users(includeSysAdmin: true)
+
+			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
+			let headers = try await authHeader(for: sysadmin, in: app)
+
+			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
+
+			let usersWithNewSysadmin = await userStore.users(includeSysAdmin: true)
+			#expect(users != usersWithNewSysadmin)
+
+			try await app.testing().test(.DELETE, "/users/foo", headers: headers) { res in
+				#expect(res.status == .noContent)
+			}
+
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
 	}
 
 	@Test
@@ -357,12 +437,13 @@ struct UserControllerTests {
 
 			let users = await app.userStore.users(includeSysAdmin: true)
 
-			let adminUser = try #require(users.first(where: { $0.scopes.contains(.sysadmin) }))
-			let headers = try await authHeader(for: adminUser, in: app)
+			#expect(users.filter { $0.scopes.contains(.sysadmin) }.count == 1)
+			let sysadminUser = try #require(users.first(where: { $0.scopes.contains(.sysadmin) }))
+			let headers = try await authHeader(for: sysadminUser, in: app)
 
-			try await app.test(.DELETE, "/users/\(adminUser.username)", headers: headers) { res in
-				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
+			try await app.testing().test(.DELETE, "/users/\(sysadminUser.username)", headers: headers) { res in
 				#expect(res.status == .badRequest)
+				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
 				#expect(error.reason == .cannotRemoveLastSysadmin)
 			}
 
@@ -381,10 +462,6 @@ struct UserControllerTests {
 		headers.add(name: "authorization", value: "\(response.type) \(response.accessToken)")
 
 		return headers
-	}
-
-	func removeRequest(username: String, loggedInUser: User = adminUser) throws -> Request {
-		return try request(method: .DELETE, body: nil, parameters: [usernameParam: username], loggedInUser: loggedInUser)
 	}
 
 	func upsertUserRequest(username: String, scopes: Set<User.Scope>?, password: String?, oldUsername: String? = nil, loggedInUser: User = adminUser) throws -> Request {

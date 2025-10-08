@@ -196,8 +196,10 @@ actor UserStore {
 extension UserStore.Error: AbortError {
 	var status: HTTPResponseStatus {
 		switch self {
-		case .usernameExists, .cannotRemoveLastSysadmin, .cannotRemoveLastAdmin, .adminsCannotRemoveSysadmin:
+		case .usernameExists, .cannotRemoveLastSysadmin, .cannotRemoveLastAdmin:
 			.badRequest
+		case .adminsCannotRemoveSysadmin:
+			.init(statusCode: 403)
 		case .failedToStoreData:
 			.internalServerError
 		}
