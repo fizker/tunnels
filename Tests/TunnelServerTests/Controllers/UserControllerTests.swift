@@ -6,222 +6,270 @@ import VaporTesting
 // This hangs if it is not serialized
 @Suite(.serialized)
 struct UserControllerTests {
-	let usernameParam = "username"
 	static let adminUser = User(username: "admin", password: "1234", scopes: [.admin])
 	static let sysadminUser = User(username: "sys", password: "1234", scopes: [.sysadmin])
 
 	@Test
 	func upsertUser__insertingNewUser_passwordPresent_scopeMissing_usernameIsNotColliding__userIsInserted() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		var users = await userStore.users()
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			var users = await userStore.users()
 
-		let request = try upsertUserRequest(username: "foo", scopes: nil, password: "bar")
+			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+			let newUser = User(username: "foo", password: "bar", scopes: [])
+			let request = UpsertUserRequest(username: "foo", scopes: nil, password: "bar")
 
-		#expect(result == User(username: "foo", password: "bar", scopes: []))
-		users.append(result)
-		let updatedUsers = await userStore.users()
-		#expect(updatedUsers == users)
+			try await app.testing().test(.PUT, "/users/foo", headers: headers, body: request) { res in
+				#expect(res.status == .ok)
+
+				let result = try res.content.decode(User.self)
+				#expect(result == newUser)
+				users.append(result)
+				let updatedUsers = await userStore.users()
+				#expect(updatedUsers == users)
+			}
+		}
 	}
 
 	@Test
 	func upsertUser__insertingNewUser_passwordIsMissing_scopeMissing_usernameIsNotColliding__errorThrown_userIsNotInserted() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		let users = await userStore.users()
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			let users = await userStore.users()
 
-		let request = try upsertUserRequest(username: "foo", scopes: nil, password: nil)
+			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
 
-		await #expect {
-			try await controller.upsertUser(usernameParam: usernameParam)
-		} throws: { error in
-			guard let error = error as? any AbortError
-			else { throw error }
+			try await app.testing().test(.PUT, "/users/foo", headers: headers, body: request) { res in
+				#expect(res.status == .badRequest)
+				let error = try res.content.decode(VaporErrorResponse<String>.self)
+				#expect(error.reason == "New users must have a password")
+			}
 
-			#expect(error.status == .badRequest)
-			#expect(error.reason == "New users must have a password")
-			return true
+			let updatedUsers = await userStore.users()
+			#expect(updatedUsers == users)
 		}
-
-		let updatedUsers = await userStore.users()
-		#expect(updatedUsers == users)
 	}
 
 	@Test
 	func upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotInserted() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		let users = await userStore.users()
+			let users = await userStore.users()
 
-		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar", loggedInUser: Self.adminUser)
+			let currentUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: currentUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
 
-		await #expect {
-			try await controller.upsertUser(usernameParam: usernameParam)
-		} throws: { error in
-			guard let error = error as? any AbortError
-			else { throw error }
+			let request = UpsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar")
 
-			#expect(error.status == .forbidden)
-			return true
+			try await app.testing().test(.PUT, newUser.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .forbidden)
+			}
+
+			let updatedUsers = await userStore.users()
+			#expect(users == updatedUsers)
 		}
-
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
 	}
 
 	@Test
 	func upsertUser__insertingNewUser_addingSysadminScope_loggedInUserIsSysadmin__userIsInserted() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		var users = await userStore.users(includeSysAdmin: true)
+			var users = await userStore.users(includeSysAdmin: true)
 
-		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar", loggedInUser: Self.sysadminUser)
+			let sysadminUser = try #require(users.first { $0.username == Self.sysadminUser.username })
+			let headers = try await authHeader(for: sysadminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let expectedUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
+			let request = UpsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar")
 
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+			try await app.testing().test(.PUT, expectedUser.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .ok)
 
-		#expect(result == User(username: "foo", password: "bar", scopes: [.sysadmin]))
+				let result = try res.content.decode(User.self)
+				#expect(result == expectedUser)
 
-		users.append(result)
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+				users.append(result)
+				let updatedUsers = await userStore.users(includeSysAdmin: true)
+				#expect(users == updatedUsers)
+			}
+		}
 	}
 
 	@Test
-	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__userIsUnchanged() async throws {
-		let userStore = try UserStore(storagePath: nil)
+	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsNotChanged__200IsReturned_userIsUnchanged() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
 
-		let users = await userStore.users()
-		let request = try upsertUserRequest(username: "foo", scopes: nil, password: nil)
+			let users = await userStore.users()
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
 
-		#expect(user == result)
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .ok)
 
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
+				let result = try res.content.decode(User.self)
+				#expect(user == result)
+
+				let updatedUsers = await userStore.users()
+				#expect(users == updatedUsers)
+			}
+		}
 	}
 
 	@Test
 	func upsertUser__updatingExistingUser_passwordIsDifferent_scopeIsDifferent_usernameIsNotChanged__userIsUpdated() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		var users = await userStore.users()
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			var users = await userStore.users()
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let request = try upsertUserRequest(username: "foo", scopes: [], password: "baz")
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo", scopes: [], password: "baz")
 
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .ok)
 
-		#expect(User(username: "foo", password: "baz") == result)
-		users.append(result)
+				let result = try res.content.decode(User.self)
+				#expect(User(username: "foo", password: "baz") == result)
+				users.append(result)
 
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
+				let updatedUsers = await userStore.users()
+				#expect(users == updatedUsers)
+			}
+		}
 	}
 
 	@Test
 	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsNotColliding__userIsUpdated() async throws {
-		let userStore = try UserStore(storagePath: nil)
-		var users = await userStore.users()
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
+			var users = await userStore.users()
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
+			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let request = try upsertUserRequest(username: "foo2", scopes: nil, password: nil, oldUsername: "foo")
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo2", scopes: nil, password: nil)
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .ok)
 
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+				let result = try res.content.decode(User.self)
+				#expect(User(username: "foo2", password: "bar", scopes: [.admin]) == result)
 
-		#expect(User(username: "foo2", password: "bar", scopes: [.admin]) == result)
-
-		users.append(result)
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
+				users.append(result)
+				let updatedUsers = await userStore.users()
+				#expect(users == updatedUsers)
+			}
+		}
 	}
 
 	@Test
 	func upsertUser__updatingExistingUser_passwordIsMissing_scopeMissing_usernameIsChanged_usernameIsColliding__errorThrown_userIsNotUpdated() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
-		try await userStore.upsert(user: User(username: "foo2", password: "baz"), oldUsername: "foo2")
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
+			try await userStore.upsert(user: User(username: "foo2", password: "baz"), oldUsername: "foo2")
 
-		let users = await userStore.users()
+			let users = await userStore.users()
 
-		let request = try upsertUserRequest(username: "foo2", scopes: nil, password: nil, oldUsername: "foo")
+			let adminUser = try #require(users.first { $0.username == Self.adminUser.username })
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo2", scopes: nil, password: nil)
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .badRequest)
+				let error = try res.content.decode(VaporErrorResponse<UserStore.Error>.self)
+				#expect(error.reason == .usernameExists)
+			}
 
-		await #expect(throws: UserStore.Error.usernameExists) {
-			try await controller.upsertUser(usernameParam: usernameParam)
+			let updatedUsers = await userStore.users()
+			#expect(users == updatedUsers)
 		}
-
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
 	}
 
 	@Test
 	func upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsNotSysadmin__throwsError_userIsNotUpdated() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
+			let maybeAdminUser = await userStore.users().first { $0.scopes.contains(.admin) }
+			let adminUser = try #require(maybeAdminUser)
+			let headers = try await authHeader(for: adminUser, in: app)
 
-		let users = await userStore.users()
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
 
-		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil, loggedInUser: Self.adminUser)
+			let users = await userStore.users()
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil)
 
-		await #expect { try await controller.upsertUser(usernameParam: usernameParam) } throws: { error in
-			guard let error = error as? any AbortError
-			else { throw error }
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .init(statusCode: 403))
+			}
 
-			#expect(error.status == .forbidden)
-			return true
+			let updatedUsers = await userStore.users()
+			#expect(users == updatedUsers)
 		}
-
-		let updatedUsers = await userStore.users()
-		#expect(users == updatedUsers)
 	}
 
 	@Test
 	func upsertUser__updatingExistingUser_addingSysadminScope_loggedInUserIsSysadmin__userIsUpdated() async throws {
-		let userStore = try UserStore(storagePath: nil)
+		try await withApp { app in
+			try await configure(app, env: .empty)
+			let userStore = app.userStore
 
-		var users = await userStore.users(includeSysAdmin: true)
+			var users = await userStore.users(includeSysAdmin: true)
 
-		let user = User(username: "foo", password: "bar", scopes: [.admin])
-		try await userStore.upsert(user: user, oldUsername: "foo")
+			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
+			let headers = try await authHeader(for: sysadmin, in: app)
 
-		let request = try upsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil, loggedInUser: Self.sysadminUser)
+			let user = User(username: "foo", password: "bar", scopes: [.admin])
+			try await userStore.upsert(user: user, oldUsername: "foo")
 
-		let controller = try UserController(request: request, userStore: userStore)
+			let request = UpsertUserRequest(username: "foo", scopes: [.sysadmin], password: nil)
 
-		let result = try await controller.upsertUser(usernameParam: usernameParam)
+			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
+				#expect(res.status == .ok)
+				let result = try res.content.decode(User.self)
+				#expect(result == User(username: "foo", password: "bar", scopes: [.sysadmin]))
+				users.append(result)
+			}
 
-		#expect(result == User(username: "foo", password: "bar", scopes: [.sysadmin]))
-
-		users.append(result)
-		let updatedUsers = await userStore.users(includeSysAdmin: true)
-		#expect(users == updatedUsers)
+			let updatedUsers = await userStore.users(includeSysAdmin: true)
+			#expect(users == updatedUsers)
+		}
 	}
 
 	@Test
@@ -469,43 +517,42 @@ struct UserControllerTests {
 
 		return headers
 	}
-
-	func upsertUserRequest(username: String, scopes: Set<User.Scope>?, password: String?, oldUsername: String? = nil, loggedInUser: User = adminUser) throws -> Request {
-		let upsertRequest = UpsertUserRequest(username: username, scopes: scopes, password: password)
-		return try request(method: .PUT, body: upsertRequest, parameters: [usernameParam: oldUsername ?? username], loggedInUser: loggedInUser)
-	}
-
-	private func request(method: HTTPMethod, body: (any Encodable)?, parameters: [String: String] = [:], loggedInUser: User) throws -> Request {
-		var headers = HTTPHeaders()
-		let buffer = try body.map(encode)
-		if buffer != nil {
-			headers.add(name: "content-type", value: "application/json")
-		}
-
-		let app = Application()
-		let request = Request(
-			application: app,
-			method: method,
-			url: "",
-			headers: headers,
-			collectedBody: buffer,
-			on: app.eventLoopGroup.any()
-		)
-		request.parameters = Parameters()
-		for (key, value) in parameters {
-			request.parameters.set(key, to: value)
-		}
-		request.auth.login(loggedInUser)
-
-		return request
-	}
-
-	func encode(_ value: any Encodable) throws -> ByteBuffer {
-		let data = try JSONEncoder().encode(value)
-		return ByteBuffer(data: data)
-	}
 }
 
 extension User {
 	var apiPath: String { "users/\(username)" }
+}
+
+extension TestingApplicationTester {
+	@discardableResult
+	func test(
+		_ method: HTTPMethod,
+		_ path: String,
+		headers: HTTPHeaders = .init([]),
+		body: some Encodable,
+		fileID: String = #fileID,
+		filePath: String = #filePath,
+		line: Int = #line,
+		column: Int = #column,
+		afterResponse: (TestingHTTPResponse) async throws -> ()
+	) async throws -> any TestingApplicationTester {
+		let encoder = JSONEncoder()
+		let data = try encoder.encode(body)
+
+		var headers = headers
+		headers.add(name: "content-type", value: "application/json")
+
+		return try await self.test(
+			method,
+			path,
+			headers: headers,
+			body: .init(data: data),
+			fileID: fileID,
+			filePath: filePath,
+			line: line,
+			column: column,
+			beforeRequest: { _ in },
+			afterResponse: afterResponse
+		)
+	}
 }
