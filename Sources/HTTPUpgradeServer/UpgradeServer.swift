@@ -9,14 +9,14 @@ public actor UpgradeServer {
 
 	public private(set) var app: Application
 
-	public init(port: Int = 80, requestUpgrade: @escaping UpgradeRequest) {
+	public init(port: Int = 80, requestUpgrade: @escaping UpgradeRequest) async throws {
 		var env = Environment(name: "upgrade")
 
 		env.arguments.append("serve")
 		env.arguments.append("--port")
 		env.arguments.append("\(port)")
 
-		self.app = Application(env)
+		self.app = try await Application.make(env)
 
 		app.http.server.configuration.hostname = "0.0.0.0"
 

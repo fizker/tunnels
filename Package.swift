@@ -237,7 +237,10 @@ func testTargets() -> [Target] {
 		),
 		.testTarget(
 			name: "TunnelServerTests",
-			dependencies: ["TunnelServer"],
+			dependencies: [
+				"TunnelServer",
+				.product(name: "VaporTesting", package: "vapor"),
+			],
 			swiftSettings: upcomingFeatures
 		),
 		.testTarget(

@@ -1,7 +1,7 @@
 public import AcmeSwift
 import Foundation
 
-extension AcmeEndpoint: @retroactive Equatable, Codable {
+extension AcmeEndpoint: @retroactive Equatable, @retroactive Codable {
 	public init(from decoder: any Swift.Decoder) throws {
 		let url = try URL(from: decoder)
 

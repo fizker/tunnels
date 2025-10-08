@@ -92,7 +92,7 @@ class AuthController {
 	}
 }
 
-extension ClientCredentials: Content {
+extension ClientCredentials: @retroactive Content {
 }
 
 extension Request {

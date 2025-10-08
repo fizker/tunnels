@@ -37,7 +37,7 @@ struct Login: Codable {
 
 actor UserStore {
 	let coder = Coder()
-	enum Error: Swift.Error {
+	enum Error: String, Swift.Error, Codable {
 		case usernameExists
 		case cannotRemoveLastSysadmin
 		case cannotRemoveLastAdmin
@@ -190,6 +190,23 @@ actor UserStore {
 		}
 
 		try upsert(user: user, oldUsername: user.username)
+	}
+}
+
+extension UserStore.Error: AbortError {
+	var status: HTTPResponseStatus {
+		switch self {
+		case .usernameExists, .cannotRemoveLastSysadmin, .cannotRemoveLastAdmin:
+			.badRequest
+		case .adminsCannotRemoveSysadmin:
+			.init(statusCode: 403)
+		case .failedToStoreData:
+			.internalServerError
+		}
+	}
+
+	var reason: String {
+		self.rawValue
 	}
 }
 
