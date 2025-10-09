@@ -34,7 +34,7 @@ let package = Package(
 		.package(url: "https://github.com/karwa/swift-url.git", .upToNextMinor(from: "0.4.2")),
 		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta6"),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.29.0"),
-//		.package(url: "https://github.com/vapor/vapor.git", from: "4.114.1"),
+//		.package(url: "https://github.com/vapor/vapor.git", from: "4.117.0"),
 		.package(url: "https://github.com/fizker/vapor.git", branch: "make-RouteNotFound-public"),
 		.package(url: "https://github.com/vapor/websocket-kit.git", from: "2.16.1"),
 	],
