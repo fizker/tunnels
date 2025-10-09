@@ -51,8 +51,9 @@ struct User: Codable, Equatable, Sendable, Authenticatable {
 		}
 	}
 
-	enum Scope: String, Codable, CustomStringConvertible, Comparable {
+	enum Scope: String, CaseIterable, Codable, CustomStringConvertible, Comparable {
 		case admin, sysadmin
+		case setupRead
 
 		var description: String {
 			rawValue
@@ -60,11 +61,15 @@ struct User: Codable, Equatable, Sendable, Authenticatable {
 
 		static func <(lhs: Scope, rhs: Scope) -> Bool {
 			switch (lhs, rhs) {
-			case (.admin, .admin), (.sysadmin, .sysadmin):
+			case (.admin, .admin), (.sysadmin, .sysadmin), (.setupRead, .setupRead):
 				false
 			case (.admin, .sysadmin):
 				false
 			case (.sysadmin, .admin):
+				true
+			case (.setupRead, .admin), (.setupRead, .sysadmin):
+				false
+			case (.admin, .setupRead), (.sysadmin, .setupRead):
 				true
 			}
 		}
