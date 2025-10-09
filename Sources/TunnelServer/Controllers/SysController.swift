@@ -1,4 +1,6 @@
 import ACME
+import Common
+import Crypto
 import Vapor
 
 class SysController {
@@ -18,11 +20,29 @@ class SysController {
 		self.userStore = userStore
 	}
 
-	func setup() async -> Setup {
-		return .init(
-			users: await userStore.users(),
+	func setup() async throws -> Response {
+		let setup = Setup(
+			users: await userStore.users(includeSysAdmin: true),
 			acmeData: await acmeHandler?.acmeData,
 			acmeSetup: await acmeHandler?.setup,
+		)
+
+		let coder = Coder()
+		let data = try coder.encode(setup)
+
+		var digester = SHA256()
+		digester.update(data: data)
+		let digest = digester.finalize()
+
+		let etag = #""\#(digest.hex)""#
+
+		if request.headers.first(name: "etag") == etag {
+			return Response(status: .notModified)
+		}
+
+		return Response(
+			headers: ["content-type": "application/json", "etag":etag],
+			body: .init(data: data),
 		)
 	}
 }

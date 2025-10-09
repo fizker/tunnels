@@ -100,3 +100,13 @@ extension User {
 		try container.encode(knownHosts.sorted(), forKey: .knownHosts)
 	}
 }
+
+extension User: Hashable {
+	func hash(into hasher: inout Hasher) {
+		username.hash(into: &hasher)
+		password.hash(into: &hasher)
+		scopes.hash(into: &hasher)
+		clientSecret.hash(into: &hasher)
+		hostMap.hash(into: &hasher)
+	}
+}
