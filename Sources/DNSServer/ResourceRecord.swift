@@ -108,16 +108,17 @@ package struct ResourceRecord: Equatable {
 	/// | MX			| 15		| mail exchange									|
 	/// | TXT			| 16		| text strings									|
 	enum `Type`: Equatable {
+		enum Obsolete: Equatable {
+			/// MD, Obsolete, use ``mailExchange`` (MX)
+			case mailDestination
+			/// MF, Obsolete, use ``mailExchange`` (MX)
+			case mailForwarder
+		}
+
 		/// A
 		case hostAddress
 		/// NS
 		case authoritativeNameServer
-		/// MD, Obsolete, use ``mailExchange`` (MX)
-		@available(*, deprecated, renamed: "mailExchange", message: "Obsolete")
-		case mailDestination
-		/// MF, Obsolete, use ``mailExchange`` (MX)
-		@available(*, deprecated, renamed: "mailExchange", message: "Obsolete")
-		case mailForwarder
 		/// CNAME
 		case canonicalName
 		/// SOA
@@ -143,13 +144,14 @@ package struct ResourceRecord: Equatable {
 		/// TXT
 		case textStrings
 		case unknown(UInt16)
+		case obsolete(Obsolete)
 
 		init(_ value: UInt16) {
 			switch value {
 			case 1: self = .hostAddress
 			case 2: self = .authoritativeNameServer
-			case 3: self = .mailDestination
-			case 4: self = .mailForwarder
+			case 3: self = .obsolete(.mailDestination)
+			case 4: self = .obsolete(.mailForwarder)
 			case 5: self = .canonicalName
 			case 6: self = .zoneOfAuthority
 			case 7: self = .mailboxDomainName
@@ -170,8 +172,8 @@ package struct ResourceRecord: Equatable {
 			switch self {
 			case .hostAddress: 1
 			case .authoritativeNameServer: 2
-			case .mailDestination: 3
-			case .mailForwarder: 4
+			case .obsolete(.mailDestination): 3
+			case .obsolete(.mailForwarder): 4
 			case .canonicalName: 5
 			case .zoneOfAuthority: 6
 			case .mailboxDomainName: 7

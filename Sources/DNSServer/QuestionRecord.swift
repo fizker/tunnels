@@ -106,16 +106,19 @@ struct QuestionRecord: Equatable {
 	/// | MAILA		| 254		| A request for mail agent RRs (Obsolete - see MX)		|
 	/// | \*			| 255		| A request for all records							|
 	enum `Type`: Equatable {
+		enum Obsolete: Equatable {
+			/// MD, Obsolete, use ``mailExchange`` (MX)
+			case mailDestination
+			/// MF, Obsolete, use ``mailExchange`` (MX)
+			case mailForwarder
+			/// MAILA, Obsolete, use ``mailExchange`` (MX)
+			case mailAgentResourceRecords
+		}
+
 		/// A
 		case hostAddress
 		/// NS
 		case authoritativeNameServer
-		/// MD, Obsolete, use ``mailExchange`` (MX)
-		@available(*, deprecated, renamed: "mailExchange", message: "Obsolete")
-		case mailDestination
-		/// MF, Obsolete, use ``mailExchange`` (MX)
-		@available(*, deprecated, renamed: "mailExchange", message: "Obsolete")
-		case mailForwarder
 		/// CNAME
 		case canonicalName
 		/// SOA
@@ -144,18 +147,16 @@ struct QuestionRecord: Equatable {
 		case transferRequest
 		/// MAILB
 		case mailboxRelatedRecords
-		/// MAILA, Obsolete, use ``mailExchange`` (MX)
-		@available(*, deprecated, renamed: "mailExchange", message: "Obsolete")
-		case mailAgentResourceRecords
 		case allRecords
 		case unknown(UInt16)
+		case obsolete(Obsolete)
 
 		init(_ value: UInt16) {
 			switch value {
 			case 1: self = .hostAddress
 			case 2: self = .authoritativeNameServer
-			case 3: self = .mailDestination
-			case 4: self = .mailForwarder
+			case 3: self = .obsolete(.mailDestination)
+			case 4: self = .obsolete(.mailForwarder)
 			case 5: self = .canonicalName
 			case 6: self = .zoneOfAuthority
 			case 7: self = .mailboxDomainName
@@ -170,7 +171,7 @@ struct QuestionRecord: Equatable {
 			case 16: self = .textStrings
 			case 252: self = .transferRequest
 			case 253: self = .mailboxRelatedRecords
-			case 254: self = .mailAgentResourceRecords
+			case 254: self = .obsolete(.mailAgentResourceRecords)
 			case 255: self = .allRecords
 			default: self = .unknown(value)
 			}
@@ -180,8 +181,8 @@ struct QuestionRecord: Equatable {
 			switch self {
 			case .hostAddress: 1
 			case .authoritativeNameServer: 2
-			case .mailDestination: 3
-			case .mailForwarder: 4
+			case .obsolete(.mailDestination): 3
+			case .obsolete(.mailForwarder): 4
 			case .canonicalName: 5
 			case .zoneOfAuthority: 6
 			case .mailboxDomainName: 7
@@ -196,7 +197,7 @@ struct QuestionRecord: Equatable {
 			case .textStrings: 16
 			case .transferRequest: 252
 			case .mailboxRelatedRecords: 253
-			case .mailAgentResourceRecords: 254
+			case .obsolete(.mailAgentResourceRecords): 254
 			case .allRecords: 255
 			case let .unknown(value): value
 			}
