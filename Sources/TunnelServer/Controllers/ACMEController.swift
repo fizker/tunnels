@@ -56,10 +56,10 @@ class ACMEController {
 		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard setup.endpoint.asAcmeSwiftEndpoint == acmeData.endpoint
+			guard setup.endpoint == acmeData.endpoint
 			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: setup.endpoint.asAcmeSwiftEndpoint)
+			acmeData = .init(endpoint: setup.endpoint)
 		}
 	}
 
@@ -103,7 +103,7 @@ class ACMEController {
 	/// Requests a new certificate from Let's Encrypt
 	private func requestNewCertificate() async throws -> ACMEData.CertWrapper {
 		// Create the client and load Let's Encrypt credentials
-		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
+		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint.asAcmeSwiftEndpoint)
 		defer { try? acme.syncShutdown() }
 
 		try await loadAccount(acme: acme)

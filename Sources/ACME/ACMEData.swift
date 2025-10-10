@@ -1,4 +1,3 @@
-package import AcmeSwift
 package import Foundation
 package import NIOSSL
 package import X509
@@ -7,11 +6,11 @@ package import X509
 ///
 /// It is also used to store the certificates produced by LetsEncrypt.
 package struct ACMEData: Codable, Equatable {
-	package var endpoint: AcmeEndpoint
+	package var endpoint: ACMEEndpoint
 	package var accountKey: String?
 	package var certificates: CertWrapper?
 
-	package init(endpoint: AcmeEndpoint, accountKey: String? = nil, certificates: CertWrapper? = nil) {
+	package init(endpoint: ACMEEndpoint, accountKey: String? = nil, certificates: CertWrapper? = nil) {
 		self.endpoint = endpoint
 		self.accountKey = accountKey
 		self.certificates = certificates

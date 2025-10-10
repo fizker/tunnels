@@ -28,10 +28,10 @@ package actor ACMEHandler {
 		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard setup.endpoint.asAcmeSwiftEndpoint == acmeData.endpoint
+			guard setup.endpoint == acmeData.endpoint
 			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: setup.endpoint.asAcmeSwiftEndpoint)
+			acmeData = .init(endpoint: setup.endpoint)
 		}
 
 		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")

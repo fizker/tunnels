@@ -1,5 +1,3 @@
-package import AcmeSwift
-
 package struct ACMESetup: Codable, Equatable {
 	package var host: String
 	package var endpoint: ACMEEndpoint
@@ -15,7 +13,7 @@ package struct ACMESetup: Codable, Equatable {
 
 	package enum Error: Swift.Error, CustomStringConvertible {
 		/// Thrown during initialization if the existing data located at ``Setup/storagePath`` does not match ``endpoint``.
-		case differentEndpointInStoredData(AcmeEndpoint)
+		case differentEndpointInStoredData(ACMEEndpoint)
 
 		package var description: String {
 			switch self {

@@ -16,26 +16,18 @@ extension ACMEEndpoint: Codable {
 
 		do {
 			let container = try decoder.container(keyedBy: CodingKeys.self)
-			var allKeys = ArraySlice(container.allKeys)
-			guard let onlyKey = allKeys.popFirst(), allKeys.isEmpty
-			else {
-				throw DecodingError.typeMismatch(
-					ACMEEndpoint.self,
-					DecodingError.Context.init(
-						codingPath: container.codingPath,
-						debugDescription: "Invalid number of keys found, expected one.",
-						underlyingError: nil,
-					)
-				)
-			}
-
 			rawValue = try container.decode(URL.self, forKey: .relative)
 		} catch {
 			let container = try decoder.singleValueContainer()
 			rawValue = try container.decode(URL.self)
 		}
 
-		self = try Self.init(rawValue: rawValue).unwrap()
+		self = try Self.init(rawValue: rawValue).unwrap(orThrow: DecodingError.dataCorrupted(
+			.init(
+				codingPath: [],
+				debugDescription: "Unsupported URL: \(rawValue)"
+			))
+		)
 	}
 
 	package func encode(to encoder: any Encoder) throws {
