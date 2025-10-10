@@ -4,6 +4,11 @@ import helpers
 import Testing
 
 struct ACMESetupTests {
+	static let endpointsAndValues: [(ACMEEndpoint, String)] = [
+		(.letsEncryptV2Production, "https://acme-v02.api.letsencrypt.org/directory"),
+		(.letsEncryptV2Staging, "https://acme-staging-v02.api.letsencrypt.org/directory"),
+	]
+
 	@Test
 	func encode__outputsExpectedJSON() async throws {
 		let setup = ACMESetup(
@@ -24,11 +29,6 @@ struct ACMESetupTests {
 		}
 		""")
 	}
-
-	static let endpointsAndValues: [(ACMEEndpoint, String)] = [
-		(.letsEncryptV2Production, "https://acme-v02.api.letsencrypt.org/directory"),
-		(.letsEncryptV2Staging, "https://acme-staging-v02.api.letsencrypt.org/directory"),
-	]
 
 	@Test(arguments: endpointsAndValues)
 	func initWithDecoder__AcmeSwiftStyleJSON__parsesJSONCorrectly(expectedEndpoint: ACMEEndpoint, url: String) async throws {

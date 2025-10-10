@@ -6,7 +6,7 @@ package import X509
 /// Top-level container for the data produced by communication to the LetsEncrypt ACME service.
 ///
 /// It is also used to store the certificates produced by LetsEncrypt.
-package struct ACMEData: Codable {
+package struct ACMEData: Codable, Equatable {
 	package var endpoint: AcmeEndpoint
 	package var accountKey: String?
 	package var certificates: CertWrapper?
@@ -18,7 +18,7 @@ package struct ACMEData: Codable {
 	}
 
 	/// Wrapper around a set of certificates and the private key used to create them.
-	package struct CertWrapper: Codable {
+	package struct CertWrapper: Codable, Equatable {
 		/// The certificates.
 		package var certificates: CertificateDataArray
 		/// The private key used to create the certificates.
