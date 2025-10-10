@@ -8,7 +8,7 @@ struct ACMESetupTests {
 	func encode__outputsExpectedJSON() async throws {
 		let setup = ACMESetup(
 			host: "example.com",
-			endpoint: .letsEncrypt,
+			endpoint: .letsEncryptV2Production,
 			contactEmail: "contact@example.com",
 			storagePath: "/some/path",
 		)
@@ -18,22 +18,25 @@ struct ACMESetupTests {
 		#expect(json == """
 		{
 		  "contactEmail" : "contact@example.com",
-		  "endpoint" : {
-		    "relative" : "https://acme-v02.api.letsencrypt.org/directory"
-		  },
+		  "endpoint" : "https://acme-v02.api.letsencrypt.org/directory",
 		  "host" : "example.com",
 		  "storagePath" : "/some/path"
 		}
 		""")
 	}
 
-	@Test
-	func initWithDecoder__parsesJSONCorrectly() async throws {
+	static let endpointsAndValues: [(ACMEEndpoint, String)] = [
+		(.letsEncryptV2Production, "https://acme-v02.api.letsencrypt.org/directory"),
+		(.letsEncryptV2Staging, "https://acme-staging-v02.api.letsencrypt.org/directory"),
+	]
+
+	@Test(arguments: endpointsAndValues)
+	func initWithDecoder__AcmeSwiftStyleJSON__parsesJSONCorrectly(expectedEndpoint: ACMEEndpoint, url: String) async throws {
 		let json = """
 		{
 		  "contactEmail" : "contact@example.com",
 		  "endpoint" : {
-		    "relative" : "https://acme-v02.api.letsencrypt.org/directory"
+		    "relative" : "\(url)"
 		  },
 		  "host" : "example.com",
 		  "storagePath" : "/some/path"
@@ -44,7 +47,30 @@ struct ACMESetupTests {
 
 		let expected = ACMESetup(
 			host: "example.com",
-			endpoint: .letsEncrypt,
+			endpoint: expectedEndpoint,
+			contactEmail: "contact@example.com",
+			storagePath: "/some/path",
+		)
+
+		#expect(actual == expected)
+	}
+
+	@Test(arguments: endpointsAndValues)
+	func initWithDecoder__nativeStyleJSON__parsesJSONCorrectly(expectedEndpoint: ACMEEndpoint, url: String) async throws {
+		let json = """
+		{
+		  "contactEmail" : "contact@example.com",
+		  "endpoint" : "\(url)",
+		  "host" : "example.com",
+		  "storagePath" : "/some/path"
+		}
+		"""
+
+		let actual = try decode(json) as ACMESetup
+
+		let expected = ACMESetup(
+			host: "example.com",
+			endpoint: expectedEndpoint,
 			contactEmail: "contact@example.com",
 			storagePath: "/some/path",
 		)

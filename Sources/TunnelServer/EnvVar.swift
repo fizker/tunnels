@@ -1,4 +1,4 @@
-import AcmeSwift
+import ACME
 import EnvironmentVariables
 import Vapor
 
@@ -50,14 +50,14 @@ extension EnvironmentVariables where Key == EnvVar {
 		}
 	}
 
-	var acmeEndpoint: AcmeEndpoint {
+	var acmeEndpoint: ACMEEndpoint {
 		get throws {
 			try get(.acmeEndpoint) {
 				switch $0 {
 				case "production":
-					.letsEncrypt
+					.letsEncryptV2Production
 				case "staging":
-					.letsEncryptStaging
+					.letsEncryptV2Staging
 				default:
 					nil
 				}

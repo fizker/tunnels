@@ -2,11 +2,11 @@ package import AcmeSwift
 
 package struct ACMESetup: Codable, Equatable {
 	package var host: String
-	package var endpoint: AcmeEndpoint
+	package var endpoint: ACMEEndpoint
 	package var contactEmail: String
 	package var storagePath: String
 
-	package init(host: String, endpoint: AcmeEndpoint, contactEmail: String, storagePath: String) {
+	package init(host: String, endpoint: ACMEEndpoint, contactEmail: String, storagePath: String) {
 		self.host = host
 		self.endpoint = endpoint
 		self.contactEmail = contactEmail

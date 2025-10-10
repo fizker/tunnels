@@ -56,10 +56,10 @@ class ACMEController {
 		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard setup.endpoint == acmeData.endpoint
+			guard setup.endpoint.asAcmeSwiftEndpoint == acmeData.endpoint
 			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: setup.endpoint)
+			acmeData = .init(endpoint: setup.endpoint.asAcmeSwiftEndpoint)
 		}
 	}
 

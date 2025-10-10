@@ -28,10 +28,10 @@ package actor ACMEHandler {
 		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard setup.endpoint == acmeData.endpoint
+			guard setup.endpoint.asAcmeSwiftEndpoint == acmeData.endpoint
 			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
 		} else {
-			acmeData = .init(endpoint: setup.endpoint)
+			acmeData = .init(endpoint: setup.endpoint.asAcmeSwiftEndpoint)
 		}
 
 		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")
@@ -104,7 +104,7 @@ package actor ACMEHandler {
 			accountKey = try await generateAccountKey()
 		}
 
-		let generator = try await LetsEncryptGenerator(domains: domains, endpoint: setup.endpoint)
+		let generator = try await LetsEncryptGenerator(domains: domains, endpoint: setup.endpoint.asAcmeSwiftEndpoint)
 		let pendingChallenges = try await generator.createPendingChallenges(setup: setup, accountKey: accountKey)
 
 		let bundle = ChallengeBundle(domains: domains, challenges: pendingChallenges)
@@ -147,7 +147,7 @@ package actor ACMEHandler {
 	private func generateAccountKey() async throws -> String {
 		let setup = self.setup
 		let accountKey = try await Task.detached {
-			let acme = try await AcmeSwift(acmeEndpoint: setup.endpoint)
+			let acme = try await AcmeSwift(acmeEndpoint: setup.endpoint.asAcmeSwiftEndpoint)
 			let account = try await acme.account.create(contacts: [setup.contactEmail], acceptTOS: true)
 			try acme.account.use(account)
 			return account.privateKeyPem!
