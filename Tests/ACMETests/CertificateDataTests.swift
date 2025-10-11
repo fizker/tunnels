@@ -124,8 +124,7 @@ struct CertificateDataTests {
 			false
 		),
 	])
-	func coversDomains__includesWildcards__matchesCorrectly(test: (lhs: [String], rhs: [String], expected: Bool)) async throws {
-		let (lhs, rhs, expected) = test
+	func coversDomains__includesWildcards__matchesCorrectly(lhs: [String], rhs: [String], expected: Bool) async throws {
 		let data = CertificateData(domains: lhs, certificate: testCert, isSelfSigned: true)
 		let actual = data.covers(domains: rhs)
 		#expect(actual == expected)
