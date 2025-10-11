@@ -1,7 +1,7 @@
 package import Foundation
 import FzkExtensions
 
-package enum ACMEEndpoint: Equatable, Sendable {
+package enum ACMEEndpoint: Equatable, Hashable, Sendable {
 	case letsEncryptV2Production
 	case letsEncryptV2Staging
 }

@@ -1,4 +1,4 @@
-package struct ACMESetup: Codable, Equatable {
+package struct ACMESetup: Codable, Equatable, Hashable {
 	package var host: String
 	package var endpoint: ACMEEndpoint
 	package var contactEmail: String
