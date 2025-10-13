@@ -51,7 +51,9 @@ final class DeferredTests: XCTestCase {
 
 		events.append("resolving")
 		deferred.resolve("foo")
+		try await waitToStabilize()
 		deferred.resolve("bar")
+		try await waitToStabilize()
 
 		let firstActual = try await deferred.value
 		let secondActual = try await deferred.value
@@ -105,7 +107,9 @@ final class DeferredTests: XCTestCase {
 
 		events.append("resolving")
 		deferred.resolve("foo")
+		try await waitToStabilize()
 		deferred.reject()
+		try await waitToStabilize()
 
 		let actual = try await deferred.value
 		events.append("after await")
@@ -120,7 +124,9 @@ final class DeferredTests: XCTestCase {
 
 		events.append("resolving")
 		deferred.reject()
+		try await waitToStabilize()
 		deferred.resolve("foo")
+		try await waitToStabilize()
 
 		do {
 			_ = try await deferred.value
@@ -173,5 +179,10 @@ final class DeferredTests: XCTestCase {
 
 		let e = await events.events
 		XCTAssertEqual(e, ["start", "requesting value", "resolving", "error caught"])
+	}
+
+	/// `deferred.resolve()`/`deferred.reject()` is running in a Task, and we want to ensure that it has a chance to complete
+	func waitToStabilize() async throws {
+		try await Task.sleep(for: .milliseconds(10))
 	}
 }
