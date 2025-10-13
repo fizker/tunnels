@@ -1,7 +1,7 @@
 package import Foundation
 package import X509
 
-package struct CertificateData: Codable {
+package struct CertificateData: Codable, Equatable, Hashable {
 	/// The certificate.
 	package let certificate: Certificate
 
@@ -63,7 +63,7 @@ extension CertificateData {
 	}
 }
 
-package struct CertificateDataArray: Codable {
+package struct CertificateDataArray: Codable, Equatable, Hashable {
 	/// The certificates.
 	package let certificates: [CertificateData]
 

@@ -103,7 +103,7 @@ class ACMEController {
 	/// Requests a new certificate from Let's Encrypt
 	private func requestNewCertificate() async throws -> ACMEData.CertWrapper {
 		// Create the client and load Let's Encrypt credentials
-		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint)
+		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint.asAcmeSwiftEndpoint)
 		defer { try? acme.syncShutdown() }
 
 		try await loadAccount(acme: acme)

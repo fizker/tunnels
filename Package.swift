@@ -189,10 +189,19 @@ func executableTargets() -> [Target] {
 // MARK: Test targets
 func testTargets() -> [Target] {
 	[
+		.target(
+			name: "helpers",
+			dependencies: [
+				"Common",
+				.product(name: "FzkExtensions", package: "swift-extensions"),
+			],
+			path: "Tests/helpers",
+		),
 		.testTarget(
 			name: "ACMETests",
 			dependencies: [
-				"ACME"
+				"ACME",
+				"helpers",
 			],
 			swiftSettings: upcomingFeatures
 		),

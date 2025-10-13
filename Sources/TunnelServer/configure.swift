@@ -15,7 +15,7 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 	app.environment = env
 
-	app.userStore = try .init(storagePath: try app.environment.userStoragePath)
+	app.userStore = try .init(storagePath: app.environment.userStoragePath)
 
 	if app.environment.useSSL {
 		let setup = ACMESetup(
