@@ -1,49 +1,41 @@
-import XCTest
-import XCTVapor
+import Testing
+import VaporTesting
 @testable import DebugServer
 
-final class BigFileTests: XCTestCase {
-	func test__reasonablyBigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		let app = try await Application.make(.testing)
-		defer { Task {
-			try await app.asyncShutdown()
-		} }
+struct BigFileTests {
+	@Test
+	func reasonablyBigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
+		try await withApp(configure: DebugServer.configure) { app in
+			let size = 123_456
 
-		try await DebugServer.configure(app)
+			let path = "big-file?size=\(size)"
+			try await app.test(.GET, path) { res async throws in
+				var body = res.body
+				let data = body.readData(length: body.readableBytes)!
+				#expect(data.count == size)
 
-		let size = 123_456
-
-		let path = "big-file?size=\(size)"
-		try await app.test(.GET, path) { res async throws in
-			var body = res.body
-			let data = body.readData(length: body.readableBytes)!
-			XCTAssertEqual(data.count, size)
-
-			let actualDigest = SHA256.hash(data: data)
-			let expectedDigest = res.headers.first(name: "x-digest-value")
-			XCTAssertEqual(expectedDigest, actualDigest.hex)
+				let actualDigest = SHA256.hash(data: data)
+				let expectedDigest = res.headers.first(name: "x-digest-value")
+				#expect(expectedDigest == actualDigest.hex)
+			}
 		}
 	}
 
-	func test__10mb_bigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		let app = try await Application.make(.testing)
-		defer { Task {
-			try await app.asyncShutdown()
-		} }
+	@Test
+	func bigFileRequests_10mb__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
+		try await withApp(configure: DebugServer.configure) { app in
+			let size = 10_000_000
 
-		try await DebugServer.configure(app)
+			let path = "big-file?size=\(size)"
+			try await app.test(.GET, path) { res async throws in
+				var body = res.body
+				let data = body.readData(length: body.readableBytes)!
+				#expect(data.count == size)
 
-		let size = 10_000_000
-
-		let path = "big-file?size=\(size)"
-		try await app.test(.GET, path) { res async throws in
-			var body = res.body
-			let data = body.readData(length: body.readableBytes)!
-			XCTAssertEqual(data.count, size)
-
-			let actualDigest = SHA256.hash(data: data)
-			let expectedDigest = res.headers.first(name: "x-digest-value")
-			XCTAssertEqual(expectedDigest, actualDigest.hex)
+				let actualDigest = SHA256.hash(data: data)
+				let expectedDigest = res.headers.first(name: "x-digest-value")
+				#expect(expectedDigest == actualDigest.hex)
+			}
 		}
 	}
 }

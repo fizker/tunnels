@@ -1,7 +1,7 @@
-import XCTest
+import Testing
 @testable import Common
 
-final class DeferredTests: XCTestCase {
+struct DeferredTests {
 	actor Events {
 		var events: [String]
 
@@ -14,7 +14,8 @@ final class DeferredTests: XCTestCase {
 		}
 	}
 
-	func test__resolve__singleResolve_syncResolve__resolvesAsExpected() async throws {
+	@Test
+	func resolve__singleResolve_syncResolve__resolvesAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -24,11 +25,12 @@ final class DeferredTests: XCTestCase {
 
 		let actual = try await deferred.value
 		events.append("after await")
-		XCTAssertEqual("foo", actual)
-		XCTAssertEqual(events, ["start", "resolving", "after await"])
+		#expect("foo" == actual)
+		#expect(events == ["start", "resolving", "after await"])
 	}
 
-	func test__value__singleResolve_syncResolve_multipleValue__returnsTheSameValueEveryTime() async throws {
+	@Test
+	func value__singleResolve_syncResolve_multipleValue__returnsTheSameValueEveryTime() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -39,12 +41,13 @@ final class DeferredTests: XCTestCase {
 		let firstActual = try await deferred.value
 		let secondActual = try await deferred.value
 		events.append("after await")
-		XCTAssertEqual("foo", firstActual)
-		XCTAssertEqual("foo", secondActual)
-		XCTAssertEqual(events, ["start", "resolving", "after await"])
+		#expect("foo" == firstActual)
+		#expect("foo" == secondActual)
+		#expect(events == ["start", "resolving", "after await"])
 	}
 
-	func test__resolve__multipleResolve_syncResolve__resolvesAsExpected() async throws {
+	@Test
+	func resolve__multipleResolve_syncResolve__resolvesAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -58,12 +61,13 @@ final class DeferredTests: XCTestCase {
 		let firstActual = try await deferred.value
 		let secondActual = try await deferred.value
 		events.append("after await")
-		XCTAssertEqual("foo", firstActual)
-		XCTAssertEqual("foo", secondActual)
-		XCTAssertEqual(events, ["start", "resolving", "after await"])
+		#expect("foo" == firstActual)
+		#expect("foo" == secondActual)
+		#expect(events == ["start", "resolving", "after await"])
 	}
 
-	func test__reject__singleReject_sync__rejectsAsExpected() async throws {
+	@Test
+	func reject__singleReject_sync__rejectsAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -73,15 +77,16 @@ final class DeferredTests: XCTestCase {
 
 		do {
 			_ = try await deferred.value
-			XCTFail()
+			#expect(Bool(false))
 		} catch DeferredError.rejected {
 			events.append("error caught")
 		}
 
-		XCTAssertEqual(events, ["start", "resolving", "error caught"])
+		#expect(events == ["start", "resolving", "error caught"])
 	}
 
-	func test__reject__multipleReject_sync__rejectsAsExpected() async throws {
+	@Test
+	func reject__multipleReject_sync__rejectsAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -92,15 +97,16 @@ final class DeferredTests: XCTestCase {
 
 		do {
 			_ = try await deferred.value
-			XCTFail()
+			#expect(Bool(false))
 		} catch DeferredError.rejected {
 			events.append("error caught")
 		}
 
-		XCTAssertEqual(events, ["start", "resolving", "error caught"])
+		#expect(events == ["start", "resolving", "error caught"])
 	}
 
-	func test__resolve__rejectAfterResolve_sync__resolvesAsExpected() async throws {
+	@Test
+	func resolve__rejectAfterResolve_sync__resolvesAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -113,11 +119,12 @@ final class DeferredTests: XCTestCase {
 
 		let actual = try await deferred.value
 		events.append("after await")
-		XCTAssertEqual("foo", actual)
-		XCTAssertEqual(events, ["start", "resolving", "after await"])
+		#expect("foo" == actual)
+		#expect(events == ["start", "resolving", "after await"])
 	}
 
-	func test__reject__resolveAfterReject_sync__rejectsAsExpected() async throws {
+	@Test
+	func reject__resolveAfterReject_sync__rejectsAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		var events = ["start"]
@@ -130,16 +137,16 @@ final class DeferredTests: XCTestCase {
 
 		do {
 			_ = try await deferred.value
-			#warning("TODO: This was seen failing, probably because reject() runs in a Task {}, and thus might not resolve first in this test")
-			XCTFail()
+			#expect(Bool(false))
 		} catch DeferredError.rejected {
 			events.append("error caught")
 		}
 
-		XCTAssertEqual(events, ["start", "resolving", "error caught"])
+		#expect(events == ["start", "resolving", "error caught"])
 	}
 
-	func test__resolve__valueRequestedBeforeResolve__resolvesAsExpected() async throws {
+	@Test
+	func resolve__valueRequestedBeforeResolve__resolvesAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		let events = Events(["start"])
@@ -155,10 +162,11 @@ final class DeferredTests: XCTestCase {
 		await events.append("value fetched")
 
 		let e = await events.events
-		XCTAssertEqual(e, ["start", "requesting value", "resolving", "value fetched"])
+		#expect(e == ["start", "requesting value", "resolving", "value fetched"])
 	}
 
-	func test__reject__valueRequestedBeforeRejection__resolvesAsExpected() async throws {
+	@Test
+	func reject__valueRequestedBeforeRejection__resolvesAsExpected() async throws {
 		let deferred = Deferred(becoming: String.self)
 
 		let events = Events(["start"])
@@ -172,13 +180,13 @@ final class DeferredTests: XCTestCase {
 		await events.append("requesting value")
 		do {
 			_ = try await deferred.value
-			XCTFail()
+			#expect(Bool(false))
 		} catch DeferredError.rejected {
 			await events.append("error caught")
 		}
 
 		let e = await events.events
-		XCTAssertEqual(e, ["start", "requesting value", "resolving", "error caught"])
+		#expect(e == ["start", "requesting value", "resolving", "error caught"])
 	}
 
 	/// `deferred.resolve()`/`deferred.reject()` is running in a Task, and we want to ensure that it has a chance to complete

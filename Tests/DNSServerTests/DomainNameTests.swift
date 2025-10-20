@@ -1,22 +1,24 @@
-import XCTest
 import Binary
 import Foundation
+import Testing
 @testable import DNSServer
 
-final class DomainNameTests: XCTestCase {
-	func test__initWithIterator__validDomainName__dataIsParsedCorrectly() throws {
+struct DomainNameTests {
+	@Test
+	func initWithIterator__validDomainName__dataIsParsedCorrectly() throws {
 		let input: [UInt32] = [ 0x0667_6f6f, 0x676c_6503, 0x636f_6d00 ]
 		var iterator = BitIterator(input)
 
 		let domainName = try DomainName(iterator: &iterator)
 
-		XCTAssertEqual(domainName.components, ["google", "com"])
-		XCTAssertEqual(domainName.value, "google.com")
+		#expect(domainName.components == ["google", "com"])
+		#expect(domainName.value == "google.com")
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
-	func test__initWithIterator__contentIsCompressed__dataIsParsedCorrectly() throws {
+	@Test
+	func initWithIterator__contentIsCompressed__dataIsParsedCorrectly() throws {
 		let expected = DomainName(components: [
 			// 0x67 0x6f 0x6f 0x67 0x6c 0x65
 			"google",
@@ -40,15 +42,17 @@ final class DomainNameTests: XCTestCase {
 		// Shifting iterator forward until the first name starts
 		_ = iterator.data(bytes: 12)
 
-		XCTAssertEqual(expected, try DomainName(iterator: &iterator))
+		var actual = try DomainName(iterator: &iterator)
+		#expect(expected == actual)
 
 		// Shift iterator again until the next name start, which is compressed
 		_ = iterator.data(bytes: 4)
 
-		XCTAssertEqual(expected, try DomainName(iterator: &iterator))
+		actual = try DomainName(iterator: &iterator)
+		#expect(expected == actual)
 
-		XCTAssertNotNil(iterator.data(bytes: 14))
-		XCTAssertNil(iterator.next())
+		#expect(nil != iterator.data(bytes: 14))
+		#expect(nil == iterator.next())
 	}
 
 	/// The following example is taken from https://www.rfc-editor.org/rfc/rfc1035.html#section-4.1.4
@@ -69,7 +73,8 @@ final class DomainNameTests: XCTestCase {
 	/// | 64 		| Bit(1) Bit(1)	Int14(26)	|
 	/// | 66 - 91	|	not specified for test	|
 	/// | 92 		|	Byte(0)			|
-	func test__initWithIterator__multipleLabelsGiven__parsesAllAsExpected() throws {
+	@Test
+	func initWithIterator__multipleLabelsGiven__parsesAllAsExpected() throws {
 		typealias A = [UInt8]
 		let input: A = A(repeating: 0xFF, count: 20) + [
 			1,			/*F*/70,
@@ -88,26 +93,30 @@ final class DomainNameTests: XCTestCase {
 			0
 		] as A
 
-		XCTAssertEqual(input.count, 93)
+		#expect(input.count == 93)
 
 		var iterator = BitIterator(input)
 		_ = iterator.byteIndex = 20
 
-		XCTAssertEqual(try DomainName(iterator: &iterator), DomainName(components: ["F", "ISI", "ARPA"]))
+		var actual = try DomainName(iterator: &iterator)
+		#expect(actual == DomainName(components: ["F", "ISI", "ARPA"]))
 
 		iterator.byteIndex = 40
-		XCTAssertEqual(try DomainName(iterator: &iterator), DomainName(components: ["FOO", "F", "ISI", "ARPA"]))
+		actual = try DomainName(iterator: &iterator)
+		#expect(actual == DomainName(components: ["FOO", "F", "ISI", "ARPA"]))
 
 		iterator.byteIndex = 64
-		XCTAssertEqual(try DomainName(iterator: &iterator), DomainName(components: ["ARPA"]))
+		actual = try DomainName(iterator: &iterator)
+		#expect(actual == DomainName(components: ["ARPA"]))
 	}
 
-	func test__asData__googleCom__encodesAsExpected() throws {
+	@Test
+	func asData__googleCom__encodesAsExpected() throws {
 		let domainName = DomainName(components: ["google", "com"])
 		let expected = Data([ 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00 ])
 
 		let actual = domainName.asData()
 
-		XCTAssertEqual(expected, actual)
+		#expect(expected == actual)
 	}
 }

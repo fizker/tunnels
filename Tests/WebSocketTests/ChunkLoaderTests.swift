@@ -1,9 +1,11 @@
 import Binary
-import XCTest
+import Foundation
+import Testing
 @testable import WebSocket
 
-final class ChunkLoaderTests: XCTestCase {
-	func test__add__singleChunk__loaderIsComplete() async throws {
+struct ChunkLoaderTests {
+	@Test
+	func add__singleChunk__loaderIsComplete() async throws {
 		let data = Data([
 			0xde, 0xad,
 			0xbe, 0xef,
@@ -12,11 +14,12 @@ final class ChunkLoaderTests: XCTestCase {
 		var chunkLoader = ChunkLoader(id: UUID())
 		try chunkLoader.add(chunk(index: 0, count: 1, data: data))
 
-		XCTAssertTrue(chunkLoader.isComplete)
-		assertEqual(chunkLoader.data, data)
+		#expect(chunkLoader.isComplete)
+		#expect(data.hexEncodedString() == chunkLoader.data?.hexEncodedString())
 	}
 
-	func test__add__twoChunks_chunksAreInOrder__loaderIsComplete() async throws {
+	@Test
+	func add__twoChunks_chunksAreInOrder__loaderIsComplete() async throws {
 		let data1 = Data([
 			0xde, 0xad,
 			0xbe, 0xef,
@@ -29,18 +32,19 @@ final class ChunkLoaderTests: XCTestCase {
 		])
 
 		var chunkLoader = ChunkLoader(id: UUID())
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 0, count: 2, data: data1))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 1, data: data2))
-		XCTAssertTrue(chunkLoader.isComplete)
+		#expect(chunkLoader.isComplete)
 
-		assertEqual(chunkLoader.data, data1 + data2)
+		#expect((data1 + data2).hexEncodedString() == chunkLoader.data?.hexEncodedString())
 	}
 
-	func test__add__multipleChunks_chunksAreInOrder__loaderIsComplete() async throws {
+	@Test
+	func add__multipleChunks_chunksAreInOrder__loaderIsComplete() async throws {
 		let data0 = Data([
 			0x01, 0x02,
 			0x03, 0x04,
@@ -65,23 +69,25 @@ final class ChunkLoaderTests: XCTestCase {
 		])
 
 		var chunkLoader = ChunkLoader(id: UUID())
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 0, count: 4, data: data0))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 1, data: data1))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 2, data: data2))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 3, data: data3))
-		XCTAssertTrue(chunkLoader.isComplete)
-		assertEqual(chunkLoader.data, data0 + data1 + data2 + data3)
+		#expect(chunkLoader.isComplete)
+
+		#expect((data0 + data1 + data2 + data3).hexEncodedString() == chunkLoader.data?.hexEncodedString())
 	}
 
-	func test__add__multipleChunks_chunksAreOutOfOrder__loaderIsComplete() async throws {
+	@Test
+	func add__multipleChunks_chunksAreOutOfOrder__loaderIsComplete() async throws {
 		let data0 = Data([
 			0x01, 0x02,
 			0x03, 0x04,
@@ -106,21 +112,21 @@ final class ChunkLoaderTests: XCTestCase {
 		])
 
 		var chunkLoader = ChunkLoader(id: UUID())
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 1, data: data1))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 3, data: data3))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 0, count: 4, data: data0))
-		XCTAssertFalse(chunkLoader.isComplete)
+		#expect(false == chunkLoader.isComplete)
 
 		try chunkLoader.add(chunk(index: 2, data: data2))
-		XCTAssertTrue(chunkLoader.isComplete)
+		#expect(chunkLoader.isComplete)
 
-		assertEqual(chunkLoader.data, data0 + data1 + data2 + data3)
+		#expect((data0 + data1 + data2 + data3).hexEncodedString() == chunkLoader.data?.hexEncodedString())
 	}
 
 	func chunk(index: UInt16, count: UInt16? = nil, data: Data) -> BitIterator {
@@ -131,9 +137,5 @@ final class ChunkLoaderTests: XCTestCase {
 		}
 		output.append(data)
 		return .init(output)
-	}
-
-	func assertEqual(_ first: Data?, _ second: Data?, file: StaticString = #filePath, line: UInt = #line) {
-		XCTAssertEqual(first, second, "\(first?.hexEncodedString() ?? "nil") -> \(second?.hexEncodedString() ?? "nil")", file: file, line: line)
 	}
 }

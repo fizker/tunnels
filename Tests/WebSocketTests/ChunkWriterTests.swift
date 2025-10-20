@@ -1,8 +1,9 @@
 import Binary
-import XCTest
+import Foundation
+import Testing
 @testable import WebSocket
 
-final class ChunkWriterTests: XCTestCase {
+struct ChunkWriterTests {
 	let uuidBytes: [UInt8] = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	let uuid = UUID(uuid: (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
@@ -11,7 +12,8 @@ final class ChunkWriterTests: XCTestCase {
 	/// Subsequent chunks have a header size of 18 bytes.
 	let maxChunkSize = 24
 
-	func test__initWithData__dataIsSmallerThanChunkSize__containsOneChunk() async throws {
+	@Test
+	func initWithData__dataIsSmallerThanChunkSize__containsOneChunk() async throws {
 		let data = Data([
 			0xde, 0xad,
 			0xbe, 0xef,
@@ -21,12 +23,13 @@ final class ChunkWriterTests: XCTestCase {
 
 		var iterator = writer.chunks.makeIterator()
 		var chunk = iterator.next()
-		XCTAssertEqual(chunk?.data(), self.chunk(index: 0, count: 1, data: data))
+		#expect(chunk?.data() == self.chunk(index: 0, count: 1, data: data))
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
-	func test__initWithData__dataRequiresTwoChunks_exactFit__containsExpectedChunks() async throws {
+	@Test
+	func initWithData__dataRequiresTwoChunks_exactFit__containsExpectedChunks() async throws {
 		let data = Data([
 			0xde, 0xad,
 			0xbe, 0xef,
@@ -53,10 +56,11 @@ final class ChunkWriterTests: XCTestCase {
 			0xee, 0xff,
 		])))
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
-	func test__initWithData__dataRequiresTwoChunks_lastChunkIsPartial__containsExpectedChunks() async throws {
+	@Test
+	func initWithData__dataRequiresTwoChunks_lastChunkIsPartial__containsExpectedChunks() async throws {
 		let data = Data([
 			0xde, 0xad,
 			0xbe, 0xef,
@@ -81,10 +85,11 @@ final class ChunkWriterTests: XCTestCase {
 			0xcc, 0xdd,
 		])))
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
-	func test__initWithData__dataRequiresMultipleChunks_exactFit__containsExpectedChunks() async throws {
+	@Test
+	func initWithData__dataRequiresMultipleChunks_exactFit__containsExpectedChunks() async throws {
 		let data = Data([
 			0x01, 0x02,
 			0x03, 0x04,
@@ -132,10 +137,11 @@ final class ChunkWriterTests: XCTestCase {
 			0x35, 0x36,
 		])))
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
-	func test__initWithData__dataRequiresMultipleChunks_lastChunkIsPartial__containsExpectedChunks() async throws {
+	@Test
+	func initWithData__dataRequiresMultipleChunks_lastChunkIsPartial__containsExpectedChunks() async throws {
 		let data = Data([
 			0x01, 0x02,
 			0x03, 0x04,
@@ -190,11 +196,11 @@ final class ChunkWriterTests: XCTestCase {
 			0x41, 0x42,
 		])))
 
-		XCTAssertNil(iterator.next())
+		#expect(nil == iterator.next())
 	}
 
 	func assertEqual(_ first: Data?, _ second: Data?, file: StaticString = #filePath, line: UInt = #line) {
-		XCTAssertEqual(first, second, "\(first?.hexEncodedString() ?? "nil") -> \(second?.hexEncodedString() ?? "nil")", file: file, line: line)
+		#expect(first?.hexEncodedString() == second?.hexEncodedString())
 	}
 
 	func chunk(index: UInt16, count: UInt16? = nil, data: Data) -> Data {

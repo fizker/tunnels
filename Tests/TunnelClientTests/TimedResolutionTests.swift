@@ -1,8 +1,9 @@
-import XCTest
+import Testing
 @testable import TunnelClient
 
-final class TimedResolutionTests: XCTestCase {
-	func test__resolve__resolvesBeforeTimeout__resultIsResolved() async throws {
+struct TimedResolutionTests {
+	@Test
+	func resolve__resolvesBeforeTimeout__resultIsResolved() async throws {
 		let (stream, continuation) = AsyncStream.makeStream(of: TestResult.self)
 		let timer = TimedResolution(timeout: .milliseconds(100)) { result in
 			continuation.yield(.resolved(result))
@@ -19,12 +20,13 @@ final class TimedResolutionTests: XCTestCase {
 
 		let result = await stream.first { _ in true }
 
-		XCTAssertEqual(result, .resolved(.resolved))
+		#expect(result == .resolved(.resolved))
 		let isResolved = await timer.isResolved
-		XCTAssertTrue(isResolved)
+		#expect(true == isResolved)
 	}
 
-	func test__resolve__resolvesAfterTimeout__resultIsTimedOut() async throws {
+	@Test
+	func resolve__resolvesAfterTimeout__resultIsTimedOut() async throws {
 		let (stream, continuation) = AsyncStream.makeStream(of: TestResult.self)
 		let timer = TimedResolution(timeout: .milliseconds(100)) { result in
 			continuation.yield(.resolved(result))
@@ -41,9 +43,9 @@ final class TimedResolutionTests: XCTestCase {
 
 		let result = await stream.first { _ in true }
 
-		XCTAssertEqual(result, .resolved(.timedOut))
+		#expect(result == .resolved(.timedOut))
 		let isResolved = await timer.isResolved
-		XCTAssertTrue(isResolved)
+		#expect(true == isResolved)
 	}
 
 	enum TestResult: Equatable {

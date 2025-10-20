@@ -211,7 +211,7 @@ func testTargets() -> [Target] {
 				"Common",
 				"DebugServer",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
-				.product(name: "XCTVapor", package: "vapor"),
+				.product(name: "VaporTesting", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures
 		),
@@ -231,7 +231,7 @@ func testTargets() -> [Target] {
 			name: "DebugServerTests",
 			dependencies: [
 				"DebugServer",
-				.product(name: "XCTVapor", package: "vapor"),
+				.product(name: "VaporTesting", package: "vapor"),
 			],
 			swiftSettings: upcomingFeatures
 		),

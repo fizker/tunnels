@@ -2,8 +2,8 @@ import AsyncHTTPClient
 import Common
 import Crypto
 import NIOCore
+import Testing
 import Vapor
-import XCTest
 
 /// # Note
 ///
@@ -11,13 +11,12 @@ import XCTest
 /// - `TunnelServer` must run on `localhost:8110`.
 /// - `DebugServer` must run.
 /// - `TunnelClient` must run against `TunnelServer` with `test.fizkerinc.dk` pointing to `DebugServer`.
-final class FullFlowTests: XCTestCase {
+@Suite(.serialized, .enabled(if: false))
+struct FullFlowTests {
 	let timeout: TimeAmount = .seconds(10)
-	let enabled = false
 
-	func test__DebugServer__catchAll__returnsExpectedBody() async throws {
-		try XCTSkipIf(!enabled)
-
+	@Test
+	func DebugServer__catchAll__returnsExpectedBody() async throws {
 		let client = HTTPClient()
 		defer { Task {
 			try? await client.shutdown()
@@ -26,15 +25,14 @@ final class FullFlowTests: XCTestCase {
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/foo")
 		let response = try await client.execute(request, timeout: timeout)
 
-		XCTAssertEqual(response.status, .ok)
+		#expect(response.status == .ok)
 		let data = try await readBody(from: response)
 		let value = data.flatMap { String(data: $0, encoding: .utf8) }
-		XCTAssertEqual(value, "Hello World at /foo")
+		#expect(value == "Hello World at /foo")
 	}
 
-	func test__DebugServer__redirect__redirectResponseIsReceivedCorrectly() async throws {
-		try XCTSkipIf(!enabled)
-
+	@Test
+	func DebugServer__redirect__redirectResponseIsReceivedCorrectly() async throws {
 		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
 		defer { Task {
 			try? await client.shutdown()
@@ -43,16 +41,15 @@ final class FullFlowTests: XCTestCase {
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/redirect?location=example.com")
 		let response = try await client.execute(request, timeout: timeout)
 
-		XCTAssertEqual(response.status, .temporaryRedirect)
-		XCTAssertEqual(response.headers["location"], ["example.com"])
+		#expect(response.status == .temporaryRedirect)
+		#expect(response.headers["location"] == ["example.com"])
 
 		let data = try await readBody(from: response)
-		XCTAssertNil(data)
+		#expect(data == nil)
 	}
 
-	func test__DebugServer__bigFile__returnsExpectedBody() async throws {
-		try XCTSkipIf(!enabled)
-
+	@Test
+	func DebugServer__bigFile__returnsExpectedBody() async throws {
 		let client = HTTPClient()
 		defer { Task {
 			try? await client.shutdown()
@@ -63,23 +60,18 @@ final class FullFlowTests: XCTestCase {
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/big-file?size=\(size)")
 		let response = try await client.execute(request, timeout: timeout)
 
-		XCTAssertEqual(response.status, .ok)
+		#expect(response.status == .ok)
 
-		guard let data = try await readBody(from: response)
-		else {
-			XCTFail("No body available")
-			return
-		}
-		XCTAssertEqual(data.count, size)
+		let data = try #require(try await readBody(from: response))
+		#expect(data.count == size)
 
 		let actualDigest = SHA256.hash(data: data)
 		let expectedDigest = response.headers.first(name: "x-digest-value")
-		XCTAssertEqual(expectedDigest, actualDigest.hex)
+		#expect(expectedDigest == actualDigest.hex)
 	}
 
-	func test__DebugServer__upload_smallFile__returnsExpectedBody() async throws {
-		try XCTSkipIf(!enabled)
-
+	@Test
+	func DebugServer__upload_smallFile__returnsExpectedBody() async throws {
 		let data = await AsyncStream(generateDataStreamOfSize: 10)
 			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
@@ -94,16 +86,15 @@ final class FullFlowTests: XCTestCase {
 		} }
 
 		let response = try await client.execute(request, timeout: timeout)
-		XCTAssertEqual(response.status, .ok)
+		#expect(response.status == .ok)
 
 		let body = try await readBody(from: response)
 		let value = body.flatMap { String(data: $0, encoding: .utf8) }
-		XCTAssertEqual(value, "Content received correctly")
+		#expect(value == "Content received correctly")
 	}
 
-	func test__DebugServer__upload_bigFile__returnsExpectedBody() async throws {
-		try XCTSkipIf(!enabled)
-
+	@Test
+	func DebugServer__upload_bigFile__returnsExpectedBody() async throws {
 		let data = await AsyncStream(generateDataStreamOfSize: 1_000_000)
 			.reduce(into: Data()) { $0.append($1) }
 		let digest = SHA256.hash(data: data)
@@ -118,11 +109,11 @@ final class FullFlowTests: XCTestCase {
 		} }
 
 		let response = try await client.execute(request, timeout: timeout)
-		XCTAssertEqual(response.status, .ok)
+		#expect(response.status == .ok)
 
 		let body = try await readBody(from: response)
 		let value = body.flatMap { String(data: $0, encoding: .utf8) }
-		XCTAssertEqual(value, "Content received correctly")
+		#expect(value == "Content received correctly")
 	}
 
 	func tunnelServerRequest(host: String, path: String) -> HTTPClientRequest {
