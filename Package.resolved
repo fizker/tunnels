@@ -1,5 +1,5 @@
 {
-  "originHash" : "52fbb70bbba79daa68590c51b8c0972e71f5b681ace7ac1e912ff832bd881aac",
+  "originHash" : "4059dc195d1773bb49db384572e0c24c79e232dcc622d7ec7fd1b1172bb8f481",
   "pins" : [
     {
       "identity" : "acmeswift",
@@ -150,8 +150,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-environment-variables.git",
       "state" : {
-        "revision" : "a6d776637a6db349ff929f7acbdf9802b23b2571",
-        "version" : "1.1.1"
+        "revision" : "780aa116cdf328e42d3d34f4a439d301a57d6fff",
+        "version" : "1.2.0"
       }
     },
     {
