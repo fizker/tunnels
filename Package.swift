@@ -210,6 +210,8 @@ func testTargets() -> [Target] {
 			dependencies: [
 				"Common",
 				"DebugServer",
+				"TunnelClient",
+				"TunnelServer",
 				.product(name: "AsyncHTTPClient", package: "async-http-client"),
 				.product(name: "VaporTesting", package: "vapor"),
 			],

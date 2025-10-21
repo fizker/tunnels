@@ -5,13 +5,10 @@ import NIOCore
 import Testing
 import Vapor
 
-/// # Note
-///
-/// These tests require the different components to run externally when starting the tests
-/// - `TunnelServer` must run on `localhost:8110`.
-/// - `DebugServer` must run.
-/// - `TunnelClient` must run against `TunnelServer` with `test.fizkerinc.dk` pointing to `DebugServer`.
-@Suite(.serialized, .enabled(if: false))
+@Suite(
+	.serialized,
+	DebugServerTunnel(tunnelServerPort: 8110, debugServerPort: 8113, debugServerHostName: "test.fizkerinc.dk"),
+)
 struct FullFlowTests {
 	let timeout: TimeAmount = .seconds(10)
 
