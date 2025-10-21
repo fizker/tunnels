@@ -2,7 +2,7 @@ import ACME
 import EnvironmentVariables
 import Vapor
 
-enum EnvVar: String, CaseIterable {
+public enum EnvVar: String, CaseIterable, Sendable {
 	case port = "PORT"
 	case host
 	case httpPort
