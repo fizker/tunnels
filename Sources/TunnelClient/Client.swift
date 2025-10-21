@@ -5,7 +5,7 @@ import Logging
 import NIO
 import OAuth2Models
 import TunnelLogModels
-public import TunnelModels
+import TunnelModels
 import WebSocket
 import WebSocketKit
 public import WebURL
@@ -27,13 +27,13 @@ public actor Client {
 	public init?(
 		serverURL: WebURL,
 		proxies: [Proxy],
-		clientCredentials: ClientCredentials,
+		credentials: any Credentials,
 		logStorage: LogStorage
 	) {
 		guard serverURL.path.isEmpty || serverURL.path == "/"
 		else { return nil }
 
-		self.credentialsStore = .init(credentials: clientCredentials, serverURL: serverURL)
+		self.credentialsStore = .init(credentials: credentials, serverURL: serverURL)
 		self.serverURL = serverURL
 		self.webSocketURL = serverURL ~ {
 			switch $0.scheme {

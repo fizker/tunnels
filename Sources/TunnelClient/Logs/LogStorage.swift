@@ -21,6 +21,11 @@ public actor LogStorage {
 	private let fileManager: FileManager = .default
 	private var listener: FileSystemWatcher?
 
+	/// Creates a new LogStorage at the specified path.
+	///
+	/// If the path is relative, it will be considered according to the current working directory.
+	///
+	/// - parameter storagePath: The path to store the logs at.
 	public init(storagePath: String) async throws {
 		var path = FilePath(storagePath).lexicallyNormalized()
 		if path.isRelative {
@@ -29,6 +34,9 @@ public actor LogStorage {
 		try await self.init(storage: WebURL(filePath: path.string))
 	}
 
+	/// Creates a new LogStorage at the specified absolute `file:` `URL`.
+	///
+	/// - parameter storage: The `file:` `URL` to store the logs at. This is expected to be an absolute path.
 	public init(storage: WebURL) async throws {
 		let summaryURL = storage.appending(path: ["summary.json"])
 		let summaryPath = summaryURL.path
