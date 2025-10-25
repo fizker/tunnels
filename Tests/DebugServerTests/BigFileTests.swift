@@ -5,7 +5,7 @@ import VaporTesting
 struct BigFileTests {
 	@Test
 	func reasonablyBigFileRequests__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		try await withApp(configure: DebugServer.configure) { app in
+		try await withApp(configure: configure) { app in
 			let size = 123_456
 
 			let path = "big-file?size=\(size)"
@@ -23,7 +23,7 @@ struct BigFileTests {
 
 	@Test
 	func bigFileRequests_10mb__fileIsReceived_sizeIsCorrect_shasumMatches() async throws {
-		try await withApp(configure: DebugServer.configure) { app in
+		try await withApp(configure: configure) { app in
 			let size = 10_000_000
 
 			let path = "big-file?size=\(size)"

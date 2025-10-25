@@ -29,7 +29,7 @@ struct StartClientCommand: AsyncParsableCommand {
 		guard let client = Client(
 			serverURL: server,
 			proxies: proxies,
-			clientCredentials: credentials,
+			credentials: credentials,
 			logStorage: logStorage
 		)
 		else { throw ValidationError("Failed to create client.") }

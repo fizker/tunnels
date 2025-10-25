@@ -8,6 +8,14 @@ import OAuth2Models
 import TunnelModels
 import WebURL
 
+public protocol Credentials: Sendable {
+	associatedtype AccessTokenRequest: Encodable
+
+	var request: AccessTokenRequest { get }
+}
+
+extension ClientCredentials: Credentials {}
+
 actor CredentialsStore {
 	enum Error: Swift.Error {
 		case noContent
@@ -16,12 +24,12 @@ actor CredentialsStore {
 	}
 
 	private let logger = Logger(label: "CredentialsStore")
-	private var credentials: ClientCredentials
+	private var credentials: any Credentials
 	private var serverURL: WebURL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
 	private let coder = Coder()
 
-	init(credentials: ClientCredentials, serverURL: WebURL) {
+	init(credentials: some Credentials, serverURL: WebURL) {
 		self.credentials = credentials
 		self.serverURL = serverURL
 	}
