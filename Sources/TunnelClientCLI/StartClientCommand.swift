@@ -1,4 +1,5 @@
 public import ArgumentParser
+import Logging
 public import TunnelClient
 import TunnelModels
 import WebURL
@@ -23,6 +24,9 @@ struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .shortAndLong, transform: { try ClientCredentials(argument: $0) })
 	var credentials: ClientCredentials
 
+	@Option(name: .long, transform: { try Logger.Level(rawValue: $0).unwrap() })
+	var logLevel: Logger.Level = .info
+
 	func run() async throws {
 		let logStorage = try await LogStorage(storagePath: logs)
 
@@ -30,7 +34,8 @@ struct StartClientCommand: AsyncParsableCommand {
 			serverURL: server,
 			proxies: proxies,
 			credentials: credentials,
-			logStorage: logStorage
+			logStorage: logStorage,
+			logLevel: logLevel,
 		)
 		else { throw ValidationError("Failed to create client.") }
 
