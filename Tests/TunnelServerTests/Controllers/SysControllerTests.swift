@@ -11,6 +11,31 @@ struct SysControllerTests {
 	let expectedETag = #""c2ba9b74f233305c9ddaaf0a6613d62fd89900d05bf9172b5506394a632ff7fe""#
 
 	@Test
+	func setup__noAuthHeaders__401IsReturned() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+
+			try await app.testing().test(.GET, "/sys/setup") { res in
+				#expect(res.status == .init(statusCode: 401))
+			}
+		}
+	}
+
+	@Test
+	func setup__userDoesNotHaveProperScope__403IsReturned() async throws {
+		try await withApp { app in
+			try await configure(app, env: .empty)
+
+			try await app.userStore.add(userWithoutScope)
+			let headers = try await app.authHeader(for: userWithoutScope)
+
+			try await app.testing().test(.GET, "/sys/setup", headers: headers) { res in
+				#expect(res.status == .init(statusCode: 403))
+			}
+		}
+	}
+
+	@Test
 	func setup__noETag_userHaveProperScope__setupIsReturned_etagIsReturned() async throws {
 		try await withApp { app in
 			try await configure(app, env: .empty)
