@@ -10,7 +10,7 @@ enum WebSocketError: Error {
 public actor WebSocketHandler {
 	public let webSocket: WebSocket
 	var chunkLoaders: [UUID: ChunkLoader] = [:]
-	let coder = Coder()
+	let coder = Common.Coder()
 
 	public init(webSocket: WebSocket) {
 		self.webSocket = webSocket

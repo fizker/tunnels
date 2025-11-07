@@ -27,7 +27,7 @@ actor CredentialsStore {
 	private var credentials: any Credentials
 	private var serverURL: WebURL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
-	private let coder = Coder()
+	private let coder = Common.Coder()
 
 	init(credentials: some Credentials, serverURL: WebURL) {
 		self.credentials = credentials
