@@ -17,7 +17,7 @@ public actor LogStorage {
 	private let storagePath: WebURL
 	private let summaryURL: WebURL
 	private let summaryPath: String
-	private let coder = Coder()
+	private let coder = Common.Coder()
 	private let fileManager: FileManager = .default
 	private var listener: FileSystemWatcher?
 

@@ -40,7 +40,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 			path: request.url.description,
 			method: request.method.rawValue,
 			headers: headers,
-			body: .stream
+			body: headers.containsHeader(named: "content-type") ? .stream : nil,
 		)
 
 		logger.info("Routing \(clientRequest)")

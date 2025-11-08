@@ -29,17 +29,24 @@ extension Client {
 		}
 
 		do {
+			logger.debug("Asking proxy for request \(req.id)")
 			let response = try await askProxy(request: request, client: client)
 			let res = HTTPResponse(id: req.id, response: response)
 			let uploadURL = serverURL.appending(path: ["tunnels", req.id.uuidString, "response"])
 
+			logger.debug("Proxy responded for \(req.id)")
+
+			let logger = logger
 			return (res, { pathToLocalCopy in
 				if case .stream = res.body {
+					logger.debug("Initiating body upload for \(req.id)")
 					try await self.upload(body: response, to: uploadURL, client: client, localCopy: pathToLocalCopy)
+					logger.debug("Finished body upload for \(req.id)")
 				}
 				try await client.shutdown()
 			})
 		} catch {
+			logger.debug("\(String(describing: handle(_:localCopy:))) caught unknown error \(error)")
 			try await client.shutdown()
 			throw error
 		}
@@ -100,11 +107,19 @@ extension Client {
 	}
 
 	func stream(from url: WebURL, client: HTTPClient, localCopy: WebURL?) async throws -> HTTPClientRequest.Body {
+		logger.debug("Initiating stream from \(url)")
+
 		var request = HTTPClientRequest(url: url.serialized())
 		request.headers = try await credentialsStore.httpHeaders
 
-		let response = try await client.execute(request, timeout: .seconds(30))
-		return requestBody(response: response, localCopy: localCopy)
+		do {
+			let response = try await client.execute(request, timeout: .seconds(30))
+			logger.debug("Completed stream from \(url)")
+			return requestBody(response: response, localCopy: localCopy)
+		} catch {
+			logger.error("Failed to load stream: \(error)")
+			throw error
+		}
 	}
 
 	func upload(body response: HTTPClientResponse, to url: WebURL, client: HTTPClient, localCopy: WebURL?) async throws {
