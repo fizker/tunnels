@@ -10,7 +10,13 @@ func handleReceivingFile(req: Request) async throws -> Response {
 	guard let digest = req.query["digest"] as String?
 	else {
 		req.logger.info("Failing request because digest query is missing")
-		return Response(status: .badRequest, body: "Invalid request. digest query is required")
+		return Response(
+			status: .badRequest,
+			headers: [
+				"Content-Type": "text/plain",
+			],
+			body: "Invalid request. digest query is required"
+		)
 	}
 
 	let rawBody = try await req.body.collectAll(as: [ByteBuffer].self)
@@ -22,7 +28,13 @@ func handleReceivingFile(req: Request) async throws -> Response {
 	guard body.readableBytes > 0
 	else {
 		req.logger.info("Failing request because body is missing")
-		return Response(status: .badRequest, body: "A body is required")
+		return Response(
+			status: .badRequest,
+			headers: [
+				"Content-Type": "text/plain",
+			],
+			body: "A body is required"
+		)
 	}
 
 	let actualDigest = SHA256.hash(data: body.readableBytesView)

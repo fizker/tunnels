@@ -75,6 +75,7 @@ struct FullFlowTests {
 
 		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
 		request.method = .POST
+		request.headers.replaceOrAdd(name: "content-type", value: "application/octet-stream")
 		request.body = .bytes(data, length: .unknown)
 
 		let client = HTTPClient()
@@ -98,6 +99,7 @@ struct FullFlowTests {
 
 		var request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/upload?digest=\(digest.hex)")
 		request.method = .POST
+		request.headers.replaceOrAdd(name: "content-type", value: "application/octet-stream")
 		request.body = .bytes(data, length: .unknown)
 
 		let client = HTTPClient()
