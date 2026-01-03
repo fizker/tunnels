@@ -1,5 +1,7 @@
 import ACME
-import Common
+import ACMEClient
+import ACMEClientModels
+import Foundation
 import Vapor
 import SwiftASN1
 import NIOSSL
@@ -7,7 +9,7 @@ import NIOSSL
 private let _1Day: TimeInterval = 84_600
 private let _30Days = _1Day * 30
 
-func add(certificates: ACMEData.CertWrapper, to app: Application) throws {
+func add(certificates: CertificateAndPrivateKey, to app: Application) throws {
 	let certificateChain = try certificates.nioCertificates.map {
 		return NIOSSLCertificateSource.certificate($0)
 	}
@@ -21,30 +23,9 @@ func add(certificates: ACMEData.CertWrapper, to app: Application) throws {
 class ACMEController {
 	typealias Setup = ACMEHandler.Setup
 
-	enum Error: Swift.Error, CustomStringConvertible {
-		case pendingChallenges([ChallengeDescription])
-		case validationFailed([AcmeAuthorization.Challenge])
-
-		var description: String {
-			switch self {
-			case let .pendingChallenges(challenges):
-				"""
-				Pending challenges:
-
-				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
-				"""
-			case let .validationFailed(challenges):
-				"""
-				Validation failed:
-
-				\(challenges.map { "• \($0)" }.joined(separator: "\n"))
-				"""
-			}
-		}
-	}
+	private let logger = Logger(label: "ACMEController")
 
 	private let setup: Setup
-	private let coder = Coder()
 
 	private var acmeData: ACMEData
 
@@ -55,15 +36,15 @@ class ACMEController {
 		if let data = fm.contents(atPath: setup.storagePath) {
 			acmeData = try coder.decode(data)
 
-			guard setup.endpoint == acmeData.endpoint
-			else { throw Setup.Error.differentEndpointInStoredData(acmeData.endpoint) }
+			guard setup.directory == acmeData.directory
+			else { throw Setup.Error.differentDirectoryInStoredData(acmeData.directory) }
 		} else {
-			acmeData = .init(endpoint: setup.endpoint)
+			acmeData = .init(directory: setup.directory)
 		}
 	}
 
-	private func lazyLoadData() async throws -> ACMEData.CertWrapper {
-		if let certs = acmeData.certificates {
+	private func lazyLoadData() async throws -> CertificateAndPrivateKey {
+		if let certs = acmeData.certificate {
 			let untilExpiration = certs.expiresAt.timeIntervalSince(.now)
 
 			guard untilExpiration < _1Day
@@ -87,73 +68,56 @@ class ACMEController {
 		try add(certificates: certificates, to: app)
 	}
 
-	private func loadAccount(acme: AcmeSwift) async throws {
-		if let accountKey = acmeData.accountKey {
-			let credentials = try AccountCredentials(contacts: [setup.contactEmail], pemKey: accountKey)
-			try acme.account.use(credentials)
-		} else {
-			let account = try await acme.account.create(contacts: [setup.contactEmail], acceptTOS: true)
-			try acme.account.use(account)
-			acmeData.accountKey = account.privateKeyPem!
-			try save()
+	private func loadAccount() async throws -> Account {
+		if let account = acmeData.account {
+			return account
 		}
+
+		logger.notice("Creating account")
+		let api = try await API(directory: acmeData.directory)
+
+		let account = try await api.createAccount(
+			request: .init(
+				contact: [URL(string: setup.contactEmail).unwrap()],
+				termsOfServiceAgreed: true,
+			)
+		)
+		logger.notice("account created")
+		acmeData.account = account
+		try save()
+		return account
 	}
 
 	/// Requests a new certificate from Let's Encrypt
-	private func requestNewCertificate() async throws -> ACMEData.CertWrapper {
-		// Create the client and load Let's Encrypt credentials
-		let acme = try await AcmeSwift(acmeEndpoint: acmeData.endpoint.asAcmeSwiftEndpoint)
-		defer { try? acme.syncShutdown() }
+	private func requestNewCertificate() async throws -> CertificateAndPrivateKey {
+		logger.notice("requestNewCertificate()")
+		let account = try await loadAccount()
 
-		try await loadAccount(acme: acme)
-
-		let domains: [String] = ["*.\(setup.host)", setup.host]
-
-		// Create a certificate order for *.ponies.com
-		let order = try await acme.orders.create(domains: domains)
-
-		// ... after that, now we can fetch the challenges we need to complete
-		let pendingChallenges = try await acme.orders.describePendingChallenges(from: order, preferring: .dns)
-
-		if !pendingChallenges.isEmpty {
-			let e = Error.pendingChallenges(pendingChallenges)
-			awaitKeyboardInput(message: e.description + "\n")
-		}
-
-		while true {
-			// Assuming the challenges have been published, we can now ask Let's Encrypt to validate them.
-			// If some challenges fail to validate, it is safe to call validateChallenges() again after fixing the underlying issue.
-			let failed = try await acme.orders.validateChallenges(from: order, preferring: .dns)
-
-			guard failed.isEmpty
-			else {
-				let e = Error.validationFailed(failed)
-				awaitKeyboardInput(message: e.description + "\n")
-				continue
-			}
-
-			break
-		}
-
-		print("No challenges remaining. Finalizing order.")
-
-		// Let's create a private key and CSR using the rudimentary feature provided by AcmeSwift
-		// If the validation didn't throw any error, we can now send our Certificate Signing Request...
-		let (privateKey, csr, finalized) = try await acme.orders.finalizeWithRsa(order: order, domains: domains)
-
-		// ... and the certificate is ready to download!
-		let certs = try await acme.certificates.download(for: finalized)
-
-		let data = ACMEData.CertWrapper(
-			certificates: try CertificateDataArray(certificates: try certs.map {
-				return try CertificateData(pemEncoded: $0, isSelfSigned: false)
-			}),
-			privateKey: privateKey
+		let client = try await ACMEClient(
+			directory: acmeData.directory,
+			account: account,
 		)
-		acmeData.certificates = data
+
+		logger.notice("Client initialized")
+
+		let domains = try [
+			Domain("*.\(setup.host)").unwrap(),
+			Domain(setup.host).unwrap(),
+		]
+
+		let cert = try await client.requestCertificate(
+			covering: domains,
+			authHandler: client.handleDNSChallengesViaCLI(_:),
+		)
+
+		logger.notice("Certificate request completed")
+
+		acmeData.certificate = cert
 		try save()
 
-		return data
+		logger.notice("Data is saved")
+
+		return cert
 	}
 
 	private func awaitKeyboardInput(message: String? = nil) {
@@ -165,26 +129,9 @@ class ACMEController {
 	}
 
 	private func save() throws {
+		logger.notice("Saving data")
 		let data = try coder.encode(acmeData)
 		try data.write(to: URL(filePath: setup.storagePath))
-	}
-}
-
-extension ChallengeDescription: @retroactive CustomStringConvertible {
-	public var description: String {
-		switch type {
-		case .http:
-			"The URL \(endpoint) needs to return \(value)"
-		case .dns:
-			"Create the following DNS record: \(endpoint) TXT \(value)"
-		case .alpn:
-			"TLS-ALPN-01 challenge. Endpoint: \(endpoint), value: \(value)"
-		}
-	}
-}
-
-extension AcmeAuthorization.Challenge: @retroactive CustomStringConvertible {
-	public var description: String {
-		"\(type): Token=\(token), error=\(error?.localizedDescription ?? "no error"), status=\(status)"
+		logger.notice("Data saved")
 	}
 }

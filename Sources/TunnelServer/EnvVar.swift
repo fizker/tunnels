@@ -1,4 +1,4 @@
-import ACME
+import ACMEClientModels
 import EnvironmentVariables
 import Vapor
 
@@ -50,7 +50,7 @@ extension EnvironmentVariables where Key == EnvVar {
 		}
 	}
 
-	var acmeEndpoint: ACMEEndpoint {
+	var acmeDirectory: ACMEDirectory {
 		get throws {
 			try get(.acmeEndpoint) {
 				switch $0 {
