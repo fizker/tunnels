@@ -1,5 +1,4 @@
 import ACME
-public import AcmeSwift
 import Common
 import Vapor
 import SwiftASN1

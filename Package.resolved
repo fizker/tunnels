@@ -1,15 +1,6 @@
 {
-  "originHash" : "e7d10c399cef91a4f44f85ad292bea0a7572f4cebbf253f14d615c97959a9ec4",
+  "originHash" : "66a1fa7135b90d2f371113f13ed99b68d54da147603f0e1e3a6169833a6dee7f",
   "pins" : [
-    {
-      "identity" : "acmeswift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/m-barthelemy/AcmeSwift.git",
-      "state" : {
-        "revision" : "aca3a34f9b86d936ce5df4edd816af3460b8c74f",
-        "version" : "1.0.0-beta6"
-      }
-    },
     {
       "identity" : "async-http-client",
       "kind" : "remoteSourceControl",

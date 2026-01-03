@@ -32,7 +32,6 @@ let package = Package(
 		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.4.0"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),
 		.package(url: "https://github.com/karwa/swift-url.git", .upToNextMinor(from: "0.4.2")),
-		.package(url: "https://github.com/m-barthelemy/AcmeSwift.git", from: "1.0.0-beta6"),
 		.package(url: "https://github.com/swift-server/async-http-client.git", from: "1.30.2"),
 //		.package(url: "https://github.com/vapor/vapor.git", from: "4.120.0"),
 		.package(url: "https://github.com/fizker/vapor.git", branch: "make-RouteNotFound-public"),
@@ -43,7 +42,6 @@ let package = Package(
 			name: "ACME",
 			dependencies: [
 				"Common",
-				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "SwiftASN1", package: "swift-asn1"),
 				.product(name: "Crypto", package: "swift-crypto"),
 				.product(name: "X509", package: "swift-certificates"),
@@ -117,7 +115,6 @@ let package = Package(
 				"HTTPUpgradeServer",
 				"WebSocket",
 				.product(name: "TunnelModels", package: "tunnels-models"),
-				.product(name: "AcmeSwift", package: "acmeswift"),
 				.product(name: "EnvironmentVariables", package: "swift-environment-variables"),
 				.product(name: "FzkExtensions", package: "swift-extensions"),
 				.product(name: "OAuth2Models", package: "swift-oauth2-models"),
