@@ -1,7 +1,7 @@
 import Common
 import Foundation
 import FzkExtensions
-import Logging
+public import Logging
 import NIO
 import OAuth2Models
 import TunnelLogModels
@@ -12,7 +12,7 @@ public import WebURL
 import WebURLFoundationExtras
 
 public actor Client {
-	let logger = Logger(label: "Client")
+	let logger: Logger
 	var serverURL: WebURL
 	var webSocketURL: WebURL
 	var proxies: [Proxy]
@@ -28,10 +28,15 @@ public actor Client {
 		serverURL: WebURL,
 		proxies: [Proxy],
 		credentials: any Credentials,
-		logStorage: LogStorage
+		logStorage: LogStorage,
+		logLevel: Logger.Level = .info,
 	) {
 		guard serverURL.path.isEmpty || serverURL.path == "/"
 		else { return nil }
+
+		logger = Logger(label: "Client") ~ {
+			$0.logLevel = logLevel
+		}
 
 		self.credentialsStore = .init(credentials: credentials, serverURL: serverURL)
 		self.serverURL = serverURL

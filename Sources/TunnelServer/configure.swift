@@ -18,11 +18,12 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 	app.userStore = try .init(storagePath: app.environment.userStoragePath)
 
 	if app.environment.useSSL {
+		app.logger.notice("SSL setup initiated")
 		let setup = ACMESetup(
 			host: app.environment.host,
-			endpoint: try app.environment.acmeEndpoint,
+			directory: try app.environment.acmeDirectory,
 			contactEmail: try app.environment.acmeContactEmail,
-			storagePath: try app.environment.acmeStoragePath
+			storagePath: try app.environment.acmeStoragePath,
 		)
 
 		let challengeHandler = ChallengeHandler(host: setup.host)
@@ -35,6 +36,7 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 		}
 		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
 
+		app.logger.notice("Asking ACMEController to add certificate")
 		let acmeController = try ACMEController(setup: setup)
 		try await acmeController.addCertificate(to: app)
 
