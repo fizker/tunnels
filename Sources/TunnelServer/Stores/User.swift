@@ -59,19 +59,17 @@ struct User: Codable, Equatable, Sendable, Authenticatable {
 			rawValue
 		}
 
-		static func <(lhs: Scope, rhs: Scope) -> Bool {
-			switch (lhs, rhs) {
-			case (.admin, .admin), (.sysadmin, .sysadmin), (.setupRead, .setupRead):
-				false
-			case (.admin, .sysadmin):
-				false
-			case (.sysadmin, .admin):
-				true
-			case (.setupRead, .admin), (.setupRead, .sysadmin):
-				false
-			case (.admin, .setupRead), (.sysadmin, .setupRead):
-				true
+		/// The sort-value of the scope. A lower value means higher priority.
+		var sortValue: Int {
+			switch self {
+			case .sysadmin: 1
+			case .admin: 2
+			case .setupRead: 3
 			}
+		}
+
+		static func <(lhs: Scope, rhs: Scope) -> Bool {
+			return lhs.sortValue < rhs.sortValue
 		}
 	}
 }
