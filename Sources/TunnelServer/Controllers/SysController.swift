@@ -1,4 +1,5 @@
 import ACME
+import ACMEClientModels
 import Common
 import Crypto
 import Vapor

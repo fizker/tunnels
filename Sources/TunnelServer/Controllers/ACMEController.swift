@@ -78,7 +78,7 @@ class ACMEController {
 
 		let account = try await api.createAccount(
 			request: .init(
-				contact: [URL(string: setup.contactEmail).unwrap()],
+				contact: [.init(setup.contactEmail)],
 				termsOfServiceAgreed: true,
 			)
 		)
