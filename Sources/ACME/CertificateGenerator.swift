@@ -1,3 +1,4 @@
+import ACMEClientModels
 import Crypto
 import Foundation
 import X509
@@ -6,8 +7,8 @@ struct CertificateGenerator {
 	let commonName: String
 	let domains: Set<String>
 
-	func generateSelfSignedCertificate() throws -> CertificateData {
-		let key = P256.Signing.PrivateKey()
+	func generateSelfSignedCertificate() throws -> CertificateAndPrivateKey {
+		let key = Certificate.PrivateKey(P256.Signing.PrivateKey())
 
 		let subject = try DistinguishedName {
 			CommonName(commonName)
@@ -15,7 +16,7 @@ struct CertificateGenerator {
 		let cert = try Certificate(
 			version: .v3,
 			serialNumber: .init(),
-			publicKey: .init(key.publicKey),
+			publicKey: key.publicKey,
 			notValidBefore: .now,
 			notValidAfter: Date(timeIntervalSinceNow: 3600 * 24 * 365),
 			issuer: subject,
@@ -28,9 +29,14 @@ struct CertificateGenerator {
 					.dnsName($0)
 				})
 			}),
-			issuerPrivateKey: .init(key)
+			issuerPrivateKey: key,
 		)
 
-		return CertificateData(domains: domains, certificate: cert, isSelfSigned: true)
+		return try .init(
+			certificateChain: .init(certificates: [
+				.init(certificate: cert, isSelfSigned: true),
+			]),
+			privateKey: key,
+		)
 	}
 }
