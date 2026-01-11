@@ -1,12 +1,15 @@
 import ACME
+import ACMEClient
 import Common
+import Foundation
 import FzkExtensions
 import Vapor
 import WebURL
 
 actor ChallengeHandler: EndpointChallengeHandler {
+	typealias Token = UUID
 	let host: String
-	var pendingChallenges: [Challenge] = []
+	var pendingChallenges: [(token: Token, challenge: TypedChallenge)] = []
 
 	init(host: String) {
 		self.host = host
@@ -17,24 +20,68 @@ actor ChallengeHandler: EndpointChallengeHandler {
 			guard let token = req.parameters.get("token")
 			else { throw Abort(.notFound) }
 
-			return try await self.challengeIssued(token: token)
+			guard
+				let match = await self.pendingChallenges.first(where: { $0.challenge.token == token }),
+				case let .http(challenge) = match.challenge
+			else {
+				print("Failed to resolve ACME challenge for token \(token)")
+				throw Abort(.notFound)
+			}
+
+			return Response(
+				status: .ok,
+				headers: [
+					"content-type": challenge.endpoint.contentType,
+				],
+				body: .init(string: challenge.endpoint.body),
+			)
 		}
 	}
 
-	func register(challenge: PendingChallenge) async throws {
-		let token = try token(for: challenge)
-		let c = Challenge(token: token, value: challenge.value)
-
-		pendingChallenges.append(c)
-
-		_ = try await c.task.value
+	nonisolated
+	func createToken() -> Token {
+		UUID()
 	}
 
-	func remove(challenge: PendingChallenge) {
-		guard let token = try? token(for: challenge)
-		else { return }
+	func register(auth: TypedAuthorization, token: Token) async throws -> Verification {
+		let verification: Verification
+		if let v = auth.verify(via: .http) {
+			verification = v
+		} else if let v = auth.verify(via: .dns) {
+			verification = v
+		} else {
+			throw UnsupportedChallengeType(types: auth.challenges.map(\.type))
+		}
 
-		pendingChallenges.removeAll { $0.token == token }
+		pendingChallenges.append((token, verification.challenge))
+		return verification
+	}
+
+	func handleNonAutomaticSetup(token: Token) async throws {
+		var hasDNS = false
+		for pending in pendingChallenges where pending.token == token {
+			switch pending.challenge {
+			// Automatic setup
+			case .http:
+				break
+			case let .dns(challenge):
+				if !hasDNS {
+					print("Setup DNS for the following challenges:")
+				}
+				hasDNS = true
+				print(challenge.directions)
+			case .other: break
+			}
+		}
+
+		if hasDNS {
+			print("Press enter to continue")
+			_ = readLine()
+		}
+	}
+
+	func reset(token: Token) {
+		pendingChallenges.removeAll { $0.0 == token }
 	}
 
 	private func token(for challenge: PendingChallenge) throws -> String {
@@ -56,25 +103,9 @@ actor ChallengeHandler: EndpointChallengeHandler {
 		return token
 	}
 
-	private func challengeIssued(token: String) throws -> String {
-		guard let match = pendingChallenges.first(where: { $0.token == token })
-		else {
-			print("Failed to resolve ACME challenge for token \(token)")
-			throw Abort(.notFound)
-		}
-
-		match.task.resolve(())
-
-		return match.value
+	struct UnsupportedChallengeType: Error {
+		var types: [TypedChallenge.`Type`]
 	}
-
-	struct Challenge {
-		let token: String
-		let value: String
-		let task: Deferred<Void> = .init()
-	}
-
-	struct NotEnabledError: Error {}
 	enum InvalidChallengeEndpointError: Error {
 		case invalidURL
 		case invalidDomain

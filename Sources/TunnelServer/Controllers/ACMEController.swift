@@ -21,7 +21,7 @@ func add(certificates: CertificateAndPrivateKey, to app: Application) throws {
 }
 
 class ACMEController {
-	typealias Setup = ACMEHandler.Setup
+	typealias Setup = ACMEHandler<ChallengeHandler>.Setup
 
 	private let logger = Logger(label: "ACMEController")
 

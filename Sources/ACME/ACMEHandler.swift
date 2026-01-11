@@ -1,15 +1,19 @@
-import ACMEClient
+package import ACMEClient
 package import ACMEClientModels
 import Foundation
 import FzkExtensions
 import Logging
 
 package protocol EndpointChallengeHandler: Sendable {
-	func register(challenge: PendingChallenge) async throws -> Void
-	func remove(challenge: PendingChallenge) async
+	associatedtype Token: Sendable
+
+	func createToken() -> Token
+	func register(auth: TypedAuthorization, token: Token) async throws -> Verification
+	func handleNonAutomaticSetup(token: Token) async throws
+	func reset(token: Token) async
 }
 
-package actor ACMEHandler {
+package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 	package typealias Setup = ACMESetup
 	package typealias OnCertificatesUpdated = (CertificateAndPrivateKey) -> Void
 
@@ -17,11 +21,11 @@ package actor ACMEHandler {
 	var acmeData: ACMEData
 	let coder = Coder()
 	let setup: Setup
-	let challengeHandler: any EndpointChallengeHandler
+	let challengeHandler: ChallengeHandler
 	let logger = Logger(label: "ACMEHandler")
 	let onCertificatesUpdated: OnCertificatesUpdated
 
-	package init(setup: Setup, challengeHandler: some EndpointChallengeHandler, onCertificatesUpdated: @escaping OnCertificatesUpdated) throws {
+	package init(setup: Setup, challengeHandler: ChallengeHandler, onCertificatesUpdated: @escaping OnCertificatesUpdated) throws {
 		self.setup = setup
 		self.challengeHandler = challengeHandler
 		self.onCertificatesUpdated = onCertificatesUpdated
@@ -73,87 +77,53 @@ package actor ACMEHandler {
 		else { return }
 
 		logger.info("Requesting new certificate")
+		let logger = logger
 
 		Task.detached {
 			do {
-				let certs = try await requestCerts(domains: uncoveredEndpoints)
-				onCertificatesUpdated(certs)
+				try await self.requestCerts(domains: uncoveredEndpoints)
 			} catch {
 				logger.error("Failed to create certificates: \(error)")
 			}
 		}
 	}
 
-//	private struct ChallengeBundle {
-//		let id = UUID()
-//		var domains: Set<String>
-//		var challenges: [PendingChallenge]
-//	}
-//
-//	private var currentChallenges: [ChallengeBundle] = []
-//
-//	private func requestCerts(domains: Set<String>) async throws -> ACMEData.CertWrapper {
-//		let accountKey: String
-//		if let ak = acmeData.accountKey {
-//			accountKey = ak
-//		} else {
-//			accountKey = try await generateAccountKey()
-//		}
-//
-//		let generator = try await LetsEncryptGenerator(domains: domains, endpoint: setup.endpoint.asAcmeSwiftEndpoint)
-//		let pendingChallenges = try await generator.createPendingChallenges(setup: setup, accountKey: accountKey)
-//
-//		let bundle = ChallengeBundle(domains: domains, challenges: pendingChallenges)
-//		currentChallenges.append(bundle)
-//		async let challenge = withThrowingTaskGroup(of: Bool.self) { group in
-//			for c in pendingChallenges {
-//				group.addTask {
-//					try await self.challengeHandler.register(challenge: c)
-//					return true
-//				}
-//			}
-//
-//			try await group.waitForAll()
-//			return true
-//		}
-//
-//		try await generator.validateChallenges()
-//
-//		_ = try await challenge
-//
-//		for c in pendingChallenges {
-//			await challengeHandler.remove(challenge: c)
-//		}
-//
-//		let privateKey = try acmeData.certificates?.privateKey ?? .makeRSA()
-//
-//		let newCerts = try await generator.finalize(privateKey: privateKey, primaryDomain: setup.host)
-//		let allCerts: ACMEData.CertWrapper
-//		if var certs = acmeData.certificates {
-//			certs.certificates = try .init(certificates: certs.certificates.certificates + newCerts.certificates)
-//			acmeData.certificates = certs
-//			allCerts = certs
-//		} else {
-//			allCerts = .init(certificates: newCerts, privateKey: privateKey)
-//			acmeData.certificates = allCerts
-//		}
-//		return allCerts
-//	}
-//
-//	private func generateAccountKey() async throws -> String {
-//		let setup = self.setup
-//		let accountKey = try await Task.detached {
-//			let acme = try await AcmeSwift(acmeEndpoint: setup.endpoint.asAcmeSwiftEndpoint)
-//			let account = try await acme.account.create(contacts: [setup.contactEmail], acceptTOS: true)
-//			try acme.account.use(account)
-//			return account.privateKeyPem!
-//		}.value
-//		acmeData.accountKey = accountKey
-//		return accountKey
-//	}
-//
-//	private func save() throws {
-//		let data = try coder.encode(acmeData)
-//		try data.write(to: URL(filePath: setup.storagePath))
-//	}
+	private func requestCerts(domains: Set<String>) async throws {
+		try await requestCerts(domains: domains.map { try Domain($0).unwrap() })
+	}
+
+	private func requestCerts(domains: [Domain]) async throws {
+		let account: Account
+		if let a = acmeData.account {
+			account = a
+		} else {
+			let api = try await API(directory: acmeData.directory)
+			account = try await api.createAccount(request: .init())
+			acmeData.account = account
+		}
+
+		let client = try await ACMEClient(directory: acmeData.directory, account: account)
+
+		let challengeHandler = challengeHandler
+		let handlerToken = challengeHandler.createToken()
+
+		let cert = try await client.requestCertificate(covering: domains) { auths in
+			var verifications: [Verification] = []
+			for auth in auths {
+				let verification = try await challengeHandler.register(auth: auth, token: handlerToken)
+				verifications.append(verification)
+			}
+			try await challengeHandler.handleNonAutomaticSetup(token: handlerToken)
+			return verifications
+		}
+
+		await challengeHandler.reset(token: handlerToken)
+
+		onCertificatesUpdated(cert)
+	}
+
+	private func save() throws {
+		let data = try coder.encode(acmeData)
+		try data.write(to: URL(filePath: setup.storagePath))
+	}
 }
