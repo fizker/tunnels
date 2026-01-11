@@ -2,6 +2,7 @@ import ACMEClient
 package import ACMEClientModels
 import Foundation
 import FzkExtensions
+import Logging
 
 package protocol EndpointChallengeHandler: Sendable {
 	func register(challenge: PendingChallenge) async throws -> Void
@@ -17,6 +18,7 @@ package actor ACMEHandler {
 	let coder = Coder()
 	let setup: Setup
 	let challengeHandler: any EndpointChallengeHandler
+	let logger = Logger(label: "ACMEHandler")
 	let onCertificatesUpdated: OnCertificatesUpdated
 
 	package init(setup: Setup, challengeHandler: some EndpointChallengeHandler, onCertificatesUpdated: @escaping OnCertificatesUpdated) throws {
@@ -37,19 +39,24 @@ package actor ACMEHandler {
 		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")
 	}
 
-	/// Registers the given endpoint for certificate generation. This will eventually result in calling the
-	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
+	/// Registers the given endpoint for certificate generation.
 	package func register(endpoint: String) {
 		register(endpoints: [endpoint])
 	}
 
-	private var registerTimeToken: Date?
-
-	/// Registers the given endpoints for certificate generation. This will eventually result in calling the
-	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
+	/// Registers the given endpoints for certificate generation.
 	package func register(endpoints: [String]) {
 		registeredEndpoints.formUnion(endpoints)
+	}
 
+	/// Resolves the certificates for the current set of registered endpoints. This will eventually result in calling the
+	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
+	package func resolveCertificates() {
+		if let cert = acmeData.certificate {
+			onCertificatesUpdated(cert)
+		}
+
+		let endpoints = Array(registeredEndpoints)
 		let uncoveredEndpoints: Set<String>
 		if let cert = acmeData.certificate {
 			if !cert.covers(domains: endpoints) {
@@ -62,32 +69,21 @@ package actor ACMEHandler {
 			uncoveredEndpoints = Set(endpoints)
 		}
 
-#warning("TODO: The ACME is disabled here for now")
-		return;
+		guard !uncoveredEndpoints.isEmpty
+		else { return }
 
-//		if !uncoveredEndpoints.isEmpty {
-//			print("Updating certificates for \(uncoveredEndpoints)")
-//
-//			let token = Date.now
-//			registerTimeToken = token
-//
-//			Task {
-//				do {
-//					try await Task.sleep(for: .seconds(1))
-//					guard token == registerTimeToken
-//					else { return }
-//
-//					let certs = try await requestCerts(domains: uncoveredEndpoints)
-//					onCertificatesUpdated(certs)
-//				} catch {
-//					print("Failed to create certificates: \(error)")
-//				}
-//			}
-//		} else if let certs = acmeData.certificates {
-//			onCertificatesUpdated(certs)
-//		}
-//	}
-//
+		logger.info("Requesting new certificate")
+
+		Task.detached {
+			do {
+				let certs = try await requestCerts(domains: uncoveredEndpoints)
+				onCertificatesUpdated(certs)
+			} catch {
+				logger.error("Failed to create certificates: \(error)")
+			}
+		}
+	}
+
 //	private struct ChallengeBundle {
 //		let id = UUID()
 //		var domains: Set<String>
@@ -159,5 +155,5 @@ package actor ACMEHandler {
 //	private func save() throws {
 //		let data = try coder.encode(acmeData)
 //		try data.write(to: URL(filePath: setup.storagePath))
-	}
+//	}
 }

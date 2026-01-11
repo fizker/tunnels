@@ -34,11 +34,9 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 				print("Failed to add certificates to Vapor App: \(error)")
 			}
 		}
-		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
 
-		app.logger.notice("Asking ACMEController to add certificate")
-		let acmeController = try ACMEController(setup: setup)
-		try await acmeController.addCertificate(to: app)
+		await app.acmeHandler?.register(endpoint: setup.host)
+		await app.acmeHandler?.register(endpoints: app.userStore.users().flatMap(\.knownHosts).map(\.value))
 
 		if let httpPort = app.environment.httpPort {
 			let upgradeServer = try await UpgradeServer(port: httpPort) {
@@ -47,22 +45,10 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 			await challengeHandler.addTokenChallengeRoute(upgradeServer.app.routes)
 
-			#warning("TODO: These endpoints should only be enabled in debug mode")
-			await upgradeServer.app.routes.group(".well-known") {
-				$0.post("register-challenge") { req in
-					let challenge = try req.content.decode(PendingChallenge.self)
-					try await challengeHandler.register(challenge: challenge)
-					await challengeHandler.remove(challenge: challenge)
-					return "was received"
-				}
-			}
 			try await upgradeServer.start(topLevelApplication: app)
+		} else {
 
-#warning("TODO: Enable this line when ready to enable the new ACME setup. Remember to remove the old ACMEController as well")
-//			await challengeHandler.enable()
 		}
-
-		await app.acmeHandler?.register(endpoint: setup.host)
 	}
 
 	app.middleware.use(CORSMiddleware())
