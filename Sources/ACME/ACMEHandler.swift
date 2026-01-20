@@ -19,7 +19,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 
 	var registeredEndpoints: Set<String> = []
 	var acmeData: ACMEData
-	let coder = Coder()
+	let coder = clientCoder
 	let setup: Setup
 	let challengeHandler: ChallengeHandler
 	let logger = Logger(label: "ACMEHandler")
@@ -60,6 +60,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			onCertificatesUpdated(cert)
 		}
 
+		let registeredEndpoints = registeredEndpoints
 		let endpoints = Array(registeredEndpoints)
 		let uncoveredEndpoints: Set<String>
 		if let cert = acmeData.certificate {
@@ -81,7 +82,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 
 		Task.detached {
 			do {
-				try await self.requestCerts(domains: uncoveredEndpoints)
+				try await self.requestCerts(domains: registeredEndpoints)
 			} catch {
 				logger.error("Failed to create certificates: \(error)")
 			}
@@ -93,16 +94,25 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 	}
 
 	private func requestCerts(domains: [Domain]) async throws {
+		logger.info("Requesting cert for domains: \(domains)")
 		let account: Account
 		if let a = acmeData.account {
 			account = a
 		} else {
+			logger.info("Creating account")
 			let api = try await API(directory: acmeData.directory)
-			account = try await api.createAccount(request: .init())
+			account = try await api.createAccount(
+				request: .init(
+					contact: setup.contactEmail,
+					termsOfServiceAgreed: true,
+				)
+			)
 			acmeData.account = account
+			logger.info("Account created")
 		}
 
 		let client = try await ACMEClient(directory: acmeData.directory, account: account)
+		logger.info("ACMEClient created")
 
 		let challengeHandler = challengeHandler
 		let handlerToken = challengeHandler.createToken()
@@ -116,8 +126,11 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			try await challengeHandler.handleNonAutomaticSetup(token: handlerToken)
 			return verifications
 		}
+		acmeData.certificate = cert
 
 		await challengeHandler.reset(token: handlerToken)
+
+		try save()
 
 		onCertificatesUpdated(cert)
 	}

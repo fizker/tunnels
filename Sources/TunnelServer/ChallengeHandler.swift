@@ -3,11 +3,13 @@ import ACMEClient
 import Common
 import Foundation
 import FzkExtensions
+import Logging
 import Vapor
 import WebURL
 
 actor ChallengeHandler: EndpointChallengeHandler {
 	typealias Token = UUID
+	let logger = Logger(label: "ChallengeHandler")
 	let host: String
 	var pendingChallenges: [(token: Token, challenge: TypedChallenge)] = []
 
@@ -20,11 +22,16 @@ actor ChallengeHandler: EndpointChallengeHandler {
 			guard let token = req.parameters.get("token")
 			else { throw Abort(.notFound) }
 
+			let pendingChallenges = await self.pendingChallenges
+			let match = pendingChallenges.first(where: { $0.challenge.token == token })
 			guard
-				let match = await self.pendingChallenges.first(where: { $0.challenge.token == token }),
+				let match,
 				case let .http(challenge) = match.challenge
 			else {
-				print("Failed to resolve ACME challenge for token \(token)")
+				self.logger.info("Failed to resolve HTTP ACME challenge for token \(token)", metadata: [
+					"match": "\(match?.challenge.type, default: "No match found")",
+				])
+				self.logger.debug("Available tokens: \(pendingChallenges.map(\.challenge.token))")
 				throw Abort(.notFound)
 			}
 
@@ -52,6 +59,11 @@ actor ChallengeHandler: EndpointChallengeHandler {
 		} else {
 			throw UnsupportedChallengeType(types: auth.challenges.map(\.type))
 		}
+
+		logger.info("Registered challenge for \(verification.challenge.token)", metadata: [
+			"token": "\(token)",
+			"type": "\(verification.challenge.type)",
+		])
 
 		pendingChallenges.append((token, verification.challenge))
 		return verification
@@ -81,6 +93,7 @@ actor ChallengeHandler: EndpointChallengeHandler {
 	}
 
 	func reset(token: Token) {
+		logger.info("Removing all challenges", metadata: [ "token": "\(token)" ])
 		pendingChallenges.removeAll { $0.0 == token }
 	}
 

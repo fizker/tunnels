@@ -34,7 +34,7 @@ class ACMEController {
 
 		let fm = FileManager.default
 		if let data = fm.contents(atPath: setup.storagePath) {
-			acmeData = try coder.decode(data)
+			acmeData = try clientCoder.decode(data)
 
 			guard setup.directory == acmeData.directory
 			else { throw Setup.Error.differentDirectoryInStoredData(acmeData.directory) }
@@ -130,7 +130,7 @@ class ACMEController {
 
 	private func save() throws {
 		logger.notice("Saving data")
-		let data = try coder.encode(acmeData)
+		let data = try clientCoder.encode(acmeData)
 		try data.write(to: URL(filePath: setup.storagePath))
 		logger.notice("Data saved")
 	}

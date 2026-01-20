@@ -47,8 +47,10 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 			try await upgradeServer.start(topLevelApplication: app)
 		} else {
-
+			#warning("In this case we should register acme-routes on the real server. We should probably always do that?")
 		}
+
+		await app.acmeHandler?.resolveCertificates()
 	}
 
 	app.middleware.use(CORSMiddleware())
