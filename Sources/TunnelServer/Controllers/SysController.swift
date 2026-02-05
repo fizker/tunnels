@@ -12,10 +12,10 @@ class SysController {
 	}
 
 	let request: Request
-	let acmeHandler: ACMEHandler?
+	let acmeHandler: ACMEHandler<ChallengeHandler>?
 	let userStore: UserStore
 
-	init(request: Request, acmeHandler: ACMEHandler? = nil, userStore: UserStore) {
+	init(request: Request, acmeHandler: ACMEHandler<ChallengeHandler>? = nil, userStore: UserStore) {
 		self.request = request
 		self.acmeHandler = acmeHandler
 		self.userStore = userStore
