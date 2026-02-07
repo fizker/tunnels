@@ -1,5 +1,5 @@
-import Common
 import OAuth2Models
+import TunnelModels
 import Vapor
 
 /// Catches and returns ``ErrorResponse`` as JSON.

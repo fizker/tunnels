@@ -1,4 +1,3 @@
-import Common
 import Foundation
 public import TunnelModels
 public import WebSocketKit
@@ -10,7 +9,7 @@ enum WebSocketError: Error {
 public actor WebSocketHandler {
 	public let webSocket: WebSocket
 	var chunkLoaders: [UUID: ChunkLoader] = [:]
-	let coder = Common.Coder()
+	let coder = Coder()
 
 	public init(webSocket: WebSocket) {
 		self.webSocket = webSocket

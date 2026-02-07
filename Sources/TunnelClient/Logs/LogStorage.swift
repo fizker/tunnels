@@ -1,4 +1,3 @@
-import Common
 public import Foundation
 import Logging
 import System
@@ -17,7 +16,7 @@ public actor LogStorage {
 	private let storagePath: WebURL
 	private let summaryURL: WebURL
 	private let summaryPath: String
-	private let coder = Common.Coder()
+	private let coder = Coder()
 	private let fileManager: FileManager = .default
 	private var listener: FileSystemWatcher?
 

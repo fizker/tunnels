@@ -1,7 +1,7 @@
 import Testing
 @testable import TunnelServer
-import Common
 import Foundation
+import TunnelModels
 
 struct UserTests {
 	let coder = Coder()
