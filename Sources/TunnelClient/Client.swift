@@ -93,15 +93,7 @@ public actor Client {
 		try await registerProxies(webSocket: webSocket)
 
 		if let acmeSetupDownloadPath {
-			var etagPath = acmeSetupDownloadPath
-			etagPath.path += ".etag"
-			let etagData = try? Data(contentsOf: etagPath)
-			let etag = etagData
-				.flatMap { String(data: $0, encoding: .utf8) }?
-				.trimmingCharacters(in: .whitespacesAndNewlines)
-			logger.info("Asking server for ACME setup data", metadata: [
-				"etag": "\(etag, default: "N/A")"
-			])
+			try await downloadACMESetup(downloadPath: acmeSetupDownloadPath, authHeader: authHeader)
 		}
 	}
 
