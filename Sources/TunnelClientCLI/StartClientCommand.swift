@@ -1,4 +1,5 @@
 public import ArgumentParser
+import Foundation
 import Logging
 public import TunnelClient
 import TunnelModels
@@ -6,12 +7,16 @@ import WebURL
 
 @main
 struct StartClientCommand: AsyncParsableCommand {
-	@Option(name: .shortAndLong, parsing: .upToNextOption)
+	@Option(
+		name: .shortAndLong,
+		parsing: .upToNextOption,
+		help: "Format: <host>=<local port>, e.g. foo.example.com=8080",
+	)
 	var proxies: [Proxy]
 
 	@Option(name: .shortAndLong, transform: {
 		guard let url = WebURL($0)
-		else { throw ValidationError("Invalid URL.") }
+		else { throw ValidationError("Invalid server URL.") }
 		guard url.path.isEmpty || url.path == "/"
 		else { throw ValidationError("Server URL must be scheme, host and port only.") }
 		return url
@@ -27,6 +32,17 @@ struct StartClientCommand: AsyncParsableCommand {
 	@Option(name: .long, transform: { try Logger.Level(rawValue: $0).unwrap() })
 	var logLevel: Logger.Level = .info
 
+	@Option(name: .shortAndLong, transform: {
+		guard let url = WebURL("file://\(FileManager.default.currentDirectoryPath)/")?.resolve($0)
+		else { throw ValidationError("Invalid file path for ACME setup.") }
+
+		guard url.scheme == "" || url.scheme == "file"
+		else { throw ValidationError("ACME setup must be a local path.") }
+
+		return url
+	})
+	var acmeSetupDownloadPath: WebURL?
+
 	func run() async throws {
 		let logStorage = try await LogStorage(storagePath: logs)
 
@@ -36,6 +52,7 @@ struct StartClientCommand: AsyncParsableCommand {
 			credentials: credentials,
 			logStorage: logStorage,
 			logLevel: logLevel,
+			acmeSetupDownloadPath: acmeSetupDownloadPath,
 		)
 		else { throw ValidationError("Failed to create client.") }
 
