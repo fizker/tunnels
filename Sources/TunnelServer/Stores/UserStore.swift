@@ -1,6 +1,6 @@
-import Common
 import Foundation
 import OAuth2Models
+import TunnelModels
 import Vapor
 
 /// Login tokens are automatically deleted when they are more than 12 hours old

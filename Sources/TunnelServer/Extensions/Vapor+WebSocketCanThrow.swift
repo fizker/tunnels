@@ -1,9 +1,8 @@
-import Common
 import TunnelModels
 import Vapor
 import WebSocket
 
-private let coder = Common.Coder()
+private let coder = Coder()
 
 extension RoutesBuilder {
 	@preconcurrency

@@ -16,8 +16,8 @@ struct UserControllerTests {
 			let userStore = app.userStore
 			var users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let adminUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: adminUser)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [])
 			let request = UpsertUserRequest(username: "foo", scopes: nil, password: "bar")
@@ -41,8 +41,8 @@ struct UserControllerTests {
 			let userStore = app.userStore
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let adminUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: adminUser)
 
 			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
 
@@ -65,8 +65,8 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let currentUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: currentUser, in: app)
+			let currentUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: currentUser)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
 
@@ -89,8 +89,8 @@ struct UserControllerTests {
 
 			var users = await userStore.users(includeSysAdmin: true)
 
-			let sysadminUser = try #require(users.first { $0.username == sysadminUsername })
-			let headers = try await authHeader(for: sysadminUser, in: app)
+			let sysadminUser = try #require(users.first(username: sysadminUsername))
+			let headers = try await app.authHeader(for: sysadminUser)
 
 			let expectedUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
 			let request = UpsertUserRequest(username: "foo", scopes: [.sysadmin], password: "bar")
@@ -119,8 +119,8 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let adminUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: adminUser)
 
 			let request = UpsertUserRequest(username: "foo", scopes: nil, password: nil)
 
@@ -144,7 +144,7 @@ struct UserControllerTests {
 			var users = await userStore.users()
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let user = User(username: "foo", password: "bar", scopes: [.admin])
 			try await userStore.upsert(user: user, oldUsername: "foo")
@@ -172,7 +172,7 @@ struct UserControllerTests {
 			var users = await userStore.users()
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let user = User(username: "foo", password: "bar", scopes: [.admin])
 			try await userStore.upsert(user: user, oldUsername: "foo")
@@ -203,8 +203,8 @@ struct UserControllerTests {
 
 			let users = await userStore.users()
 
-			let adminUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let adminUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: adminUser)
 
 			let request = UpsertUserRequest(username: "foo2", scopes: nil, password: nil)
 			try await app.testing().test(.PUT, user.apiPath, headers: headers, body: request) { res in
@@ -226,7 +226,7 @@ struct UserControllerTests {
 
 			let maybeAdminUser = await userStore.users().first { $0.scopes.contains(.admin) }
 			let adminUser = try #require(maybeAdminUser)
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let user = User(username: "foo", password: "bar", scopes: [.admin])
 			try await userStore.upsert(user: user, oldUsername: "foo")
@@ -253,7 +253,7 @@ struct UserControllerTests {
 			var users = await userStore.users(includeSysAdmin: true)
 
 			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
-			let headers = try await authHeader(for: sysadmin, in: app)
+			let headers = try await app.authHeader(for: sysadmin)
 
 			let user = User(username: "foo", password: "bar", scopes: [.admin])
 			try await userStore.upsert(user: user, oldUsername: "foo")
@@ -280,7 +280,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let nonExistingUser = User(username: "foo", password: "")
 
@@ -301,7 +301,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let newUser = User(username: "foo", password: "bar")
 			try await userStore.upsert(user: newUser, oldUsername: "foo")
@@ -323,7 +323,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [.admin])
 			try await userStore.upsert(user: newUser, oldUsername: "foo")
@@ -345,7 +345,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.admin]), oldUsername: "foo")
 			var usersWithNewAdmin = await userStore.users(includeSysAdmin: true)
@@ -370,7 +370,7 @@ struct UserControllerTests {
 
 			#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let headers = try await app.authHeader(for: adminUser)
 
 			try await app.testing().test(.DELETE, adminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .badRequest)
@@ -394,7 +394,7 @@ struct UserControllerTests {
 			#expect(users.filter { $0.scopes.contains(.admin) }.count == 1)
 			let adminUser = try #require(users.first { $0.scopes.contains(.admin) })
 			let sysadminUser = try #require(users.first { $0.scopes.contains(.sysadmin) })
-			let headers = try await authHeader(for: sysadminUser, in: app)
+			let headers = try await app.authHeader(for: sysadminUser)
 
 			try await app.testing().test(.DELETE, adminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .noContent)
@@ -416,8 +416,8 @@ struct UserControllerTests {
 			try await userStore.upsert(user: newUser, oldUsername: "foo")
 			let users = await userStore.users(includeSysAdmin: true)
 
-			let adminUser = try #require(users.first { $0.username == adminUsername })
-			let headers = try await authHeader(for: adminUser, in: app)
+			let adminUser = try #require(users.first(username: adminUsername))
+			let headers = try await app.authHeader(for: adminUser)
 
 			try await app.testing().test(.DELETE, newUser.apiPath, headers: headers) { res in
 				#expect(res.status == .init(statusCode: 403))
@@ -440,7 +440,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
-			let headers = try await authHeader(for: sysadmin, in: app)
+			let headers = try await app.authHeader(for: sysadmin)
 
 			try await userStore.upsert(user: User(username: "foo", password: "bar", scopes: [.sysadmin]), oldUsername: "foo")
 
@@ -467,7 +467,7 @@ struct UserControllerTests {
 			let users = await userStore.users(includeSysAdmin: true)
 
 			let sysadmin = try #require(users.first { $0.scopes.contains(.sysadmin) })
-			let headers = try await authHeader(for: sysadmin, in: app)
+			let headers = try await app.authHeader(for: sysadmin)
 
 			let newUser = User(username: "foo", password: "bar", scopes: [.sysadmin])
 			try await userStore.upsert(user: newUser, oldUsername: "foo")
@@ -493,7 +493,7 @@ struct UserControllerTests {
 
 			#expect(users.filter { $0.scopes.contains(.sysadmin) }.count == 1)
 			let sysadminUser = try #require(users.first(where: { $0.scopes.contains(.sysadmin) }))
-			let headers = try await authHeader(for: sysadminUser, in: app)
+			let headers = try await app.authHeader(for: sysadminUser)
 
 			try await app.testing().test(.DELETE, sysadminUser.apiPath, headers: headers) { res in
 				#expect(res.status == .badRequest)
@@ -504,55 +504,5 @@ struct UserControllerTests {
 			let updatedUsers = await app.userStore.users(includeSysAdmin: true)
 			#expect(users == updatedUsers)
 		}
-	}
-
-	func authHeader(for user: User, in app: Application, headers: HTTPHeaders = [:]) async throws -> HTTPHeaders {
-		let login = Login(user: user)
-		try await app.userStore.add(login)
-
-		let response = login.accessTokenResponse(type: .bearer)
-
-		var headers = headers
-		headers.add(name: "authorization", value: "\(response.type) \(response.accessToken)")
-
-		return headers
-	}
-}
-
-extension User {
-	var apiPath: String { "users/\(username)" }
-}
-
-extension TestingApplicationTester {
-	@discardableResult
-	func test(
-		_ method: HTTPMethod,
-		_ path: String,
-		headers: HTTPHeaders = .init([]),
-		body: some Encodable,
-		fileID: String = #fileID,
-		filePath: String = #filePath,
-		line: Int = #line,
-		column: Int = #column,
-		afterResponse: (TestingHTTPResponse) async throws -> ()
-	) async throws -> any TestingApplicationTester {
-		let encoder = JSONEncoder()
-		let data = try encoder.encode(body)
-
-		var headers = headers
-		headers.add(name: "content-type", value: "application/json")
-
-		return try await self.test(
-			method,
-			path,
-			headers: headers,
-			body: .init(data: data),
-			fileID: fileID,
-			filePath: filePath,
-			line: line,
-			column: column,
-			beforeRequest: { _ in },
-			afterResponse: afterResponse
-		)
 	}
 }

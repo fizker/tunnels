@@ -18,9 +18,9 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 	package typealias OnCertificatesUpdated = (CertificateAndPrivateKey) -> Void
 
 	var registeredEndpoints: Set<String> = []
-	var acmeData: ACMEData
+	package var acmeData: ACMEData
 	let coder = clientCoder
-	let setup: Setup
+	package let setup: Setup
 	let challengeHandler: ChallengeHandler
 	let logger = Logger(label: "ACMEHandler")
 	let onCertificatesUpdated: OnCertificatesUpdated

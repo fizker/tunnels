@@ -1,5 +1,5 @@
-import Common
 import FzkExtensions
+import TunnelModels
 
 package func encode(_ value: some Encodable) throws -> String {
 	let coder = Coder()

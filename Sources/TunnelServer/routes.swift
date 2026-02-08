@@ -45,6 +45,12 @@ func routes(_ app: Application) throws {
 	}
 
 	app
+	.grouped(RequireUserMiddleware(.setupRead))
+	.group("sys") { app in
+		app.get("setup") { try await $0.sysController().setup() }
+	}
+
+	app
 	.grouped(RequireUserMiddleware())
 	.group("tunnels") { app in
 		app.get { try await tunnelController.all(req: $0) }

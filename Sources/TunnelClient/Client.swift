@@ -19,6 +19,7 @@ public actor Client {
 	var webSocket: WebSocketHandler?
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
+	var acmeSetupDownloadPath: WebURL?
 
 	public enum Error: Swift.Error, Sendable {
 		case failedToRegisterProxies([Proxy])
@@ -30,6 +31,7 @@ public actor Client {
 		credentials: any Credentials,
 		logStorage: LogStorage,
 		logLevel: Logger.Level = .info,
+		acmeSetupDownloadPath: WebURL?,
 	) {
 		guard serverURL.path.isEmpty || serverURL.path == "/"
 		else { return nil }
@@ -52,6 +54,7 @@ public actor Client {
 		}
 		self.proxies = proxies
 		self.logStorage = logStorage
+		self.acmeSetupDownloadPath = acmeSetupDownloadPath
 	}
 
 	public func connect() async throws {
@@ -88,6 +91,10 @@ public actor Client {
 		}
 
 		try await registerProxies(webSocket: webSocket)
+
+		if let acmeSetupDownloadPath {
+			try await downloadACMESetup(downloadPath: acmeSetupDownloadPath, authHeader: authHeader)
+		}
 	}
 
 	var pendingProxies: [(continuation: TimedResolution, config: TunnelConfiguration)] = []

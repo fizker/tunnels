@@ -51,22 +51,25 @@ struct User: Codable, Equatable, Sendable, Authenticatable {
 		}
 	}
 
-	enum Scope: String, Codable, CustomStringConvertible, Comparable {
+	enum Scope: String, CaseIterable, Codable, CustomStringConvertible, Comparable {
 		case admin, sysadmin
+		case setupRead
 
 		var description: String {
 			rawValue
 		}
 
-		static func <(lhs: Scope, rhs: Scope) -> Bool {
-			switch (lhs, rhs) {
-			case (.admin, .admin), (.sysadmin, .sysadmin):
-				false
-			case (.admin, .sysadmin):
-				false
-			case (.sysadmin, .admin):
-				true
+		/// The sort-value of the scope. A lower value means higher priority.
+		var sortValue: Int {
+			switch self {
+			case .sysadmin: 1
+			case .admin: 2
+			case .setupRead: 3
 			}
+		}
+
+		static func <(lhs: Scope, rhs: Scope) -> Bool {
+			return lhs.sortValue < rhs.sortValue
 		}
 	}
 }
@@ -93,5 +96,15 @@ extension User {
 			try container.encode(clientSecret, forKey: .clientSecret)
 		}
 		try container.encode(knownHosts.sorted(), forKey: .knownHosts)
+	}
+}
+
+extension User: Hashable {
+	func hash(into hasher: inout Hasher) {
+		username.hash(into: &hasher)
+		password.hash(into: &hasher)
+		scopes.hash(into: &hasher)
+		clientSecret.hash(into: &hasher)
+		hostMap.hash(into: &hasher)
 	}
 }

@@ -1,5 +1,4 @@
 import AsyncHTTPClient
-import Common
 import Foundation
 import FzkExtensions
 import Logging
@@ -27,7 +26,7 @@ actor CredentialsStore {
 	private var credentials: any Credentials
 	private var serverURL: WebURL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
-	private let coder = Common.Coder()
+	private let coder = Coder()
 
 	init(credentials: some Credentials, serverURL: WebURL) {
 		self.credentials = credentials
