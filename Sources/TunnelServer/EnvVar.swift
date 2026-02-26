@@ -50,17 +50,16 @@ extension EnvironmentVariables where Key == EnvVar {
 
 	package var acmeSetup: ACMESetup? {
 		get throws {
-			guard useSSL
-			else { return nil }
-
 			guard let acmeSetupPath = try? get(.acmeSetup)
 			else {
-				return .init(
+				return useSSL
+				? .init(
 					host: host,
 					directory: try acmeDirectory,
 					contactEmail: try acmeContactEmail,
 					storagePath: try acmeStoragePath,
 				)
+				: nil
 			}
 
 			let url = URL(fileURLWithPath: acmeSetupPath)
