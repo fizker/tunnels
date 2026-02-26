@@ -1,5 +1,8 @@
-import ACMEClientModels
-import EnvironmentVariables
+package import ACME
+package import ACMEClientModels
+package import EnvironmentVariables
+import Foundation
+import TunnelModels
 import Vapor
 
 public enum EnvVar: String, CaseIterable, Sendable {
@@ -8,49 +11,71 @@ public enum EnvVar: String, CaseIterable, Sendable {
 	case httpPort
 	case useSSL
 	case userStoragePath
+	case acmeSetup
 	case acmeEndpoint
 	case acmeContactEmail
 	case acmeStoragePath
 }
 
 extension EnvironmentVariables where Key == EnvVar {
-	var port: Int {
+	package var port: Int {
 		get {
 			get(.port, map: Int.init, default: 8110)
 		}
 	}
 
-	var host: String {
+	package var host: String {
 		get {
 			get(.host, default: "localhost")
 		}
 	}
 
-	var httpPort: Int? {
+	package var httpPort: Int? {
 		get {
 			try? get(.httpPort, map: Int.init)
 		}
 	}
 
-	var userStoragePath: String? {
+	package var userStoragePath: String? {
 		get {
 			try? get(.userStoragePath)
 		}
 	}
 
-	var useSSL: Bool {
+	package var useSSL: Bool {
 		get {
 			get(.useSSL, map: Bool.init, default: false)
 		}
 	}
 
-	var acmeContactEmail: String {
+	package var acmeSetup: ACMESetup? {
+		get throws {
+			guard let acmeSetupPath = try? get(.acmeSetup)
+			else {
+				return useSSL
+				? .init(
+					host: host,
+					directory: try acmeDirectory,
+					contactEmail: try acmeContactEmail,
+					storagePath: try acmeStoragePath,
+				)
+				: nil
+			}
+
+			let url = URL(fileURLWithPath: acmeSetupPath)
+			let data = try Data(contentsOf: url)
+			let coder = Coder()
+			return try coder.decode(data)
+		}
+	}
+
+	package var acmeContactEmail: String {
 		get throws {
 			try get(.acmeContactEmail)
 		}
 	}
 
-	var acmeDirectory: ACMEDirectory {
+	package var acmeDirectory: ACMEDirectory {
 		get throws {
 			try get(.acmeEndpoint) {
 				switch $0 {
@@ -65,7 +90,7 @@ extension EnvironmentVariables where Key == EnvVar {
 		}
 	}
 
-	var acmeStoragePath: String {
+	package var acmeStoragePath: String {
 		get throws {
 			try get(.acmeStoragePath)
 		}

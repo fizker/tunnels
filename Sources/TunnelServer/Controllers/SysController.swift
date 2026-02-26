@@ -1,14 +1,14 @@
-import ACME
-import ACMEClientModels
+package import ACME
+package import ACMEClientModels
 import Crypto
 import TunnelModels
 import Vapor
 
-class SysController {
-	struct Setup: Codable, Content {
+package class SysController {
+	package struct Setup: Codable, Content {
 		var users: [User]
-		var acmeData: ACMEData?
-		var acmeSetup: ACMEHandler.Setup?
+		package var acmeData: ACMEData?
+		package var acmeSetup: ACMEHandler.Setup?
 	}
 
 	let request: Request

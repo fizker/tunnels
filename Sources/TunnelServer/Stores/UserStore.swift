@@ -1,5 +1,6 @@
 import Foundation
 import OAuth2Models
+package import SystemPackage
 import TunnelModels
 import Vapor
 
@@ -35,7 +36,7 @@ struct Login: Codable {
 	}
 }
 
-actor UserStore {
+package actor UserStore {
 	let coder = Coder()
 	enum Error: String, Swift.Error, Codable {
 		case usernameExists
@@ -79,6 +80,18 @@ actor UserStore {
 				self.data.logins[key] = nil
 			}
 		}
+	}
+
+	package static func `import`(downloadedData: SysController.Setup, storagePath: FilePath?) async throws {
+		let store = try Self.init(storagePath: storagePath?.string)
+
+		await store.set(downloadedData.users)
+
+		try await store.save()
+	}
+
+	private func set(_ users: [User]) {
+		data.users = users
 	}
 
 	private static func load(fileManager fm: FileManager, path: String, coder: Coder) throws -> UserData? {
