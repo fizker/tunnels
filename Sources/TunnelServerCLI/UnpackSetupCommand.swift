@@ -9,7 +9,7 @@ let coder = Coder()
 struct UnpackSetupCommand: AsyncParsableCommand {
 	static let configuration = CommandConfiguration(
 		commandName: "unpack",
-		abstract: "Unpacks a downloaded setup file for use in starting a server",
+		abstract: "Unpacks a downloaded setup file for use in starting TunnelServer.",
 	)
 
 	@Argument(
@@ -24,19 +24,21 @@ struct UnpackSetupCommand: AsyncParsableCommand {
 
 	@Option(
 		name: [ .short, .customLong("user-storage") ],
-		help: "The path to unpack the users to",
+		help: "The path to write the user-data to.",
 		transform: FilePath.init(_:),
 	)
 	var userStoragePath: FilePath
 
 	@Option(
 		name: [ .customShort("s"), .customLong("acme-setup") ],
+		help: "The path that the ACME setup should be written to.",
 		transform: FilePath.init(_:),
 	)
 	var acmeSetupPath: FilePath
 
 	@Option(
 		name: [ .customShort("d"), .customLong("acme-data") ],
+		help: "The path that the ACME certificates should be written to.",
 		transform: FilePath.init(_:),
 	)
 	var acmeDataPath: FilePath
