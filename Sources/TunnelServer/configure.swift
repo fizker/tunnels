@@ -17,14 +17,8 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 	app.userStore = try .init(storagePath: app.environment.userStoragePath)
 
-	if app.environment.useSSL {
+	if let setup = try env.acmeSetup {
 		app.logger.notice("SSL setup initiated")
-		let setup = ACMESetup(
-			host: app.environment.host,
-			directory: try app.environment.acmeDirectory,
-			contactEmail: try app.environment.acmeContactEmail,
-			storagePath: try app.environment.acmeStoragePath,
-		)
 
 		let challengeHandler = ChallengeHandler(host: setup.host)
 		app.acmeHandler = try .init(setup: setup, challengeHandler: challengeHandler) {
