@@ -6,6 +6,7 @@ struct MainCommand: AsyncParsableCommand {
 		commandName: "tunnel-server",
 		subcommands: [
 			StartCommand.self,
+			UnpackSetupCommand.self,
 		],
 		defaultSubcommand: StartCommand.self,
 	)
