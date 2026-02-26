@@ -155,6 +155,7 @@ func executableTargets() -> [Target] {
 			name: "TunnelServerCLI",
 			dependencies: [
 				"TunnelServer",
+				.product(name: "ArgumentParser", package: "swift-argument-parser"),
 			],
 			swiftSettings: upcomingFeatures
 		),
