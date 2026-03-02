@@ -60,12 +60,17 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			return
 		}
 
+		let logger = logger
+
 		let delay = max(0, date.timeIntervalSinceNow)
+		logger.info("Waiting for \(Int(delay)) seconds before performing automatic ACME renewal check")
 		Task.detached { [weak self] in
 			do {
 				try await Task.sleep(for: .seconds(delay))
+				logger.info("Performing automatic ACME renewal check")
 				await self?.resolveCertificates()
 			} catch {
+				logger.error("Automatic renewal check failed: \(error)")
 				// If the task fails, we just reschedule and try again
 				await self?.setRenewalTimer(for: date, callCount: callCount + 1)
 			}
@@ -148,6 +153,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		}
 
 		if let cert {
+			logger.info("New certificate received")
 			acmeData.certificate = cert
 
 			await challengeHandler.reset(token: handlerToken)
@@ -155,6 +161,8 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			try save()
 
 			onCertificatesUpdated(cert)
+		} else {
+			logger.info("No certificate update needed")
 		}
 
 		return renewalInfo.recommendedDateForNextCheck
