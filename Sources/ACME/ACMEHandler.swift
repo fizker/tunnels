@@ -53,6 +53,9 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		registeredEndpoints.formUnion(endpoints)
 	}
 
+	func setRenewalTimer(for date: Date) {
+	}
+
 	/// Resolves the certificates for the current set of registered endpoints. This will eventually result in calling the
 	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
 	package func resolveCertificates() {
@@ -82,18 +85,19 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 
 		Task.detached {
 			do {
-				try await self.requestCerts(domains: registeredEndpoints)
+				let renewalTestDate = try await self.requestCerts(domains: registeredEndpoints)
+				await self.setRenewalTimer(for: renewalTestDate)
 			} catch {
 				logger.error("Failed to create certificates: \(error)")
 			}
 		}
 	}
 
-	private func requestCerts(domains: Set<String>) async throws {
+	private func requestCerts(domains: Set<String>) async throws -> Date {
 		try await requestCerts(domains: domains.map { try Domain($0).unwrap() })
 	}
 
-	private func requestCerts(domains: [Domain]) async throws {
+	private func requestCerts(domains: [Domain]) async throws -> Date {
 		logger.info("Requesting cert for domains: \(domains)")
 		let account: Account
 		if let a = acmeData.account {
@@ -117,7 +121,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		let challengeHandler = challengeHandler
 		let handlerToken = challengeHandler.createToken()
 
-		let cert = try await client.requestCertificate(covering: domains) { auths in
+		let (renewalInfo, cert) = try await client.requestCertificate(covering: domains, renewing: acmeData.certificate) { auths in
 			var verifications: [Verification] = []
 			for auth in auths {
 				let verification = try await challengeHandler.register(auth: auth, token: handlerToken)
@@ -126,13 +130,18 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			try await challengeHandler.handleNonAutomaticSetup(token: handlerToken)
 			return verifications
 		}
-		acmeData.certificate = cert
 
-		await challengeHandler.reset(token: handlerToken)
+		if let cert {
+			acmeData.certificate = cert
 
-		try save()
+			await challengeHandler.reset(token: handlerToken)
 
-		onCertificatesUpdated(cert)
+			try save()
+
+			onCertificatesUpdated(cert)
+		}
+
+		return renewalInfo.recommendedDateForNextCheck
 	}
 
 	private func save() throws {
