@@ -39,8 +39,6 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		} else {
 			acmeData = .init(directory: setup.directory)
 		}
-
-		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")
 	}
 
 	/// Registers the given endpoint for certificate generation.
@@ -53,7 +51,25 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		registeredEndpoints.formUnion(endpoints)
 	}
 
-	func setRenewalTimer(for date: Date) {
+	private func setRenewalTimer(for date: Date, callCount: Int = 0) {
+		guard callCount < 5
+		else {
+			logger.error("Renewal timer failed too many times")
+			// If we fail 5 times in a row, we just execute this immediately
+//			resolveCertificates()
+			return
+		}
+
+		let delay = max(0, date.timeIntervalSinceNow)
+		Task.detached { [weak self] in
+			do {
+				try await Task.sleep(for: .seconds(delay))
+				await self?.resolveCertificates()
+			} catch {
+				// If the task fails, we just reschedule and try again
+				await self?.setRenewalTimer(for: date, callCount: callCount + 1)
+			}
+		}
 	}
 
 	/// Resolves the certificates for the current set of registered endpoints. This will eventually result in calling the
