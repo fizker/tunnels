@@ -55,8 +55,9 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		guard callCount < 5
 		else {
 			logger.error("Renewal timer failed too many times")
-			// If we fail 5 times in a row, we just execute this immediately
-//			resolveCertificates()
+			// If we fail 5 times in a row, we just execute this immediately.
+			// Note that the only thing that can fail to get here is the `Task.sleep()`
+			resolveCertificates()
 			return
 		}
 
