@@ -27,7 +27,7 @@ let package = Package(
 		.package(url: "https://github.com/apple/swift-crypto.git", from: "4.2.0"),
 		.package(url: "https://github.com/apple/swift-nio.git", from: "2.95.0"),
 		.package(url: "https://github.com/apple/swift-nio-ssl.git", from: "2.36.0"),
-		.package(url: "https://github.com/fizker/swift-acme-client.git", from: "0.3.0"),
+		.package(url: "https://github.com/fizker/swift-acme-client.git", from: "0.4.0"),
 		.package(url: "https://github.com/fizker/swift-environment-variables.git", from: "1.2.0"),
 		.package(url: "https://github.com/fizker/swift-extensions.git", from:"1.4.0"),
 		.package(url: "https://github.com/fizker/swift-oauth2-models.git", .upToNextMinor(from: "0.4.0")),

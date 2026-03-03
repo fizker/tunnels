@@ -39,8 +39,6 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		} else {
 			acmeData = .init(directory: setup.directory)
 		}
-
-		#warning("TODO: Check if the certificate is ready for renewal and set up timer for when it needs renewal")
 	}
 
 	/// Registers the given endpoint for certificate generation.
@@ -53,6 +51,33 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		registeredEndpoints.formUnion(endpoints)
 	}
 
+	private func setRenewalTimer(for date: Date, callCount: Int = 0) {
+		guard callCount < 5
+		else {
+			logger.error("Renewal timer failed too many times")
+			// If we fail 5 times in a row, we just execute this immediately.
+			// Note that the only thing that can fail to get here is the `Task.sleep()`
+			resolveCertificates()
+			return
+		}
+
+		let logger = logger
+
+		let delay = max(0, date.timeIntervalSinceNow)
+		logger.info("Waiting for \(Int(delay)) seconds before performing automatic ACME renewal check")
+		Task.detached { [weak self] in
+			do {
+				try await Task.sleep(for: .seconds(delay))
+				logger.info("Performing automatic ACME renewal check")
+				await self?.resolveCertificates()
+			} catch {
+				logger.error("Automatic renewal check failed: \(error)")
+				// If the task fails, we just reschedule and try again
+				await self?.setRenewalTimer(for: date, callCount: callCount + 1)
+			}
+		}
+	}
+
 	/// Resolves the certificates for the current set of registered endpoints. This will eventually result in calling the
 	/// ``OnCertificatesUpdated`` function registered during ``init(setup:challengeHandler:onCertificatesUpdated:)``.
 	package func resolveCertificates() {
@@ -61,39 +86,25 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		}
 
 		let registeredEndpoints = registeredEndpoints
-		let endpoints = Array(registeredEndpoints)
-		let uncoveredEndpoints: Set<String>
-		if let cert = acmeData.certificate {
-			if !cert.covers(domains: endpoints) {
-				uncoveredEndpoints = endpoints.filter { !cert.covers(domains: [$0]) }
-					|> Set.init
-			} else {
-				uncoveredEndpoints = []
-			}
-		} else {
-			uncoveredEndpoints = Set(endpoints)
-		}
-
-		guard !uncoveredEndpoints.isEmpty
-		else { return }
 
 		logger.info("Requesting new certificate")
 		let logger = logger
 
 		Task.detached {
 			do {
-				try await self.requestCerts(domains: registeredEndpoints)
+				let renewalTestDate = try await self.requestCerts(domains: registeredEndpoints)
+				await self.setRenewalTimer(for: renewalTestDate)
 			} catch {
 				logger.error("Failed to create certificates: \(error)")
 			}
 		}
 	}
 
-	private func requestCerts(domains: Set<String>) async throws {
+	private func requestCerts(domains: Set<String>) async throws -> Date {
 		try await requestCerts(domains: domains.map { try Domain($0).unwrap() })
 	}
 
-	private func requestCerts(domains: [Domain]) async throws {
+	private func requestCerts(domains: [Domain]) async throws -> Date {
 		logger.info("Requesting cert for domains: \(domains)")
 		let account: Account
 		if let a = acmeData.account {
@@ -117,7 +128,7 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		let challengeHandler = challengeHandler
 		let handlerToken = challengeHandler.createToken()
 
-		let cert = try await client.requestCertificate(covering: domains) { auths in
+		let (renewalInfo, cert) = try await client.requestCertificate(covering: domains, renewing: acmeData.certificate) { auths in
 			var verifications: [Verification] = []
 			for auth in auths {
 				let verification = try await challengeHandler.register(auth: auth, token: handlerToken)
@@ -126,13 +137,21 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			try await challengeHandler.handleNonAutomaticSetup(token: handlerToken)
 			return verifications
 		}
-		acmeData.certificate = cert
 
-		await challengeHandler.reset(token: handlerToken)
+		if let cert {
+			logger.info("New certificate received")
+			acmeData.certificate = cert
 
-		try save()
+			await challengeHandler.reset(token: handlerToken)
 
-		onCertificatesUpdated(cert)
+			try save()
+
+			onCertificatesUpdated(cert)
+		} else {
+			logger.info("No certificate update needed")
+		}
+
+		return renewalInfo.recommendedDateForNextCheck
 	}
 
 	private func save() throws {
