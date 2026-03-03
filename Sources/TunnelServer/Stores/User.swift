@@ -30,6 +30,12 @@ struct User: Codable, Equatable, Sendable, Authenticatable {
 		hostMap[host.value] = host
 	}
 
+	var removingKnownHosts: Self {
+		var copy = self
+		copy.hostMap = [:]
+		return copy
+	}
+
 	enum CodingKeys: CodingKey {
 		case username
 		case password

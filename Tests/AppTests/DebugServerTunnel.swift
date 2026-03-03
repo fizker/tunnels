@@ -46,6 +46,7 @@ struct DebugServerTunnel: SuiteTrait, TestScoping {
 			],
 			credentials: PasswordCredentials(username: "regular", password: "1234"),
 			logStorage: try await .init(storage: .init(storagePath).unwrap()),
+			acmeSetupDownloadPath: nil,
 		)
 		try await client?.connect()
 
