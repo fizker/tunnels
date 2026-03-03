@@ -86,21 +86,6 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 		}
 
 		let registeredEndpoints = registeredEndpoints
-		let endpoints = Array(registeredEndpoints)
-		let uncoveredEndpoints: Set<String>
-		if let cert = acmeData.certificate {
-			if !cert.covers(domains: endpoints) {
-				uncoveredEndpoints = endpoints.filter { !cert.covers(domains: [$0]) }
-					|> Set.init
-			} else {
-				uncoveredEndpoints = []
-			}
-		} else {
-			uncoveredEndpoints = Set(endpoints)
-		}
-
-		guard !uncoveredEndpoints.isEmpty
-		else { return }
 
 		logger.info("Requesting new certificate")
 		let logger = logger
