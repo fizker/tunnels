@@ -1,5 +1,5 @@
 {
-  "originHash" : "b6613d9e85e5caa3b0388cc6fa1639229949bd8a92f52acf4e8bbae5113b4b47",
+  "originHash" : "ec6616c726a0fad2444dca59e41f0e72150701aa181377691b1e1baaf4f0af68",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-acme-client.git",
       "state" : {
-        "revision" : "d81044f426ac0569f1eea73ddd3deaf3d5c2473d",
-        "version" : "0.3.0"
+        "revision" : "155aea4aa2db43c06758c835382c92c4dea30f3d",
+        "version" : "0.4.0"
       }
     },
     {
