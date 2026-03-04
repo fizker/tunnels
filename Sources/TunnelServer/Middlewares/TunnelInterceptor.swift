@@ -8,7 +8,21 @@ struct TunnelInterceptor: AsyncMiddleware {
 	func respond(to request: Request, chainingTo next: any AsyncResponder) async throws -> Response {
 		let logger = request.logger(label: "TunnelInterceptor")
 
-		guard let host = portlessHost(for: request), host != ownHost
+		guard let host = portlessHost(for: request)
+		else {
+			return Response(
+				status: .badRequest,
+				headers: ["content-type": "text/html"],
+				body: .init(string: """
+				<!doctype html>
+
+				<h1>Host header missing</h1>
+
+				<p>The host-header is required</p>
+				"""),
+			)
+		}
+		guard host != ownHost
 		else {
 			logger.info("Handling request with regular routes")
 			return try await next.respond(to: request)
@@ -18,7 +32,7 @@ struct TunnelInterceptor: AsyncMiddleware {
 		else {
 			logger.info("Could not find client for host \(host)")
 			return Response(
-				status: .badGateway,
+				status: .notFound,
 				headers: ["content-type": "text/html"],
 				body: .init(string: """
 				<!doctype html>

@@ -54,11 +54,11 @@ struct UpgradeMiddleware: AsyncMiddleware {
 		url.scheme = "https"
 
 		guard let host = request.headers["host"].first
-		else { return Response(status: .serviceUnavailable) }
+		else { return Response(status: .badRequest) }
 
 		let response = await requestUpgrade(host)
 		guard response.isAccepted
-		else { return Response(status: .serviceUnavailable) }
+		else { return Response(status: .notFound) }
 
 		url.host = response.host ?? host
 		url.port = response.port == 443 ? nil : response.port

@@ -65,13 +65,12 @@ extension Client {
 				case .ECONNREFUSED:
 					let html = """
 					<!doctype html>
-					<h1>Service Unavailable</h1>
+					<h1>Bad gateway</h1>
 					<p>Proxied server did not respond.</p>
 					"""
-					return .init(status: .serviceUnavailable, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+					return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
 				default:
 					logger.error("Failed to handle posix error \(error.errorCode)")
-					break
 				}
 			} else if let error = error as? HTTPClientError {
 				switch error {
@@ -85,13 +84,12 @@ extension Client {
 				case .remoteConnectionClosed:
 					let html = """
 					<!doctype html>
-					<h1>Service Unavailable</h1>
+					<h1>Bad gateway</h1>
 					<p>Proxied server closed the connection before responding.</p>
 					"""
-					return .init(status: .serviceUnavailable, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
+					return .init(status: .badGateway, headers: ["content-type": "text/html"], body: .bytes(.init(string: html)))
 				default:
 					logger.error("Failed to handle HTTPClientError error \(error)")
-					break
 				}
 			} else {
 				logger.error("Unknown error: \(error)")
