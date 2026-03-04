@@ -53,6 +53,7 @@ struct UnpackSetupCommand: AsyncParsableCommand {
 
 		if var setup = setup.acmeSetup {
 			setup.storagePath = acmeDataPath.string
+			setup.fetchCertificates = false
 			let encoded = try coder.encode(setup)
 			try await encoded.write(toFileAt: acmeSetupPath)
 		}

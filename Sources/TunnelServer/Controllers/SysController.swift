@@ -27,6 +27,7 @@ package class SysController {
 			acmeData: await acmeHandler?.acmeData,
 			acmeSetup: await acmeHandler?.setup,
 		)
+		setup.acmeSetup?.fetchCertificates = false
 
 		if !(request.query["include-known-hosts"] ?? false)  {
 			setup.users = setup.users.map(\.removingKnownHosts)
