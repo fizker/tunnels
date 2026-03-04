@@ -22,11 +22,16 @@ package class SysController {
 	}
 
 	func setup() async throws -> Response {
-		let setup = Setup(
+		var setup = Setup(
 			users: await userStore.users(includeSysAdmin: true),
 			acmeData: await acmeHandler?.acmeData,
 			acmeSetup: await acmeHandler?.setup,
 		)
+		setup.acmeSetup?.fetchCertificates = false
+
+		if !(request.query["include-known-hosts"] ?? false)  {
+			setup.users = setup.users.map(\.removingKnownHosts)
+		}
 
 		let coder = Coder()
 		let data = try coder.encode(setup)

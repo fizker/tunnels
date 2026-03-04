@@ -194,6 +194,7 @@ func testTargets() -> [Target] {
 			name: "helpers",
 			dependencies: [
 				"Common",
+				.product(name: "TunnelModels", package: "tunnels-models"),
 				.product(name: "FzkExtensions", package: "swift-extensions"),
 			],
 			path: "Tests/helpers",
