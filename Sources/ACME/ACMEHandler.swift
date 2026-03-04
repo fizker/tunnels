@@ -85,6 +85,9 @@ package actor ACMEHandler<ChallengeHandler: EndpointChallengeHandler> {
 			onCertificatesUpdated(cert)
 		}
 
+		guard setup.fetchCertificates
+		else { return }
+
 		let registeredEndpoints = registeredEndpoints
 
 		logger.info("Requesting new certificate")
