@@ -6,6 +6,14 @@ extension TunnelDTO: Content {}
 func routes(_ app: Application) throws {
 	let tunnelController = TunnelController()
 
+	app.middleware.use(BlacklistMiddleware(blacklistedPaths: [
+		#/^/blacklisted/#,
+		/\.php/,
+		/robots.txt$/,
+		#/^/.git/#,
+		#/^/wp/#,
+	]), at: .beginning)
+
 	app.middleware.use(TunnelInterceptor(ownHost: app.environment.host, controller: tunnelController))
 
 	app.middleware.use(AuthMiddleware(userStore: app.userStore))
