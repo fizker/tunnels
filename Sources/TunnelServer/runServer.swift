@@ -1,4 +1,5 @@
 import EnvironmentVariables
+import RotatingFileLogHandler
 import Vapor
 
 package func runServer() async throws {
@@ -8,12 +9,28 @@ package func runServer() async throws {
 		.default,
 	]))
 
+	let acmeFileLogs = try RotatingFileLogHandler(folderPath: "server-logs", filenamePrefix: "acme", rotation: .size(.kilobytes(500)), cleanup: .fileCount(4))
+	let otherFileLogs = try RotatingFileLogHandler(folderPath: "server-logs", filenamePrefix: "tunnel-server", rotation: .size(.kilobytes(500)), cleanup: .age(.days(7)))
+
 	LoggingSystem.bootstrap { label in
-		StreamLogHandler.standardOutput(label: label)
+		var handlers: [any LogHandler] = [
+			StreamLogHandler.standardOutput(label: label),
+		]
+		if isACME(label: label) {
+			handlers.append(acmeFileLogs.handler(label: label))
+		} else {
+			handlers.append(otherFileLogs.handler(label: label))
+		}
+		return MultiplexLogHandler(handlers)
 	}
 
 	let server = try await TunnelServer(environmentVars: envVar)
 
 	try await server.start()
 	try await server.waitUntilStopped()
+}
+
+nonisolated(unsafe) let acmeCheck = /^acme/.ignoresCase()
+func isACME(label: String) -> Bool {
+	label.starts(with: acmeCheck)
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "ec6616c726a0fad2444dca59e41f0e72150701aa181377691b1e1baaf4f0af68",
+  "originHash" : "90ead02cfc3fe632616b27c9089d71f136500f377e599e685dd5081265db43a6",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -168,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-extensions.git",
       "state" : {
-        "revision" : "5a6354c898424f6a536d32fcf1e5bfca415c7312",
-        "version" : "1.5.1"
+        "revision" : "45efdcd210e37ff288b6dc6f095e0b47a3b66468",
+        "version" : "1.5.2"
       }
     },
     {
@@ -276,7 +276,16 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/fizker/swift-oauth2-models.git",
       "state" : {
-        "revision" : "edf3e56ff84d8d087294f6687bf30ac5e1cbe203",
+        "revision" : "b9a64a9c23588f0e433c021508657f7d0ccca112",
+        "version" : "0.4.1"
+      }
+    },
+    {
+      "identity" : "swift-rotating-file-log-handler",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/fizker/swift-rotating-file-log-handler.git",
+      "state" : {
+        "revision" : "5499df3f4468bea18602d5983fccc89888956ef9",
         "version" : "0.4.0"
       }
     },
