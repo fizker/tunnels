@@ -2,11 +2,13 @@ package import ACME
 package import ACMEClientModels
 package import EnvironmentVariables
 import Foundation
+package import SystemPackage
 import TunnelModels
 import Vapor
 
 public enum EnvVar: String, CaseIterable, Sendable {
 	case port = "PORT"
+	case logs
 	case host
 	case httpPort
 	case useSSL
@@ -21,6 +23,12 @@ extension EnvironmentVariables where Key == EnvVar {
 	package var port: Int {
 		get {
 			get(.port, map: Int.init, default: 8110)
+		}
+	}
+
+	package var logs: FilePath {
+		get {
+			get(.logs, map: { FilePath($0) }, default: "server-logs")
 		}
 	}
 

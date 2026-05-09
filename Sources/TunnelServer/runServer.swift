@@ -9,14 +9,18 @@ package func runServer() async throws {
 		.default,
 	]))
 
-	let acmeFileLogs = try RotatingFileLogHandler(folderPath: "server-logs", filenamePrefix: "acme", rotation: .size(.kilobytes(500)), cleanup: .fileCount(4))
-	let otherFileLogs = try RotatingFileLogHandler(folderPath: "server-logs", filenamePrefix: "tunnel-server", rotation: .size(.kilobytes(500)), cleanup: .age(.days(7)))
+	let acmeFileLogs = try RotatingFileLogHandler(folderPath: envVar.logs, filenamePrefix: "acme", rotation: .size(.kilobytes(500)), cleanup: .fileCount(4))
+	let blacklistLogs = try RotatingFileLogHandler(folderPath: envVar.logs, filenamePrefix: "blacklist", rotation: .size(.kilobytes(500)), cleanup: .age(.days(7)))
+	let otherFileLogs = try RotatingFileLogHandler(folderPath: envVar.logs, filenamePrefix: "tunnel-server", rotation: .size(.kilobytes(500)), cleanup: .age(.days(7)))
+	print("Logs are output into: \(envVar.logs)")
 
 	LoggingSystem.bootstrap { label in
 		var handlers: [any LogHandler] = [
 			StreamLogHandler.standardOutput(label: label),
 		]
-		if isACME(label: label) {
+		if isBlacklist(label: label) {
+			handlers.append(blacklistLogs.handler(label: label))
+		} else if isACME(label: label) {
 			handlers.append(acmeFileLogs.handler(label: label))
 		} else {
 			handlers.append(otherFileLogs.handler(label: label))
@@ -33,4 +37,7 @@ package func runServer() async throws {
 nonisolated(unsafe) let acmeCheck = /^acme/.ignoresCase()
 func isACME(label: String) -> Bool {
 	label.starts(with: acmeCheck)
+}
+func isBlacklist(label: String) -> Bool {
+	label.starts(with: "blacklist")
 }

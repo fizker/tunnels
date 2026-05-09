@@ -1,12 +1,20 @@
-import Foundation
+import Logging
 import Vapor
 
 struct BlacklistMiddleware: SimpleMiddleware, @unchecked Sendable {
+	let logger = Logger(label: "blacklist")
 	var blacklistedPaths: [Regex<Substring>] = []
 
 	func next(_ request: Request) async throws -> Response? {
 		guard try !isBlacklisted(request)
-		else { return Response(status: .notFound, body: "Not found") }
+		else {
+			var metadata: Logger.Metadata = [:]
+			if let ra = request.remoteAddress {
+				metadata["remote"] = .string(ra.description)
+			}
+			logger.info("\(request.method) \(request.url)", metadata: metadata)
+			return Response(status: .notFound, body: "Not found")
+		}
 
 		return nil
 	}
