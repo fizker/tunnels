@@ -1,5 +1,6 @@
 import AsyncHTTPClient
 import Foundation
+import FzkExtensions
 import NIOHTTP1
 import Testing
 
@@ -11,15 +12,13 @@ struct ConcurrentCallLimitTests {
 	var debugServerPort: Int { Self.debugServerPort }
 
 	@Test(StartDebugServer(port: debugServerPort), arguments: [
-		(1, 20, true),
+		(delay: 1, concurrent: 20),
 	])
-	func debugServer__multipleCallsStartedInParallel__responseExpectedToLandReasonablyClose(delay: Int, concurrent: Int, raiseHTTP1Limit: Bool) async throws {
+	func debugServer__multipleCallsStartedInParallel__responseExpectedToLandReasonablyClose(delay: Int, concurrent: Int) async throws {
 		let request = HTTPClientRequest(url: "http://localhost:\(debugServerPort)/delayed?delay=\(delay)")
 
 		var config = HTTPClient.Configuration()
-		if raiseHTTP1Limit {
-			config.connectionPool.concurrentHTTP1ConnectionsPerHostSoftLimit = concurrent
-		}
+		config.connectionPool.concurrentHTTP1ConnectionsPerHostSoftLimit = concurrent
 		let client = HTTPClient(configuration: config)
 		defer {
 			Task { try await client.shutdown() }
@@ -35,17 +34,23 @@ struct ConcurrentCallLimitTests {
 		}
 	}
 
-	@Test(DebugServerTunnel(tunnelServerPort: tunnelServerPort, debugServerPort: debugServerPort, debugServerHostName: "test.fizkerinc.dk"), arguments: [
-		(1, 20, true),
-	])
-	func tunnel__multipleCallsStartedInParallel__responseExpectedToLandReasonablyClose(delay: Int, concurrent: Int, raiseHTTP1Limit: Bool) async throws {
+	@Test(
+		DebugServerTunnel(
+			tunnelServerPort: tunnelServerPort,
+			debugServerPort: debugServerPort,
+			debugServerHostName: "test.fizkerinc.dk",
+			useHTTPS: true,
+		),
+		arguments: [
+			(delay: 1, concurrent: 20),
+		]
+	)
+	func tunnel__multipleCallsStartedInParallel__responseExpectedToLandReasonablyClose(delay: Int, concurrent: Int) async throws {
 		let request = tunnelServerRequest(host: "test.fizkerinc.dk", path: "/delayed?delay=\(delay)")
 
-		var config = HTTPClient.Configuration()
-		if raiseHTTP1Limit {
-			config.connectionPool.concurrentHTTP1ConnectionsPerHostSoftLimit = concurrent
-		}
-		let client = HTTPClient(configuration: config)
+		let client = HTTPClient(configuration: .init(tlsConfiguration: .makeClientConfiguration() ~ {
+			$0?.certificateVerification = .none
+		}))
 		defer {
 			Task { try await client.shutdown() }
 		}
@@ -61,7 +66,7 @@ struct ConcurrentCallLimitTests {
 	}
 
 	func tunnelServerRequest(host: String, path: String) -> HTTPClientRequest {
-		var request = HTTPClientRequest(url: "http://localhost:\(tunnelServerPort)\(path)")
+		var request = HTTPClientRequest(url: "https://localhost:\(tunnelServerPort)\(path)")
 		request.method = .GET
 		request.headers.replaceOrAdd(name: "host", value: host)
 		return request

@@ -36,12 +36,14 @@ struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 	var tunnelServerPort: Int
 	var debugServerPort: Int
 	var debugServerHostName: String
+	var useHTTPS: Bool = false
 
 	func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable () async throws -> Void) async throws {
 		// start tunnel server and debug server
 		let tunnelServer = try await TunnelServer(
 			environmentVars: .init([
 				.port: "\(tunnelServerPort)",
+				.useSSL: "\(useHTTPS)",
 			]),
 		)
 		try await tunnelServer.start()
@@ -57,13 +59,14 @@ struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 
 		// when tunnel server is running, start tunnel client
 		let client = Client(
-			serverURL: .init("http://localhost:\(tunnelServerPort)")!,
+			serverURL: .init("\(useHTTPS ? "https" : "http")://localhost:\(tunnelServerPort)")!,
 			proxies: [
 				.init(localPort: debugServerPort, host: debugServerHostName),
 			],
 			credentials: PasswordCredentials(username: "regular", password: "1234"),
 			logStorage: try await .init(storage: .init(storagePath).unwrap()),
 			acmeSetupDownloadPath: nil,
+			verifyHTTPSCertificate: false,
 		)
 		try await client?.connect()
 
