@@ -15,7 +15,24 @@ struct PasswordCredentials: Credentials {
 	}
 }
 
-struct DebugServerTunnel: SuiteTrait, TestScoping {
+struct StartDebugServer: SuiteTrait, TestTrait, TestScoping {
+	var port: Int
+
+	func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable () async throws -> Void) async throws {
+		let debugServer = try await DebugServer(port: "\(port)")
+		try await debugServer.start()
+
+		do {
+			try await function()
+		} catch {
+			try? await debugServer.stop()
+			throw error
+		}
+		try? await debugServer.stop()
+	}
+}
+
+struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 	var tunnelServerPort: Int
 	var debugServerPort: Int
 	var debugServerHostName: String
@@ -50,9 +67,16 @@ struct DebugServerTunnel: SuiteTrait, TestScoping {
 		)
 		try await client?.connect()
 
-		try await function()
+		do {
+			try await function()
+		} catch {
+			try? await debugServer.stop()
+			try? await tunnelServer.stop()
+			throw error
+		}
 
-		try await debugServer.stop()
-		try await tunnelServer.stop()
+		try? await debugServer.stop()
+		try? await tunnelServer.stop()
+
 	}
 }
