@@ -12,7 +12,7 @@ extension Client {
 		guard let proxy = proxies.first(where: { $0.host == req.host })
 		else { throw ClientError.invalidHost(req.host) }
 
-		let client = HTTPClient(configuration: .init(redirectConfiguration: .disallow))
+		let client = HTTPClient(configuration: .init(tlsConfiguration: tlsConfig, redirectConfiguration: .disallow))
 
 		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.path)")
 		request.method = .RAW(value: req.method)
