@@ -3,6 +3,7 @@ import Foundation
 import FzkExtensions
 import Logging
 import NIOHTTP1
+import NIOSSL
 import OAuth2Models
 import TunnelModels
 import WebURL
@@ -27,10 +28,12 @@ actor CredentialsStore {
 	private var serverURL: WebURL
 	private var accessToken: Result<(res: AccessTokenResponse, expires: Date), ErrorResponse>?
 	private let coder = Coder()
+	private let tlsConfiguration: TLSConfiguration?
 
-	init(credentials: some Credentials, serverURL: WebURL) {
+	init(credentials: some Credentials, serverURL: WebURL, tlsConfiguration: TLSConfiguration?) {
 		self.credentials = credentials
 		self.serverURL = serverURL
+		self.tlsConfiguration = tlsConfiguration
 	}
 
 	func accessToken() async throws -> Result<AccessTokenResponse, ErrorResponse> {
@@ -56,7 +59,7 @@ actor CredentialsStore {
 		request.headers = ["content-type": "application/json"]
 		request.method = .POST
 
-		let client = HTTPClient()
+		let client = HTTPClient(configuration: .init(tlsConfiguration: tlsConfiguration))
 
 		do {
 			logger.info("Requesting new AccessToken")

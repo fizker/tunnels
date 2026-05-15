@@ -15,16 +15,35 @@ struct PasswordCredentials: Credentials {
 	}
 }
 
-struct DebugServerTunnel: SuiteTrait, TestScoping {
+struct StartDebugServer: SuiteTrait, TestTrait, TestScoping {
+	var port: Int
+
+	func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable () async throws -> Void) async throws {
+		let debugServer = try await DebugServer(port: "\(port)")
+		try await debugServer.start()
+
+		do {
+			try await function()
+		} catch {
+			try? await debugServer.stop()
+			throw error
+		}
+		try? await debugServer.stop()
+	}
+}
+
+struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 	var tunnelServerPort: Int
 	var debugServerPort: Int
 	var debugServerHostName: String
+	var useHTTPS: Bool = false
 
 	func provideScope(for test: Test, testCase: Test.Case?, performing function: @Sendable () async throws -> Void) async throws {
 		// start tunnel server and debug server
 		let tunnelServer = try await TunnelServer(
 			environmentVars: .init([
 				.port: "\(tunnelServerPort)",
+				.useSSL: "\(useHTTPS)",
 			]),
 		)
 		try await tunnelServer.start()
@@ -39,20 +58,29 @@ struct DebugServerTunnel: SuiteTrait, TestScoping {
 		print("TunnelClient logs are stored at \(storagePath)")
 
 		// when tunnel server is running, start tunnel client
-		let client = Client(
-			serverURL: .init("http://localhost:\(tunnelServerPort)")!,
+		let client = try Client(
+			serverURL: .init("\(useHTTPS ? "https" : "http")://localhost:\(tunnelServerPort)")!,
 			proxies: [
 				.init(localPort: debugServerPort, host: debugServerHostName),
 			],
 			credentials: PasswordCredentials(username: "regular", password: "1234"),
 			logStorage: try await .init(storage: .init(storagePath).unwrap()),
 			acmeSetupDownloadPath: nil,
-		)
-		try await client?.connect()
+			verifyHTTPSCertificate: false,
+		).unwrap()
+		try await client.connect()
 
-		try await function()
+		do {
+			try await function()
+		} catch {
+			try? await debugServer.stop()
+			try? await tunnelServer.stop()
+			throw error
+		}
 
-		try await debugServer.stop()
-		try await tunnelServer.stop()
+		try? await client.disconnect()
+		try? await debugServer.stop()
+		try? await tunnelServer.stop()
+
 	}
 }

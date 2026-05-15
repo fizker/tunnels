@@ -3,6 +3,7 @@ import Foundation
 import FzkExtensions
 public import Logging
 import NIO
+import NIOSSL
 import OAuth2Models
 import TunnelLogModels
 import TunnelModels
@@ -20,6 +21,7 @@ public actor Client {
 	var logStorage: LogStorage
 	var credentialsStore: CredentialsStore
 	var acmeSetupDownloadPath: WebURL?
+	let tlsConfig: TLSConfiguration
 
 	public enum Error: Swift.Error, Sendable {
 		case failedToRegisterProxies([Proxy])
@@ -32,6 +34,7 @@ public actor Client {
 		logStorage: LogStorage,
 		logLevel: Logger.Level = .info,
 		acmeSetupDownloadPath: WebURL?,
+		verifyHTTPSCertificate: Bool = true,
 	) {
 		guard serverURL.path.isEmpty || serverURL.path == "/"
 		else { return nil }
@@ -40,7 +43,13 @@ public actor Client {
 			$0.logLevel = logLevel
 		}
 
-		self.credentialsStore = .init(credentials: credentials, serverURL: serverURL)
+		tlsConfig = .makeClientConfiguration() ~ {
+			if !verifyHTTPSCertificate {
+				$0.certificateVerification = .none
+			}
+		}
+
+		self.credentialsStore = .init(credentials: credentials, serverURL: serverURL, tlsConfiguration: tlsConfig)
 		self.serverURL = serverURL
 		self.webSocketURL = serverURL ~ {
 			switch $0.scheme {
@@ -67,6 +76,7 @@ public actor Client {
 			WebSocket.connect(
 				to: URL(webSocketURL.appending(path: ["tunnels", "client"]))!,
 				headers: authHeader,
+				configuration: .init(tlsConfiguration: tlsConfig),
 				on: MultiThreadedEventLoopGroup.singleton
 			) { ws in
 				self.logger.info("Client connected")
@@ -95,6 +105,13 @@ public actor Client {
 		if let acmeSetupDownloadPath {
 			try await downloadACMESetup(downloadPath: acmeSetupDownloadPath, authHeader: authHeader)
 		}
+	}
+
+	public func disconnect() async throws {
+		guard let ws = await webSocket?.webSocket
+		else { return }
+		webSocket = nil
+		try await ws.close()
 	}
 
 	var pendingProxies: [(continuation: TimedResolution, config: TunnelConfiguration)] = []
@@ -177,6 +194,10 @@ public actor Client {
 			} catch {
 				logger.info("connection lost: \(error)")
 			}
+
+			// The explicit disconnect sets this to nil
+			guard self.webSocket != nil
+			else { return }
 
 			while true {
 				logger.info("attempting reconnect...")

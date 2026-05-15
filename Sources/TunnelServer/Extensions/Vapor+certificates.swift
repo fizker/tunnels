@@ -12,4 +12,6 @@ func add(certificates: CertificateAndPrivateKey, to app: Application) throws {
 		certificateChain: certificateChain,
 		privateKey: .privateKey(try certificates.nioPrivateKey)
 	)
+
+	app.http.server.configuration.supportVersions = [.one, .two]
 }

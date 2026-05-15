@@ -56,6 +56,15 @@ extension EnvironmentVariables where Key == EnvVar {
 		}
 	}
 
+	package var useSelfSignedTLS: Bool {
+		get {
+			return useSSL
+			&& (try? acmeDirectory) == nil
+			&& (try? acmeContactEmail) == nil
+			&& (try? acmeStoragePath) == nil
+		}
+	}
+
 	package var acmeSetup: ACMESetup? {
 		get throws {
 			guard let acmeSetupPath = try? get(.acmeSetup)

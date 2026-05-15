@@ -1,4 +1,5 @@
 import ACME
+import ACMEClientModels
 import Common
 import EnvironmentVariables
 import HTTPUpgradeServer
@@ -17,7 +18,28 @@ func configure(_ app: Application, env: EnvironmentVariables<EnvVar>) async thro
 
 	app.userStore = try .init(storagePath: app.environment.userStoragePath)
 
-	if let setup = try env.acmeSetup {
+	if env.useSelfSignedTLS {
+		let privateKey = """
+		-----BEGIN PRIVATE KEY-----
+		MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgOjWLANtlSuTNbU8M
+		XrQeY6Gb4zdL3HkStMB7M0Yzi56hRANCAARZIAf2HJUEMDa6G+lDgg11kXhjsARZ
+		D3fynNuUUHJTsm6VeVlZSkfiAkdyuw8GRplIefxZCwrELxlqEC1YJT6h
+		-----END PRIVATE KEY-----
+		"""
+
+		let selfSigned: CertificateAndPrivateKey = try .generateSelfSigned(
+			key: .init(pemRepresentation: privateKey),
+			commonName: env.host,
+			domains: [ env.host ],
+		)
+		try add(certificates: selfSigned, to: app)
+		if let httpPort = app.environment.httpPort {
+			let upgradeServer = try await UpgradeServer(port: httpPort) {
+				$0.hasSuffix(app.environment.host) ? .accepted(port: env.port) : .rejected
+			}
+			try await upgradeServer.start(topLevelApplication: app)
+		}
+	} else if let setup = try env.acmeSetup {
 		app.logger.notice("SSL setup initiated")
 
 		let challengeHandler = ChallengeHandler(host: setup.host)

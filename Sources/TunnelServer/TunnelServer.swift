@@ -18,7 +18,12 @@ public actor TunnelServer {
 		}
 
 		app = try await Application.make(env)
-		try await configure(app, env: environmentVars)
+		do {
+			try await configure(app, env: environmentVars)
+		} catch {
+			try? await stop()
+			throw error
+		}
 	}
 
 	public func start() async throws {

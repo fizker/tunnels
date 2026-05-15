@@ -123,9 +123,8 @@ struct FullFlowTests {
 	}
 
 	func readBody(from response: HTTPClientResponse) async throws -> Data? {
-		var iterator = response.body.makeAsyncIterator()
 		var d = Data()
-		while let buffer = try await iterator.next() {
+		for try await buffer in response.body {
 			d.append(buffer)
 		}
 
