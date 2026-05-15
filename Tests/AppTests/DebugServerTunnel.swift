@@ -58,7 +58,7 @@ struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 		print("TunnelClient logs are stored at \(storagePath)")
 
 		// when tunnel server is running, start tunnel client
-		let client = Client(
+		let client = try Client(
 			serverURL: .init("\(useHTTPS ? "https" : "http")://localhost:\(tunnelServerPort)")!,
 			proxies: [
 				.init(localPort: debugServerPort, host: debugServerHostName),
@@ -67,8 +67,8 @@ struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 			logStorage: try await .init(storage: .init(storagePath).unwrap()),
 			acmeSetupDownloadPath: nil,
 			verifyHTTPSCertificate: false,
-		)
-		try await client?.connect()
+		).unwrap()
+		try await client.connect()
 
 		do {
 			try await function()
@@ -78,6 +78,7 @@ struct DebugServerTunnel: SuiteTrait, TestTrait, TestScoping {
 			throw error
 		}
 
+		try? await client.disconnect()
 		try? await debugServer.stop()
 		try? await tunnelServer.stop()
 

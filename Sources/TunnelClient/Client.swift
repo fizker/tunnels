@@ -107,6 +107,13 @@ public actor Client {
 		}
 	}
 
+	public func disconnect() async throws {
+		guard let ws = await webSocket?.webSocket
+		else { return }
+		webSocket = nil
+		try await ws.close()
+	}
+
 	var pendingProxies: [(continuation: TimedResolution, config: TunnelConfiguration)] = []
 
 	private func register(proxy: Proxy, webSocket: WebSocketHandler, retryCount: Int) async -> Bool {
@@ -187,6 +194,10 @@ public actor Client {
 			} catch {
 				logger.info("connection lost: \(error)")
 			}
+
+			// The explicit disconnect sets this to nil
+			guard self.webSocket != nil
+			else { return }
 
 			while true {
 				logger.info("attempting reconnect...")
