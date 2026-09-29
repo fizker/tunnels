@@ -46,8 +46,11 @@ struct UnpackSetupCommand: AsyncParsableCommand {
 	func run() async throws {
 		try await UserStore.import(downloadedData: setup, storagePath: userStoragePath)
 
+		let fm = FileManager.default
+
 		if let data = setup.acmeData {
 			let encoded = try coder.encode(data)
+			try? fm.removeItem(atPath: acmeDataPath.string)
 			try await encoded.write(toFileAt: acmeDataPath)
 		}
 
@@ -55,6 +58,7 @@ struct UnpackSetupCommand: AsyncParsableCommand {
 			setup.storagePath = acmeDataPath.string
 			setup.fetchCertificates = false
 			let encoded = try coder.encode(setup)
+			try? fm.removeItem(atPath: acmeSetupPath.string)
 			try await encoded.write(toFileAt: acmeSetupPath)
 		}
 	}
