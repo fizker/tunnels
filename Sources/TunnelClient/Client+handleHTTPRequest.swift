@@ -17,6 +17,8 @@ extension Client {
 		var request = HTTPClientRequest(url: "http://localhost:\(proxy.localPort)\(req.path)")
 		request.method = .RAW(value: req.method)
 		request.headers = .init(req.headers.flatMap { (key, values) in values.map { (key, $0) } })
+		#warning("TODO: Put scheme in HTTPRequest, so that we can pass the proper scheme along")
+		request.headers.add(name: "X-Forwarded-Proto", value: "https")
 		request.body = switch req.body {
 		case let .text(text):
 			.bytes(text.data(using: .utf8)!)
